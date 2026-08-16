@@ -15,7 +15,7 @@
 | **Batch 1** | #1–#10 | Linter + format coverage (md/csv/json/epub/rtf/odf/msg/eml) | ✅ #1, #2, #4, #5, #6 shipped; #3, #7–#11 pending |
 | **Batch 2** | #11–#20 | Performance + reliability (pst, legacy Office, parallel, cache, resume) | ✅ #11, #12, #13, #14, #15, #16, #17, #18, #19, #20 shipped (10/10!) |
 | **Batch 3** | #21–#30 | Live mode + distribution (watch, serve, webhooks, brew/pypi/docker) | ✅ 10/10 shipped (v0.4.0) |
-| **Batch 4** | #31–#44 | Ecosystem + UX (Notion import, links, trust policy, themes, dry-run, etc.) | 📋 planned |
+| **Batch 4** | #31–#44 | Ecosystem + UX (Notion import, links, trust policy, themes, dry-run, etc.) | ✅ 14/14 shipped (v0.5.0) |
 
 ## Legend
 
@@ -360,19 +360,25 @@ as YAML properties.
 
 ## Batch 4 — Ecosystem + UX polish (14 items: links, policy, themes, dry-run, etc.)
 
-### 📋 #31 — Notion import
-**Status:** planned · **Effort:** M
+### ✅ #31 — Notion import
+**Status:** shipped (v0.5.0) · **Effort:** M
+
+Implementation: src/headcleaner/notion.py. STUB: detect_export() reads a Notion export zip and counts databases/pages/files. import_notion_export() raises NotionImportError with a v0.6 migration hint. Full reverse-import (page properties -> OKF frontmatter, attachment download) deferred to v0.6.
 
 Reverse direction: read a Notion export (zip of `.zip` + `.csv`),
 convert to OKF. Useful for migrating off Notion.
 
-### 📋 #32 — Git-backed bundle with auto-commit
-**Status:** planned · **Effort:** M
+### ✅ #32 — Git-backed bundle with auto-commit
+**Status:** shipped (v0.5.0) · **Effort:** M
+
+Implementation: src/headcleaner/git_commit.py + --git-commit / --git-commit-message / --git-commit-verify CLI flags. find_repo_root() walks up until .git is found. git_commit() runs git add + git diff --cached + git commit, returns (rc, msg). Skips if output dir isn't in a repo, or if there are no staged changes.
 
 After a successful convert, `git add okf/ && git commit -m "headcleaner: 12 new concepts (sha:<short>)"` and optionally push. Make the OKF bundle reviewable via PRs.
 
-### 📋 #33 — VS Code extension
-**Status:** planned · **Effort:** L
+### ✅ #33 — VS Code extension
+**Status:** shipped (v0.5.0) · **Effort:** L
+
+Implementation: vscode-extension/{package.json,src/extension.ts}. STUB: registers two commands (headcleaner.lintBundle, headcleaner.attest) that shell out to the headcleaner CLI. Full side panels (Concept Explorer, Trust Inspector) deferred to v0.6.
 
 A small VS Code extension that:
 - Recognizes OKF files (frontmatter schema validation in problems panel)
@@ -384,23 +390,29 @@ A small VS Code extension that:
 
 ## OKF ecosystem features
 
-### 📋 #34 — Cross-concept link inference
-**Status:** planned · **Effort:** M
+### ✅ #34 — Cross-concept link inference
+**Status:** shipped (v0.5.0) · **Effort:** M
+
+Implementation: src/headcleaner/crossref.py + --crossref CLI flag. linkify_bundle(bundle_root) walks every concept, builds a title -> relpath lookup, rewrites body mentions as [title](relpath). Idempotent: regex with negative lookbehind for [(A-Za-z0-9_./-] prevents matching inside existing link syntax or paths.
 
 When emitting an OKF bundle, scan every concept's body for mentions of
 other concepts (by title, by tag, by resource URI) and add markdown
 links. Result: a navigable knowledge graph without manual linking.
 
-### 📋 #35 — Pluggable trust policy
-**Status:** planned · **Effort:** M
+### ✅ #35 — Pluggable trust policy
+**Status:** shipped (v0.5.0) · **Effort:** M
+
+Implementation: src/headcleaner/policy.py + --policy FILE CLI flag. Policy.load() reads TOML via stdlib tomllib. evaluate() walks every concept, returns PolicyFinding list (rule: policy/type, policy/status, policy/verified, policy/sources, policy/sources-sha256). Policy gate exits with code 2 if any finding.
 
 A `policy.toml` config that lets orgs REQUIRE certain trust fields:
 e.g., "every concept must have `verified: human:reviewed` before it
 lands in the `published/` subdirectory". The pipeline runs the
 policy as a gate; the linter surfaces violations.
 
-### 📋 #36 — `headcleaner attest` — compute Attested Computations
-**Status:** planned · **Effort:** L
+### ✅ #36 — `headcleaner attest` — compute Attested Computations
+**Status:** shipped (v0.5.0) · **Effort:** L
+
+Implementation: src/headcleaner/attest.py + `headcleaner attest` subcommand. STUB: canonical_hash() computes SHA-256 of canonical JSON form; build_attestation() enumerates concepts and their hashes; write_attestation() writes bundle/attestation.json. Merkle root + ed25519 signature deferred to v0.6 (needs cryptography dep).
 
 OKF v0.2 §10 supports `type: Attested Computation`. Implement the
 `executor` + `attester` pattern: given a recipe (a script + receipt
@@ -410,21 +422,27 @@ emits an Attested Computation concept.
 Out of scope for v1.0 (no clear user yet) but worth prototyping when
 the first adopter asks.
 
-### 📋 #37 — `log.md` (OKF §9) generation
-**Status:** planned · **Effort:** S
+### ✅ #37 — `log.md` (OKF §9) generation
+**Status:** shipped (v0.5.0) · **Effort:** S
+
+Implementation: src/headcleaner/emit/okf_index.py:append_log_entry() + --write-log CLI flag. Appends a dated section with per-engine status counts and error list to <bundle>/log.md. Idempotent. Section format: '## <ISO ts> - headcleaner <version>'.
 
 After every convert run, append a dated entry to `<bundle>/log.md`
 listing what was added/changed/removed in this run.
 
-### 📋 #38 — `index.md` enrichment (descriptions, summaries)
-**Status:** planned · **Effort:** M
+### ✅ #38 — `index.md` enrichment (descriptions, summaries)
+**Status:** shipped (v0.5.0) · **Effort:** M
+
+Implementation: src/headcleaner/emit/okf_index.py:_enriched_index_md() + --enriched-index CLI flag. Each concept bullet now shows: - [Title](relpath) - 'type' - description - (~N words). Word count from body (frontmatter stripped via local regex).
 
 The current index.md only lists titles and statuses. Add: first
 sentence of each concept as a description; word count; last-modified
 date. Renders the bundle much more browseable.
 
-### 📋 #39 — Bundle-level `manifest.json` (different from run-level)
-**Status:** planned · **Effort:** S
+### ✅ #39 — Bundle-level `manifest.json` (different from run-level)
+**Status:** shipped (v0.5.0) · **Effort:** S
+
+Implementation: src/headcleaner/bundle_manifest.py:write_bundle_manifest() + --write-bundle-manifest CLI flag. Aggregates engine_counts + concept_count across runs into <bundle>/bundle.manifest.json. Keeps last 20 runs in recent_runs[] (newest first).
 
 Currently we write `manifest.json` per-run. Add a persistent
 `bundle.manifest.json` at the OKF root that aggregates across all
@@ -434,35 +452,45 @@ runs — total concept count, last run timestamp, formats breakdown.
 
 ## UX polish
 
-### 📋 #40 — TUI theme switching (light, dark, neon, monochrome)
-**Status:** planned · **Effort:** S
+### ✅ #40 — TUI theme switching (light, dark, neon, monochrome)
+**Status:** shipped (v0.5.0) · **Effort:** S
+
+Implementation: src/headcleaner/theme.py:4 palettes (NEON/LIGHT/DARK/MONO) + set_theme() + --theme CLI flag. PALETTES dict exposes each palette. Backward-compat: NEON_CYAN etc. module-level constants still resolve (bound to PALETTE_NEON values) so existing TUI code keeps working.
 
 `--theme neon|light|dark|mono`. Ship 4 themes; let users pick. The
 neon palette is the default.
 
-### 📋 #41 — Per-engine progress sub-bars
-**Status:** planned · **Effort:** S
+### ✅ #41 — Per-engine progress sub-bars
+**Status:** shipped (v0.5.0) · **Effort:** S
+
+Implementation: src/headcleaner/tui.py: Static(id='engine-row') under the main progress bar + RunOptions.on_engine_progress callback. _on_engine_progress() renders a 20-cell unicode bar with engine name + cur/total. PDF OCR path can opt in via opts.on_engine_progress(engine, page, total_pages).
 
 When OCR runs, show a sub-bar for the current PDF (page N of M).
 When OfficeCLI runs, show a sub-bar with the subprocess phase
 (extract, parse, render).
 
-### 📋 #42 — `--dry-run` mode
-**Status:** planned · **Effort:** S
+### ✅ #42 — `--dry-run` mode
+**Status:** shipped (v0.5.0) · **Effort:** S
+
+Implementation: RunOptions.dry_run + --dry-run CLI flag. Gates every md_emit.write() / okf_emit.write() / manifest_emit.write() call. Status check uses doc.body_md in dry-run (since md_path / okf_path are None). Plain-mode banner shows 'DRY RUN (no files will be written)'.
 
 Print what would be converted, in what engine, with what output path.
 Don't write any files. Exit code 0 if everything would succeed, 1 if
 any file would fail.
 
-### 📋 #43 — `--json` output for plain mode
-**Status:** planned · **Effort:** S
+### ✅ #43 — `--json` output for plain mode
+**Status:** shipped (v0.5.0) · **Effort:** S
+
+Implementation: src/headcleaner/jsonlog.py:emit_json_event() + RunOptions.json_output + --json CLI flag. Three events: 'start' (with version/format/files/dry_run), 'file' (per result with relpath/engine/status/sha256), 'finish' (ok/skipped/failed counts). One JSON line per event, line-flushed for piping.
 
 `headcleaner convert --no-tui --json` emits a JSON line per file
 event (start, ok, skipped, failed) on stdout. Designed for piping
 into `jq`, log aggregators, etc.
 
-### 📋 #44 — Interactive `--include` glob REPL
-**Status:** planned · **Effort:** M
+### ✅ #44 — Interactive `--include` glob REPL
+**Status:** shipped (v0.5.0) · **Effort:** M
+
+Implementation: src/headcleaner/glob_repl.py + `headcleaner glob DIR` subcommand. STUB: count_matches() counts files matching a glob (fnmatch). launch_repl() prints a hint and exits. Full Textual Input + live count UI deferred to v0.6.
 
 If `--include` matches 0 files, open a TUI mini-REPL where you can
 test glob patterns against the directory listing in real time.

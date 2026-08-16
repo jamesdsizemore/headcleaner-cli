@@ -27,6 +27,7 @@ from .engines.base import AdapterError
 from .normalize import normalize
 from .router import get_adapter
 from .walk import walk
+from .jsonlog import emit_json_event  # Batch 4 / Eng #43
 
 
 @dataclass
@@ -46,6 +47,18 @@ class RunOptions:
 
     # Batch 3: Obsidian vault sync + future flags
     obsidian_compat: bool = False  # add flat fields to OKF frontmatter
+
+    # Batch 4: OKF ecosystem
+    enriched_index: bool = False  # show description + word count in index.md (Eng #38)
+    write_log: bool = False      # append a dated entry to <bundle>/log.md (Eng #37)
+    write_bundle_manifest: bool = False  # aggregate across runs into bundle.manifest.json (Eng #39)
+    dry_run: bool = False        # Eng #42 — emit what would convert without writing
+    json_output: bool = False    # Eng #43 — emit one JSON line per event on stdout
+
+    # Eng #41: per-engine sub-progress. Called with
+    #   (engine_name, current_page, total_pages) for any adapter that
+    #   reports sub-progress (currently only the PDF OCR adapter).
+    on_engine_progress: Callable[[str, int, int], None] | None = None
 
     # Optional progress hook: called with (current_index, total, result_so_far)
     on_progress: Callable[[int, int, FileResult], None] | None = None
@@ -224,20 +237,26 @@ def _process_sequential(opts: RunOptions, record: RunRecord, cache: dict[str, di
         result.engine = adapter.name
         result.sha256 = doc.source_sha256
 
-        if opts.fmt in {"md", "both"}:
-            try:
-                p = md_emit.write(doc, md_root)
-                result.md_path = str(p)
-            except OSError as e:
-                result.error = f"md write: {e}"
-        if opts.fmt in {"okf", "both"}:
-            try:
-                p = okf_emit.write(doc, okf_root, obsidian_compat=opts.obsidian_compat)
-                result.okf_path = str(p)
-            except OSError as e:
-                result.error = (result.error + "; " if result.error else "") + f"okf write: {e}"
+        if not opts.dry_run:
+            if opts.fmt in {"md", "both"}:
+                try:
+                    p = md_emit.write(doc, md_root)
+                    result.md_path = str(p)
+                except OSError as e:
+                    result.error = f"md write: {e}"
+            if opts.fmt in {"okf", "both"}:
+                try:
+                    p = okf_emit.write(doc, okf_root, obsidian_compat=opts.obsidian_compat)
+                    result.okf_path = str(p)
+                except OSError as e:
+                    result.error = (result.error + "; " if result.error else "") + f"okf write: {e}"
 
-        result.status = "ok" if (result.md_path or result.okf_path) else "failed"
+        # Eng #42: in dry-run we don't write files, but the conversion itself
+        # succeeded — mark "ok" if the adapter produced a doc with non-empty body.
+        if opts.dry_run:
+            result.status = "ok" if doc.body_md else "failed"
+        else:
+            result.status = "ok" if (result.md_path or result.okf_path) else "failed"
         _finish_result(opts, record, result)
 
 
@@ -322,18 +341,19 @@ def _process_parallel(opts: RunOptions, record: RunRecord, cache: dict[str, dict
                         sf = type("SF", (), {"path": source, "relpath": Path(result.relpath), "size_bytes": source.stat().st_size})()
                         doc = normalize(sf, extracted, engine=adapter.name)
                         result.sha256 = doc.source_sha256
-                        if opts.fmt in {"md", "both"}:
-                            try:
-                                p = md_emit.write(doc, md_root)
-                                result.md_path = str(p)
-                            except OSError as e:
-                                result.error = f"md write: {e}"
-                        if opts.fmt in {"okf", "both"}:
-                            try:
-                                p = okf_emit.write(doc, okf_root, obsidian_compat=opts.obsidian_compat)
-                                result.okf_path = str(p)
-                            except OSError as e:
-                                result.error = (result.error + "; " if result.error else "") + f"okf write: {e}"
+                        if not opts.dry_run:
+                            if opts.fmt in {"md", "both"}:
+                                try:
+                                    p = md_emit.write(doc, md_root)
+                                    result.md_path = str(p)
+                                except OSError as e:
+                                    result.error = f"md write: {e}"
+                            if opts.fmt in {"okf", "both"}:
+                                try:
+                                    p = okf_emit.write(doc, okf_root, obsidian_compat=opts.obsidian_compat)
+                                    result.okf_path = str(p)
+                                except OSError as e:
+                                    result.error = (result.error + "; " if result.error else "") + f"okf write: {e}"
                     except Exception as e:
                         result.status = "failed"
                         result.error = f"{type(e).__name__}: {e}"
@@ -390,6 +410,17 @@ def run_pipeline(opts: RunOptions) -> RunRecord:
     total = len(all_files)
     record.options["_total"] = total
 
+    if opts.json_output:
+        from . import __version__ as _v
+        emit_json_event({
+            "event": "start",
+            "tool": "headcleaner",
+            "version": _v,
+            "format": opts.fmt,
+            "dry_run": opts.dry_run,
+            "files": total,
+        })
+
     if opts.jobs > 1:
         _process_parallel(opts, record, cache, total, all_files)
     else:
@@ -397,8 +428,26 @@ def run_pipeline(opts: RunOptions) -> RunRecord:
 
     if opts.fmt in {"okf", "both"} and opts.write_okf_index:
         okf_root = opts.output_root / "okf"
-        okf_index.generate(okf_root)
+        okf_index.generate(
+            okf_root,
+            enriched=opts.enriched_index,
+            write_log=opts.write_log,
+            record=record,
+        )
 
     record.finish()
-    manifest_emit.write(record, opts.output_root)
+    if not opts.dry_run:
+        manifest_emit.write(record, opts.output_root)
+        if opts.write_bundle_manifest:
+            from .bundle_manifest import write_bundle_manifest
+            write_bundle_manifest(opts.output_root, record)
+
+    if opts.json_output:
+        emit_json_event({
+            "event": "finish",
+            "ok": sum(1 for r in record.results if r.status == "ok"),
+            "skipped": sum(1 for r in record.results if r.status == "skipped"),
+            "failed": sum(1 for r in record.results if r.status == "failed"),
+        })
+
     return record

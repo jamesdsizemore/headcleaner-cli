@@ -1,0 +1,56 @@
+{
+  "name": "headcleaner",
+  "displayName": "HeadCleaner",
+  "description": "Browse and lint headcleaner OKF bundles in VS Code.",
+  "version": "0.1.0",
+  "publisher": "local",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": ["Other"],
+  "activationEvents": [
+    "onLanguage:markdown",
+    "workspaceContains:**/bundle.manifest.json"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "headcleaner.lintBundle",
+        "title": "HeadCleaner: Lint OKF Bundle",
+        "category": "HeadCleaner"
+      },
+      {
+        "command": "headcleaner.attest",
+        "title": "HeadCleaner: Attest Bundle",
+        "category": "HeadCleaner"
+      }
+    ],
+    "configuration": {
+      "title": "HeadCleaner",
+      "properties": {
+        "headcleaner.pythonPath": {
+          "type": "string",
+          "default": "headcleaner",
+          "description": "Path to the headcleaner executable on the system PATH."
+        },
+        "headcleaner.theme": {
+          "type": "string",
+          "enum": ["neon", "light", "dark", "mono"],
+          "default": "neon",
+          "description": "Color theme for the side panel."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -watch",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.3.0"
+  }
+}

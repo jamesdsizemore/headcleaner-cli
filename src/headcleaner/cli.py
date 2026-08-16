@@ -77,6 +77,79 @@ def cli() -> None:
     default=False,
     help="Add Obsidian-friendly flat fields to OKF frontmatter (source, sha256, generated_by, verified_by, stale_on).",
 )
+@click.option(
+    "--enriched-index",
+    is_flag=True,
+    default=False,
+    help="Eng #38: show description + word count in OKF index.md.",
+)
+@click.option(
+    "--write-log",
+    is_flag=True,
+    default=False,
+    help="Eng #37: append a dated entry to <bundle>/log.md (OKF §9).",
+)
+@click.option(
+    "--write-bundle-manifest",
+    is_flag=True,
+    default=False,
+    help="Eng #39: aggregate across runs into bundle.manifest.json.",
+)
+@click.option(
+    "--crossref",
+    is_flag=True,
+    default=False,
+    help="Eng #34: rewrite cross-concept mentions as markdown links (second pass).",
+)
+@click.option(
+    "--policy",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Eng #35: load a trust policy TOML and fail the run if any concept violates it.",
+)
+@click.option(
+    "--git-commit",
+    is_flag=True,
+    default=False,
+    help="Eng #32: after a successful run, `git add` the output dir and `git commit` it.",
+)
+@click.option(
+    "--git-commit-message",
+    default="headcleaner: convert run",
+    show_default=True,
+    help="Commit message used by --git-commit.",
+)
+@click.option(
+    "--git-commit-verify",
+    is_flag=True,
+    default=False,
+    help="Run pre-commit hooks on the auto-commit (default: skip hooks for speed).",
+)
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    default=False,
+    help="Eng #42: print what would be converted without writing any files.",
+)
+@click.option(
+    "--json",
+    "json_output",
+    is_flag=True,
+    default=False,
+    help="Eng #43: emit one JSON line per event on stdout (for piping to jq).",
+)
+@click.option(
+    "--tui / --no-tui",
+    default=None,
+    help="Force / disable the animated TUI (default: auto-detect TTY).",
+)
+@click.option(
+    "--theme",
+    type=click.Choice(["neon", "light", "dark", "mono"], case_sensitive=False),
+    default="neon",
+    show_default=True,
+    help="Eng #40: color palette for the TUI and plain-mode progress lines.",
+)
 def convert(
     input_dir: Path,
     fmt: str,
@@ -91,10 +164,25 @@ def convert(
     tui: bool | None,
     no_okf_index: bool,
     obsidian_compat: bool,
+    enriched_index: bool,
+    write_log: bool,
+    write_bundle_manifest: bool,
+    dry_run: bool,
+    json_output: bool,
+    theme: str,
+    crossref: bool,
+    policy: Path | None,
+    git_commit_flag: bool,
+    git_commit_message: str,
+    git_commit_verify: bool,
 ) -> None:
     """Convert every supported document under INPUT_DIR."""
+    from . import theme as _theme
     from .engines.officecli import OfficeCLIAdapter
     from .router import adapters as get_adapters
+
+    # Apply the requested theme before anything renders (TUI + plain lines)
+    _theme.set_theme(theme)
 
     # Rebuild the OfficeCLI adapter with the requested timeout.
     # Other adapters are constructed once in router._ADAPTERS but their
@@ -115,7 +203,49 @@ def convert(
         jobs=jobs,
         use_cache=not no_cache,
         obsidian_compat=obsidian_compat,
+        enriched_index=enriched_index,
+        write_log=write_log,
+        write_bundle_manifest=write_bundle_manifest,
+        dry_run=dry_run,
+        json_output=json_output,
     )
+
+    # Eng #34: cross-concept link inference (second pass)
+    if crossref and not dry_run and opts.fmt in {"okf", "both"}:
+        from .crossref import linkify_bundle
+        n = linkify_bundle(opts.output_root / "okf")
+        if n:
+            print(f"  crossref: rewrote {n} file(s)", file=sys.stderr)
+
+    # Eng #35: policy gate
+    if policy is not None and not dry_run and opts.fmt in {"okf", "both"}:
+        from .policy import Policy, evaluate
+        pol = Policy.load(policy)
+        findings = evaluate(pol, opts.output_root / "okf")
+        if findings:
+            for f in findings:
+                print(
+                    f"  policy violation: {f.file.name}: [{f.rule}] {f.message}",
+                    file=sys.stderr,
+                )
+            print(
+                f"  ✗ policy gate failed: {len(findings)} violation(s)",
+                file=sys.stderr,
+            )
+            sys.exit(2)
+
+    # Eng #32: git-backed bundle
+    if git_commit_flag and not dry_run:
+        from .git_commit import git_commit as do_git_commit
+        rc, msg = do_git_commit(
+            opts.output_root,
+            message=git_commit_message,
+            verify=git_commit_verify,
+        )
+        if rc != 0:
+            print(f"  git-commit: {msg}", file=sys.stderr)
+        else:
+            print(f"  git-commit: {msg}", file=sys.stderr)
 
     use_tui = tui if tui is not None else sys.stderr.isatty() and sys.stdout.isatty()
     if use_tui:
@@ -127,7 +257,10 @@ def convert(
     err.write(f"headcleaner {__version__}\n")
     err.write(f"  input:  {input_dir}\n")
     err.write(f"  output: {output}\n")
-    err.write(f"  format: {fmt}\n\n")
+    err.write(f"  format: {fmt}\n")
+    if dry_run:
+        err.write("  mode:   DRY RUN (no files will be written)\n")
+    err.write("\n")
     err.flush()
 
     def hook(i: int, total: int, result) -> None:
@@ -141,7 +274,10 @@ def convert(
     skipped = sum(1 for r in record.results if r.status == "skipped")
     failed = sum(1 for r in record.results if r.status == "failed")
     err.write(f"\n✓ done  ok={ok}  skipped={skipped}  failed={failed}\n")
-    err.write(f"manifest: {output}/manifest.json\n")
+    if dry_run:
+        err.write("(dry run — no files written)\n")
+    else:
+        err.write(f"manifest: {output}/manifest.json\n")
     sys.exit(0 if failed == 0 else 1)
 
 
@@ -186,10 +322,14 @@ def convert(
     default=None,
     help="POST the run manifest to this URL after each re-conversion.",
 )
+@click.option(
+    "--theme",
+    type=click.Choice(["neon", "light", "dark", "mono"], case_sensitive=False),
+    default="neon",
+    show_default=True,
+    help="Eng #40: color palette for the TUI and plain-mode progress lines.",
+)
 def watch(
-    input_dir: Path,
-    fmt: str,
-    output: Path,
     ocr: bool,
     officecli_timeout: int,
     include: tuple[str, ...],
@@ -243,6 +383,23 @@ def watch(
         watch_directory(opts, debounce_ms=debounce_ms, on_run_complete=on_run_complete)
     except KeyboardInterrupt:
         pass
+
+
+@cli.command()
+@click.argument("directory", type=click.Path(exists=True, file_okay=False, path_type=Path))
+def attest(directory: Path) -> None:
+    """Eng #36: compute an Attested Computations payload for a bundle."""
+    from .attest import write_attestation
+    out = write_attestation(directory)
+    click.echo(f"Attestation written: {out}")
+
+
+@cli.command()
+@click.argument("directory", type=click.Path(exists=True, file_okay=False, path_type=Path))
+def glob(directory: Path) -> None:
+    """Eng #44: launch the interactive glob REPL (stub: prints hint)."""
+    from .glob_repl import launch_repl
+    launch_repl(directory)
 
 
 @cli.command()

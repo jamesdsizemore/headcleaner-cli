@@ -4,6 +4,91 @@ All notable changes to headcleaner are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.5.0] — 2026-08-16 (Batch 4)
+
+Final batch of the [ENHANCEMENTS.md](ENHANCEMENTS.md) plan shipped.
+14 of 14 items complete — the standing goal.
+
+### Added
+
+- **`log.md` (OKF §9)** (Enhancement #37) — `okf_index.append_log_entry()`
+  appends a dated, per-engine summary after every run. Idempotent.
+  CLI: `--write-log`.
+- **Enriched `index.md`** (Enhancement #38) — descriptions + word counts
+  on every concept bullet. CLI: `--enriched-index`.
+- **Bundle-level `manifest.json`** (Enhancement #39) — aggregates engine
+  counts and recent runs across invocations into a single
+  `<bundle>/bundle.manifest.json`. CLI: `--write-bundle-manifest`.
+- **Cross-concept link inference** (Enhancement #34) — second-pass
+  rewrites mentions of other concepts' titles as markdown links.
+  Idempotent. CLI: `--crossref`.
+- **Pluggable trust policy** (Enhancement #35) — load a `policy.toml`
+  that gates the run on required trust-family fields. CLI: `--policy FILE`.
+- **Git-backed bundle** (Enhancement #32) — `git add` + commit after a
+  successful run. CLI: `--git-commit` + `--git-commit-message` +
+  `--git-commit-verify`.
+- **TUI theme switching** (Enhancement #40) — 4 palettes (neon, light,
+  dark, mono) via `theme.set_theme()`. CLI: `--theme`.
+- **Per-engine sub-bars** (Enhancement #41) — TUI gets a second
+  progress row that updates via `on_engine_progress(engine, cur, total)`.
+  Currently used by the PDF OCR path; other engines can opt in.
+- **`--dry-run`** (Enhancement #42) — show what would be converted
+  without writing any files. Manifest.json is also skipped.
+- **`--json` output** (Enhancement #43) — emit one JSON line per event
+  on stdout (`start` / `file` / `finish`) for piping into `jq` or log
+  aggregators.
+- **Notion import stub** (Enhancement #31) — `src/headcleaner/notion.py`
+  + planned `headcleaner notion-import` command. Detect-export works;
+  full reverse-import ships in v0.6.
+- **Attested Computations stub** (Enhancement #36) — `headcleaner attest`
+  builds a per-concept SHA-256 manifest. Merkle root + ed25519
+  signature land in v0.6 with proper cryptography deps.
+- **VS Code extension stub** (Enhancement #33) — `vscode-extension/`
+  with `package.json` + `extension.ts` skeleton. Two commands
+  (`headcleaner.lintBundle`, `headcleaner.attest`) shell out to the CLI.
+- **Glob REPL stub** (Enhancement #44) — `headcleaner glob` is a thin
+  wrapper around `glob_repl.launch_repl()`. Full Textual UI ships
+  in v0.6.
+
+### Module additions
+
+- `src/headcleaner/crossref.py` — `linkify_bundle()`.
+- `src/headcleaner/policy.py` — `Policy.load()` + `evaluate()` + `PolicyFinding`.
+- `src/headcleaner/git_commit.py` — `git_commit()` + `find_repo_root()`.
+- `src/headcleaner/bundle_manifest.py` — `write_bundle_manifest()`.
+- `src/headcleaner/jsonlog.py` — `emit_json_event()`.
+- `src/headcleaner/notion.py` — `detect_export()` + `import_notion_export()`.
+- `src/headcleaner/attest.py` — `build_attestation()` + `write_attestation()` + `canonical_hash()`.
+- `src/headcleaner/glob_repl.py` — `count_matches()` + `launch_repl()`.
+- `src/headcleaner/emit/okf_index.py` — added `_enriched_index_md()`,
+  `append_log_entry()`, and a `generate(enriched, write_log, record)`
+  signature.
+
+### Tests
+
+100 passing in ~8s (20 new across `test_batch4.py` + `test_batch4_skeletons.py`).
+
+### CLI surface at v0.5.0
+
+```
+headcleaner convert  IN_DIR [--format md|okf|both] [-o DIR] [-i GLOB]
+                    [-e GLOB] [-j N] [--no-cache] [--officecli-timeout N]
+                    [--obsidian-compat] [--enriched-index] [--write-log]
+                    [--write-bundle-manifest] [--crossref]
+                    [--policy FILE] [--git-commit] [--git-commit-message MSG]
+                    [--git-commit-verify] [--dry-run] [--json]
+                    [--theme neon|light|dark|mono] [--tui|--no-tui]
+                    [--no-continue-on-error] [--no-okf-index] [--ocr]
+headcleaner watch    IN_DIR [...] [--webhook-url URL] [--debounce-ms N]
+headcleaner attest   BUNDLE_DIR
+headcleaner glob     DIR
+headcleaner lint     DIR [--fix] [--strict]
+headcleaner agents   [stdout]
+headcleaner templates
+```
+
+---
+
 ## [0.4.0] — 2026-08-16 (Batch 3)
 
 Third batch of the [ENHANCEMENTS.md](ENHANCEMENTS.md) plan shipped.

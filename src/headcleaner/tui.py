@@ -107,6 +107,8 @@ class HeadCleanerApp(App):
         yield Static(title_line, id="title")
         with Vertical(id="progress-row"):
             yield ProgressBar(total=100, show_eta=True, id="bar")
+        # Eng #41: per-engine sub-progress row (updated via on_engine_progress)
+        yield Static("", id="engine-row")
         yield Log(highlight=True, id="log")
         yield Static(self._status_bar_text(), id="status-row")
         yield Footer()
@@ -176,6 +178,15 @@ class HeadCleanerApp(App):
         def hook(i: int, total: int, result: FileResult) -> None:
             self.call_from_thread(self._on_progress, i, total, result)
 
+        def engine_hook(engine: str, cur: int, total: int) -> None:
+            self.call_from_thread(self._on_engine_progress, engine, cur, total)
+
+        # Wire engine progress if the opts supports it
+        try:
+            self.opts.on_engine_progress = engine_hook
+        except AttributeError:
+            pass
+
         try:
             record = run_pipeline(_OptsProxy(self.opts, hook))
             self._finished = True
@@ -183,6 +194,20 @@ class HeadCleanerApp(App):
         except Exception as e:
             self._finished = True
             self.call_from_thread(self._on_error, e)
+
+    def _on_engine_progress(self, engine: str, cur: int, total: int) -> None:
+        """Eng #41: per-engine sub-bar update. Renders into the engine row."""
+        try:
+            row = self.query_one("#engine-row", Static)
+        except Exception:
+            return
+        if total > 0:
+            pct = int(100 * cur / total)
+            row.update(paint(f"⟫ {engine:<10} ", NEON_PURPLE) +
+                       paint(f"[{'█' * (pct // 5):<20}] ", NEON_CYAN) +
+                       paint(f"{cur}/{total}", FG_TEXT))
+        else:
+            row.update("")
 
     def _on_progress(self, i: int, total: int, result: FileResult) -> None:
         bar = self.query_one("#bar", ProgressBar)
