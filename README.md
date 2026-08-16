@@ -69,16 +69,18 @@ Options:
   --jobs, -j N                Parallel worker processes (default: 1 = sequential)
   --no-cache                  Re-convert every file (skip the SHA-256 cache)
   --no-continue-on-error       Stop on the first failure
+  --obsidian-compat            Add Obsidian-friendly flat fields to OKF frontmatter
   --tui / --no-tui             Force / disable the animated TUI (default: auto-detect TTY)
   --no-okf-index               Skip OKF directory index.md generation
+```
 
 Other commands:
   headcleaner templates        List supported formats
   headcleaner agents           Show engine install status
+  headcleaner watch IN [--webhook-url URL]   Re-convert on file changes (Ctrl+C to stop)
   headcleaner-lint <DIR>       Review converted Markdown / OKF for formatting issues
   headcleaner-lint <DIR> --fix Auto-repair safe issues to <DIR>.fixed/
 ```
-
 ## Why OKF?
 
 OKF (Open Knowledge Format, v0.2) is just **markdown + YAML frontmatter in a directory hierarchy**. That means:
@@ -118,6 +120,29 @@ See [docs/FORMAT_MATRIX.md](docs/FORMAT_MATRIX.md) for the full engine × librar
 | `.eml` | headers + text/html body + attachments | stdlib `email` |
 | `.pst` (best-effort) | item count only | `libpff-python` (optional) |
 | `.doc`, `.xls`, `.ppt` | clear error path | needs `libreoffice --convert-to` first |
+
+## Live mode
+
+```bash
+headcleaner watch ~/inbox --output ~/out --webhook-url https://hooks.slack.com/...
+```
+
+Re-runs the conversion automatically when files change under `~/inbox`.
+Each re-run POSTs the manifest to the webhook URL (optional). Press
+Ctrl+C to stop.
+
+## Obsidian vault sync
+
+```bash
+headcleaner convert ~/inbox --format okf \
+    --output ~/Documents/MyVault/Concepts \
+    --obsidian-compat
+```
+
+Adds Obsidian-friendly flat fields (`source`, `sha256`, `generated_by`,
+`verified_by`, `stale_on`) to the OKF frontmatter so the concept shows
+up correctly in Obsidian's property panel. Original OKF fields stay
+intact for round-tripping.
 
 v1.0 roadmap adds: `.md`, `.csv`, `.json`, `.epub`, `.rtf`, `.odt`/`.ods`/`.odp`, `.eml`, `.msg`, `.pst`.
 

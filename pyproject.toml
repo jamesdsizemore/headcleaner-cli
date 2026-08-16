@@ -1,10 +1,23 @@
 [project]
 name = "headcleaner"
-version = "0.3.0"
+version = "0.4.0"
 description = "HeadCleaner CLI - walk a folder, convert every document to Markdown and/or OKF v0.2 with frontmatter."
 readme = "README.md"
 license = { text = "Apache-2.0" }
-authors = [{ name = "James Sizemore" }]
+authors = [{ name = "James Sizemore", email = "jamesdsizemore@gmail.com" }]
+keywords = ["markdown", "okf", "knowledge-graph", "converter", "cli", "ocr", "tui"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Utilities",
+]
 requires-python = ">=3.12,<3.14"
 dependencies = [
   "beautifulsoup4>=4.12",
@@ -18,6 +31,7 @@ dependencies = [
   "rich>=13.7",
   "textual>=0.86",
   "extract-msg>=0.54",
+  "watchfiles>=0.21",
 ]
 
 [project.optional-dependencies]

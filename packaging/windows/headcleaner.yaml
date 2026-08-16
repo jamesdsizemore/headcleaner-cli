@@ -1,0 +1,41 @@
+# Winget manifest for headcleaner.
+# Submit at: https://github.com/microsoft/winget-pkgs (PR to /manifests/l/local/headcleaner/0.4.0/)
+# Schema: https://github.com/microsoft/winget-pkgs/blob/master/doc/manifests/schema.md
+
+PackageIdentifier: local.headcleaner
+PackageName: headcleaner
+PackageVersion: 0.4.0
+PackageLocale: en-US
+Publisher: James Sizemore
+PublisherUrl: https://github.com/local/headcleaner
+PublisherSupportUrl: https://github.com/local/headcleaner/issues
+PrivacyUrl: https://github.com/local/headcleaner/blob/main/LICENSE
+Author: James Sizemore
+Copyright: Copyright 2026 James Sizemore
+License: Apache-2.0
+LicenseUrl: https://github.com/local/headcleaner/blob/main/LICENSE
+ShortDescription: Convert documents to Markdown and/or OKF v0.2 with frontmatter.
+Description: |
+  headcleaner is a Python CLI that walks a folder and converts every
+  supported document (DOCX, XLSX, PPTX, PDF, HTML, TXT, MD, CSV, JSON, EML)
+  into Markdown and/or OKF v0.2 with frontmatter. Includes an omp-inspired
+  animated TUI and a post-conversion linter.
+Moniker:
+  - headcleaner
+Tags:
+  - command-line
+  - markdown
+  - converter
+  - developer-tools
+PurchaseUrl: ""
+Installers:
+  - Architecture: x64
+    InstallerType: zip
+    InstallerUrl: https://github.com/local/headcleaner/releases/download/v0.4.0/headcleaner-windows-x64.zip
+    InstallerSha256: REPLACE_WITH_RELEASE_SHA256
+    NestedInstallerType: portable
+    NestedInstallerFiles:
+      - RelativeFilePath: headcleaner.exe
+        PortableCommandAlias: headcleaner
+ManifestType: singletonLocale
+ManifestVersion: 1.6.0

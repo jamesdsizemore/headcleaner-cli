@@ -44,6 +44,9 @@ class RunOptions:
     jobs: int = 1                # 1 = sequential; >1 = process pool
     use_cache: bool = True       # skip files with unchanged sha256
 
+    # Batch 3: Obsidian vault sync + future flags
+    obsidian_compat: bool = False  # add flat fields to OKF frontmatter
+
     # Optional progress hook: called with (current_index, total, result_so_far)
     on_progress: Callable[[int, int, FileResult], None] | None = None
 
@@ -229,7 +232,7 @@ def _process_sequential(opts: RunOptions, record: RunRecord, cache: dict[str, di
                 result.error = f"md write: {e}"
         if opts.fmt in {"okf", "both"}:
             try:
-                p = okf_emit.write(doc, okf_root)
+                p = okf_emit.write(doc, okf_root, obsidian_compat=opts.obsidian_compat)
                 result.okf_path = str(p)
             except OSError as e:
                 result.error = (result.error + "; " if result.error else "") + f"okf write: {e}"
@@ -327,7 +330,7 @@ def _process_parallel(opts: RunOptions, record: RunRecord, cache: dict[str, dict
                                 result.error = f"md write: {e}"
                         if opts.fmt in {"okf", "both"}:
                             try:
-                                p = okf_emit.write(doc, okf_root)
+                                p = okf_emit.write(doc, okf_root, obsidian_compat=opts.obsidian_compat)
                                 result.okf_path = str(p)
                             except OSError as e:
                                 result.error = (result.error + "; " if result.error else "") + f"okf write: {e}"

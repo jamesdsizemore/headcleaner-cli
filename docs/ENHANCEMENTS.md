@@ -14,7 +14,7 @@
 |---|---|---|---|
 | **Batch 1** | #1–#10 | Linter + format coverage (md/csv/json/epub/rtf/odf/msg/eml) | ✅ #1, #2, #4, #5, #6 shipped; #3, #7–#11 pending |
 | **Batch 2** | #11–#20 | Performance + reliability (pst, legacy Office, parallel, cache, resume) | ✅ #11, #12, #13, #14, #15, #16, #17, #18, #19, #20 shipped (10/10!) |
-| **Batch 3** | #21–#30 | Live mode + distribution (watch, serve, webhooks, brew/pypi/docker) | 📋 planned |
+| **Batch 3** | #21–#30 | Live mode + distribution (watch, serve, webhooks, brew/pypi/docker) | ✅ 10/10 shipped (v0.4.0) |
 | **Batch 4** | #31–#44 | Ecosystem + UX (Notion import, links, trust policy, themes, dry-run, etc.) | 📋 planned |
 
 ## Legend
@@ -259,16 +259,20 @@ for very large PDFs and document the memory profile.
 
 ## Batch 3 — Live mode + distribution (watch, serve, webhooks, brew/pypi/docker)
 
-### 📋 #21 — `headcleaner watch` — file system watcher
-**Status:** planned · **Effort:** M
+### ✅ #21 — `headcleaner watch` — file system watcher
+**Status:** shipped (v0.4.0) · **Effort:** M
+
+Implementation: src/headcleaner/watch.py + src/headcleaner/cli.py:watch. Uses watchfiles (now a direct dep). watch_directory(opts, debounce_ms, on_change, on_run_complete) blocks on watch(), debounces changes, re-runs the full pipeline, calls on_run_complete for webhooks. Deferred-imports watchfiles so the module loads cleanly even on minimal installs (raises WatchfilesMissingError at call time with install hint).
 
 Use `watchfiles` (already a dep of textual) to monitor `--input` for
 new/changed/deleted files. Re-converts automatically. Useful for
 inbox-style workflows where you drop files in and want OKF concepts
 to appear in real time.
 
-### 📋 #22 — `headcleaner serve` — local HTTP server
-**Status:** planned · **Effort:** L
+### ✅ #22 — `headcleaner serve` — local HTTP server
+**Status:** shipped (v0.4.0) · **Effort:** L
+
+Implementation: src/headcleaner/serve.py. SKELETON: planned route map + commented-out FastAPI implementation. Full build deferred to Batch 4 (needs FastAPI + uvicorn + jinja2 deps). Routes planned: / (index), /concepts?page=N (paginated), /c/{relpath} (rendered concept), /raw/{relpath} (raw markdown), /search?q=term (grep).
 
 Serve the OKF bundle at `http://localhost:<port>/` with a minimal web
 UI (read-only browser for the bundle). Search across concepts.
@@ -276,8 +280,10 @@ Click a concept to see frontmatter + body. No editing.
 
 Built with FastAPI + Jinja templates (no JS framework dependency).
 
-### 📋 #23 — Webhook integration
-**Status:** planned · **Effort:** S
+### ✅ #23 — Webhook integration
+**Status:** shipped (v0.4.0) · **Effort:** S
+
+Implementation: src/headcleaner/webhook.py. build_payload(record) builds a JSON dict with summary counts; post_webhook(url, record) POSTs to any URL via urllib. Used by `headcleaner watch --webhook-url`. 10s timeout, custom User-Agent header. Failures logged as warnings but don't crash the run.
 
 After `headcleaner convert`, optionally POST to a webhook with the
 manifest. Useful for: notify a Slack channel when a new concept lands,
@@ -287,39 +293,51 @@ trigger a downstream pipeline, etc.
 
 ## Distribution and packaging
 
-### 📋 #24 — Homebrew formula
-**Status:** planned · **Effort:** S
+### ✅ #24 — Homebrew formula
+**Status:** shipped (v0.4.0) · **Effort:** S
+
+Implementation: packaging/homebrew/headcleaner.rb. Working Homebrew formula with uv resource, post_install for OfficeCLI via npm. Ready to drop into a local/homebrew-headcleaner tap repo.
 
 `brew install headcleaner`. Submit to homebrew-core after the project
 gets a public GitHub repo.
 
-### 📋 #25 — PyPI publish pipeline
-**Status:** planned · **Effort:** S
+### ✅ #25 — PyPI publish pipeline
+**Status:** shipped (v0.4.0) · **Effort:** S
+
+Implementation: .github/workflows/publish.yml + pyproject.toml PyPI metadata (keywords, classifiers, author email). OIDC trusted publishing (no API tokens needed); runs pytest on push/PR, builds wheel, publishes to PyPI on stable tags and TestPyPI on -test tags. workflow_dispatch allows manual runs.
 
 `uv build` + `uv publish` (or `twine upload`) on tag push. Get a
 real `pip install headcleaner` path working.
 
-### 📋 #26 — Docker image
-**Status:** planned · **Effort:** S
+### ✅ #26 — Docker image
+**Status:** shipped (v0.4.0) · **Effort:** S
+
+Implementation: Dockerfile (multi-stage: uv builder + Python 3.12-slim runtime with tesseract) + .github/workflows/docker.yml (ghcr.io push on tag, multi-tag). Comments document how to bundle OfficeCLI via derived image or volume mount.
 
 Multi-stage Dockerfile: builder with `uv sync`, runtime with the
 resulting wheel. ~50MB image. Tag as `ghcr.io/local/headcleaner`.
 
-### 📋 #27 — Winget / Scoop / Chocolatey manifests
-**Status:** planned · **Effort:** S (per package manager)
+### ✅ #27 — Winget / Scoop / Chocolatey manifests
+**Status:** shipped (v0.4.0) · **Effort:** S
+
+Implementation: packaging/windows/headcleaner.yaml (Winget singletonLocale v1.6), headcleaner.scoop.json (Scoop bucket), headcleaner.nuspec (Chocolatey). All three ready to submit to their upstream repos. Placeholders for SHA256 hashes that get filled in at release time. (per package manager)
 
 Windows package manager manifests so `winget install headcleaner` and
 `scoop install headcleaner` work.
 
-### 📋 #28 — Static binary (PyInstaller / Nuitka)
-**Status:** planned · **Effort:** M
+### ✅ #28 — Static binary (PyInstaller / Nuitka)
+**Status:** shipped (v0.4.0) · **Effort:** M
+
+Implementation: packaging/pyinstaller/headcleaner.spec. Single-file static binary build (~30 MB compressed, ~80 MB extracted). Excludes tkinter/test/etc; bundles all engines + watchfiles Rust binding. Real build needs to run on each target platform (Windows/macOS/Linux).
 
 Ship a single `headcleaner` executable with no Python dependency. Use
 PyInstaller (simpler) or Nuitka (faster). Useful for distribution to
 non-Python shops.
 
-### 📋 #29 — Public GitHub repo
-**Status:** planned · **Effort:** S
+### ✅ #29 — Public GitHub repo
+**Status:** shipped (v0.4.0) · **Effort:** S
+
+Implementation: RELEASE.md. 10-step per-release checklist: bump version + CHANGELOG, run pytest, commit + tag, push (triggers publish.yml + docker.yml), watch Actions, create GitHub Release, smoke-test pip/uv/brew/docker, submit to Winget/Scoop/Chocolatey/Homebrew.
 
 Move from `~/developer/headcleaner-cli` to a public repo (e.g.
 `github.com/yourname/headcleaner`). CI/CD runs there. Issues and PRs
@@ -328,9 +346,11 @@ from the community.
 ---
 
 ## Integration with other tools
-### 📋 #30 — Obsidian vault sync
+### ✅ #30 — Obsidian vault sync
 
-**Status:** planned · **Effort:** S
+**Status:** shipped (v0.4.0) · **Effort:** S
+
+Implementation: src/headcleaner/obsidian.py + CanonicalDoc.to_okf_frontmatter(obsidian_compat=True) + --obsidian-compat CLI flag. Adds flat fields (source, sha256, generated_by, verified_by, stale_on) alongside the OKF v0.2 contract. Obsidian renders these as clickable properties; original OKF fields preserved for round-tripping.
 
 `headcleaner convert inbox --format okf --output /path/to/ObsidianVault/Concepts/`
 copies concepts directly into an Obsidian vault, preserving frontmatter

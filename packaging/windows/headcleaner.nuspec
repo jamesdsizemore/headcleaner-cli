@@ -1,0 +1,28 @@
+# Chocolatey nuspec for headcleaner.
+# Submit at: https://github.com/local/chocolatey-packages (PR with this file)
+# Users install via: choco install headcleaner
+
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
+  <metadata>
+    <id>headcleaner</id>
+    <version>0.4.0</version>
+    <title>headcleaner</title>
+    <authors>James Sizemore</authors>
+    <projectUrl>https://github.com/local/headcleaner</projectUrl>
+    <licenseUrl>https://github.com/local/headcleaner/blob/main/LICENSE</licenseUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <projectSourceUrl>https://github.com/local/headcleaner</projectSourceUrl>
+    <docsUrl>https://github.com/local/headcleaner/tree/main/docs</docsUrl>
+    <bugTrackerUrl>https://github.com/local/headcleaner/issues</bugTrackerUrl>
+    <iconUrl>https://raw.githubusercontent.com/local/headcleaner/main/assets/icon.png</iconUrl>
+    <description>Walk a folder, convert every document to Markdown and/or OKF v0.2 with frontmatter. Includes an omp-inspired animated TUI and a post-conversion linter.</description>
+    <summary>Convert documents to Markdown and/or OKF v0.2</summary>
+    <tags>cli markdown converter office pdf admin</tags>
+    <projectUrl>https://github.com/local/headcleaner</projectUrl>
+    <packageSourceUrl>https://github.com/local/headcleaner/tree/v0.4.0/packaging/windows</packageSourceUrl>
+  </metadata>
+  <files>
+    <file src="tools\**" target="tools" />
+  </files>
+</package>

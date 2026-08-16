@@ -71,6 +71,12 @@ def cli() -> None:
 @click.option("--no-continue-on-error", is_flag=True, default=False, help="Stop on the first failure.")
 @click.option("--tui/--no-tui", default=None, help="Force / disable the animated TUI. Default: auto-detect TTY.")
 @click.option("--no-okf-index", is_flag=True, default=False, help="Skip writing OKF directory index.md files.")
+@click.option(
+    "--obsidian-compat",
+    is_flag=True,
+    default=False,
+    help="Add Obsidian-friendly flat fields to OKF frontmatter (source, sha256, generated_by, verified_by, stale_on).",
+)
 def convert(
     input_dir: Path,
     fmt: str,
@@ -84,6 +90,7 @@ def convert(
     no_continue_on_error: bool,
     tui: bool | None,
     no_okf_index: bool,
+    obsidian_compat: bool,
 ) -> None:
     """Convert every supported document under INPUT_DIR."""
     from .engines.officecli import OfficeCLIAdapter
@@ -107,6 +114,7 @@ def convert(
         write_okf_index=not no_okf_index,
         jobs=jobs,
         use_cache=not no_cache,
+        obsidian_compat=obsidian_compat,
     )
 
     use_tui = tui if tui is not None else sys.stderr.isatty() and sys.stdout.isatty()
@@ -135,6 +143,106 @@ def convert(
     err.write(f"\n✓ done  ok={ok}  skipped={skipped}  failed={failed}\n")
     err.write(f"manifest: {output}/manifest.json\n")
     sys.exit(0 if failed == 0 else 1)
+
+
+@cli.command()
+@click.argument("input_dir", type=click.Path(exists=True, file_okay=False, path_type=Path))
+@click.option(
+    "--format",
+    "fmt",
+    type=click.Choice(["md", "okf", "both"], case_sensitive=False),
+    default="both",
+    show_default=True,
+)
+@click.option(
+    "--output",
+    "-o",
+    type=click.Path(path_type=Path),
+    default=Path("./out"),
+    show_default=True,
+)
+@click.option("--ocr", is_flag=True, default=False)
+@click.option(
+    "--officecli-timeout",
+    type=int,
+    default=60,
+    show_default=True,
+)
+@click.option("--include", "-i", multiple=True)
+@click.option("--exclude", "-e", multiple=True)
+@click.option("--jobs", "-j", type=int, default=1, show_default=True)
+@click.option("--no-cache", is_flag=True, default=False)
+@click.option("--no-continue-on-error", is_flag=True, default=False)
+@click.option("--no-okf-index", is_flag=True, default=False)
+@click.option(
+    "--debounce-ms",
+    type=int,
+    default=500,
+    show_default=True,
+    help="Minimum interval (ms) between re-conversions when many files change at once.",
+)
+@click.option(
+    "--webhook-url",
+    default=None,
+    help="POST the run manifest to this URL after each re-conversion.",
+)
+def watch(
+    input_dir: Path,
+    fmt: str,
+    output: Path,
+    ocr: bool,
+    officecli_timeout: int,
+    include: tuple[str, ...],
+    exclude: tuple[str, ...],
+    jobs: int,
+    no_cache: bool,
+    no_continue_on_error: bool,
+    no_okf_index: bool,
+    debounce_ms: int,
+    webhook_url: str | None,
+) -> None:
+    """Watch INPUT_DIR for changes and re-convert automatically.
+
+    Like `convert`, but runs forever until Ctrl+C. Each detected change
+    triggers a re-conversion of the whole folder (incremental per-file
+    conversion is a future enhancement; tracked as Batch 4).
+
+    Optional webhook: --webhook-url <URL> POSTs the manifest.json after
+    each run completes (useful for Slack/Discord notifications).
+    """
+    from .engines.officecli import OfficeCLIAdapter
+    from .router import adapters as get_adapters
+    from .webhook import post_webhook
+    from .watch import watch_directory
+
+    for a in get_adapters():
+        if isinstance(a, OfficeCLIAdapter):
+            a.timeout = officecli_timeout
+
+    def on_run_complete(record) -> None:
+        if webhook_url is not None:
+            try:
+                post_webhook(webhook_url, record)
+            except Exception as e:
+                print(f"  ⚠ webhook POST failed: {e}", file=sys.stderr)
+
+    opts = RunOptions(
+        input_root=input_dir,
+        output_root=output,
+        fmt=fmt.lower(),
+        ocr=ocr,
+        include_glob=list(include) if include else None,
+        exclude_glob=list(exclude) if exclude else None,
+        continue_on_error=not no_continue_on_error,
+        write_okf_index=not no_okf_index,
+        jobs=jobs,
+        use_cache=not no_cache,
+    )
+
+    try:
+        watch_directory(opts, debounce_ms=debounce_ms, on_run_complete=on_run_complete)
+    except KeyboardInterrupt:
+        pass
 
 
 @cli.command()

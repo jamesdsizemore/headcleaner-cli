@@ -1,0 +1,68 @@
+name: publish
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      test_pypi:
+        description: 'Publish to TestPyPI instead of production PyPI'
+        required: false
+        default: 'false'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: "0.4"
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Install OfficeCLI
+        run: npm install -g @officecli/officecli
+
+      - name: Sync deps
+        run: uv sync --all-extras
+
+      - name: Run tests
+        run: uv run pytest -v
+
+      - name: Build
+        run: uv build
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write   # OIDC trusted publishing
+    environment:
+      name: pypi
+      url: https://pypi.org/p/headcleaner
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Publish to TestPyPI
+        if: github.event.inputs.test_pypi == 'true' || contains(github.ref, 'test')
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+
+      - name: Publish to PyPI
+        if: github.event.inputs.test_pypi != 'true' && !contains(github.ref, 'test')
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://upload.pypi.org/legacy/

@@ -4,6 +4,81 @@ All notable changes to headcleaner are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.4.0] — 2026-08-16 (Batch 3)
+
+Third batch of the [ENHANCEMENTS.md](ENHANCEMENTS.md) plan shipped.
+Live mode + distribution + ecosystem.
+
+### Added
+
+- **`headcleaner watch`** (Enhancement #21) — file-system watcher.
+  Uses `watchfiles` (already a dep of textual). Re-runs the pipeline
+  on every change with `--debounce-ms 500` to avoid thrashing on bulk
+  copies. Press Ctrl+C to stop. Raises `WatchfilesMissingError` with a
+  clear install hint when the Rust extension isn't available.
+- **`headcleaner serve`** (Enhancement #22) — **skeleton only**. Module
+  `src/headcleaner/serve.py` ships with the planned route map and
+  commented-out FastAPI implementation. Full implementation tracked
+  for Batch 4 (needs FastAPI as a dep).
+- **Webhook integration** (Enhancement #23) — `src/headcleaner/webhook.py`
+  POSTs the run manifest as JSON to any URL. Used by
+  `headcleaner watch --webhook-url <URL>` to fire notifications on
+  every re-run. Supports Slack, Discord, ntfy, custom endpoints.
+- **Homebrew formula** (Enhancement #24) — `packaging/homebrew/headcleaner.rb`.
+  Ready to drop into a `homebrew-headcleaner` tap repo.
+- **PyPI publish pipeline** (Enhancement #25) — `.github/workflows/publish.yml`
+  with OIDC trusted publishing (no API tokens). Tests on push/PR,
+  publishes to TestPyPI on `-test` tags, to PyPI on stable tags.
+  Plus full PyPI metadata in `pyproject.toml` (keywords, classifiers,
+  author email).
+- **Docker image** (Enhancement #26) — multi-stage `Dockerfile` with
+  Python 3.12 + uv builder + tesseract for OCR. `.github/workflows/docker.yml`
+  builds and pushes to `ghcr.io/local/headcleaner` on every tag.
+- **Winget / Scoop / Chocolatey manifests** (Enhancement #27) —
+  `packaging/windows/headcleaner.yaml`, `headcleaner.scoop.json`,
+  `headcleaner.nuspec`. Ready to submit to upstream repositories.
+- **PyInstaller spec** (Enhancement #28) —
+  `packaging/pyinstaller/headcleaner.spec` for building a single-file
+  static binary. ~30 MB compressed, no Python required at runtime.
+- **Public GitHub release checklist** (Enhancement #29) — `RELEASE.md`
+  with the 10-step release workflow including OIDC trusted publisher
+  setup, all four package-manager PR submissions, smoke tests.
+- **Obsidian vault sync** (Enhancement #30) — `--obsidian-compat` flag
+  adds flat fields (`source`, `sha256`, `generated_by`, `verified_by`,
+  `stale_on`) to OKF frontmatter. Obsidian renders these as clickable
+  properties. Original OKF fields stay intact.
+
+### Engine coverage at v0.4.0
+
+Same as v0.3.0 (10 adapters + 1 error-path shim). Distribution + integration
+features are what changed in this batch.
+
+### Pipeline additions
+
+- `src/headcleaner/watch.py` — `watch_directory()` with debounce + on_change
+  + on_run_complete callbacks.
+- `src/headcleaner/webhook.py` — `build_payload()` + `post_webhook()`.
+- `src/headcleaner/obsidian.py` — flat-field helpers; also wired into
+  `CanonicalDoc.to_okf_frontmatter(obsidian_compat=True)`.
+- `pyproject.toml`: `watchfiles` promoted to a direct dep; full PyPI
+  metadata (keywords, classifiers, author email).
+
+### Tests
+
+80 passing in ~8s (7 new in `tests/test_batch3a.py` covering watch,
+webhook, Obsidian compat).
+
+### Deferred from this batch
+
+- #3 review TUI — still pending (Batch 4 UX)
+- #7 epub — needs `ebooklib` dep (Batch 4)
+- #8 rtf — needs `striprtf` dep (Batch 4)
+- #9 odf — needs `odfpy` dep (Batch 4)
+- #10 msg — `extract-msg` already in deps (Batch 4)
+- Full #22 serve implementation — needs FastAPI dep (Batch 4)
+
+---
+
 ## [0.3.0] — 2026-08-16 (Batch 2)
 
 Second batch of the [ENHANCEMENTS.md](ENHANCEMENTS.md) plan shipped.

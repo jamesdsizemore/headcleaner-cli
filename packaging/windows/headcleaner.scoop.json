@@ -1,0 +1,29 @@
+{
+  "_comment": "Scoop manifest for headcleaner. Submit at: https://github.com/ScoopInstaller/Scoop (PR to /bucket/). Users install via: scoop bucket add local https://github.com/local/scoop-bucket ; scoop install headcleaner",
+  "manifest": "1.0",
+  "name": "headcleaner",
+  "version": "0.4.0",
+  "description": "Walk a folder, convert every document to Markdown and/or OKF v0.2 with frontmatter.",
+  "homepage": "https://github.com/local/headcleaner",
+  "license": {
+    "identifier": "Apache-2.0",
+    "url": "https://github.com/local/headcleaner/blob/main/LICENSE"
+  },
+  "depends": "",
+  "suggest": "",
+  "single_binary": {
+    "_comment": "A static PyInstaller-built binary lives here. Users do NOT need Python.",
+    "url": "https://github.com/local/headcleaner/releases/download/v0.4.0/headcleaner-windows-x64.zip",
+    "hash": "REPLACE_WITH_ZIP_SHA256"
+  },
+  "extract_dir": "headcleaner-windows-x64",
+  "pre_install": "",
+  "post_install": "",
+  "checkver": {
+    "url": "https://github.com/local/headcleaner/releases",
+    "regex": "tag/v([0-9.]+)\\.tar\\.gz"
+  },
+  "autoupdate": {
+    "url": "https://github.com/local/headcleaner/releases/download/v$version/headcleaner-windows-x64.zip"
+  }
+}

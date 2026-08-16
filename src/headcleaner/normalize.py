@@ -45,9 +45,15 @@ class CanonicalDoc:
         if not self.okf_stale_after:
             self.okf_stale_after = default_stale_after()
 
-    def to_okf_frontmatter(self) -> dict[str, Any]:
-        """Build the OKF frontmatter dict for this doc."""
-        return {
+    def to_okf_frontmatter(self, *, obsidian_compat: bool = False) -> dict[str, Any]:
+        """Build the OKF frontmatter dict for this doc.
+
+        When `obsidian_compat` is True, additional flat fields are added
+        (`source`, `sha256`, `generated_by`, `verified_by`, `stale_on`)
+        for cleaner Obsidian property rendering. The original OKF fields
+        remain intact.
+        """
+        fm = {
             "type": self.okf_type,
             "title": self.title,
             "description": self._description(),
@@ -65,6 +71,20 @@ class CanonicalDoc:
             "generated": self.okf_generated,
             "verified": self.okf_verified,
         }
+        if obsidian_compat:
+            sources = fm["sources"]
+            if sources and isinstance(sources[0], dict):
+                if sources[0].get("uri"):
+                    fm["source"] = sources[0]["uri"]
+                if sources[0].get("sha256"):
+                    fm["sha256"] = sources[0]["sha256"]
+            if fm.get("generated"):
+                fm["generated_by"] = fm["generated"].replace(":", "_")
+            if fm.get("verified"):
+                fm["verified_by"] = fm["verified"].replace(":", "_")
+            if fm.get("stale_after"):
+                fm["stale_on"] = fm["stale_after"]
+        return fm
 
     def to_md_frontmatter(self) -> dict[str, Any]:
         """Build the plain-Markdown frontmatter dict for this doc."""

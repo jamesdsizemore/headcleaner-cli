@@ -18,9 +18,14 @@ import yaml
 from ..normalize import CanonicalDoc
 
 
-def render(doc: CanonicalDoc) -> str:
-    """Return the full OKF concept (.md) contents."""
-    fm = doc.to_okf_frontmatter()
+def render(doc: CanonicalDoc, *, obsidian_compat: bool = False) -> str:
+    """Return the full OKF concept (.md) contents.
+
+    When `obsidian_compat` is True, additional flat properties are added
+    (`source`, `sha256`, `generated_by`, `verified_by`, `stale_on`) that
+    Obsidian renders as clickable note properties.
+    """
+    fm = doc.to_okf_frontmatter(obsidian_compat=obsidian_compat)
     yaml_block = yaml.safe_dump(fm, sort_keys=False, allow_unicode=True).strip()
     body = doc.body_md.rstrip() + "\n"
     return f"---\n{yaml_block}\n---\n\n{body}"
@@ -39,10 +44,10 @@ def okf_relpath_for(doc: CanonicalDoc) -> Path:
     return base
 
 
-def write(doc: CanonicalDoc, output_root: Path) -> Path:
+def write(doc: CanonicalDoc, output_root: Path, *, obsidian_compat: bool = False) -> Path:
     """Write the OKF concept file. Returns the absolute path."""
     rel = okf_relpath_for(doc)
     out_path = output_root / rel
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(render(doc), encoding="utf-8")
+    out_path.write_text(render(doc, obsidian_compat=obsidian_compat), encoding="utf-8")
     return out_path
