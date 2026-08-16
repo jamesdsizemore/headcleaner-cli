@@ -37,3 +37,4 @@ tests/fixtures/_generated/
 
 # Node (we only use npm globally; no node_modules in-repo)
 node_modules/
+test.csv
