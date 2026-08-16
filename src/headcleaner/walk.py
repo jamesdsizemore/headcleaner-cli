@@ -40,7 +40,13 @@ _SKIP_DIRS = {
 _SKIP_FILE_PREFIXES = (".",)
 
 
-def walk(root: Path, *, include_glob: list[str] | None = None, exclude_glob: list[str] | None = None) -> Iterator[SourceFile]:
+def walk(
+    root: Path,
+    *,
+    include_glob: list[str] | None = None,
+    exclude_glob: list[str] | None = None,
+    skip_root: Path | None = None,
+) -> Iterator[SourceFile]:
     """Recursively yield SourceFile records under `root`.
 
     Args:
@@ -49,6 +55,9 @@ def walk(root: Path, *, include_glob: list[str] | None = None, exclude_glob: lis
             whose basename matches AT LEAST ONE pattern are emitted.
         exclude_glob: optional list of fnmatch patterns; any file matching is
             dropped. exclude_glob runs AFTER include_glob.
+        skip_root: optional directory (absolute or relative to root); if a
+            directory equals this path, its subtree is skipped. Used by
+            headcleaner to avoid re-processing its own output.
 
     Yields:
         SourceFile records.
@@ -59,12 +68,26 @@ def walk(root: Path, *, include_glob: list[str] | None = None, exclude_glob: lis
     if not root.is_dir():
         raise NotADirectoryError(f"{root} is not a directory")
 
+    skip_root_resolved = skip_root.resolve() if skip_root is not None else None
+
     include_glob = include_glob or []
     exclude_glob = exclude_glob or []
 
     for dirpath, dirnames, filenames in os.walk(root, followlinks=False):
-        # Prune directories in-place so os.walk doesn't descend
-        dirnames[:] = [d for d in dirnames if d not in _SKIP_DIRS and not d.startswith(".")]
+        # Skip directories in-place so os.walk doesn't descend
+        new_dirnames = []
+        for d in dirnames:
+            if d in _SKIP_DIRS or d.startswith("."):
+                continue
+            full_dir = Path(dirpath) / d
+            if skip_root_resolved is not None:
+                try:
+                    if full_dir.resolve() == skip_root_resolved:
+                        continue
+                except OSError:
+                    pass
+            new_dirnames.append(d)
+        dirnames[:] = new_dirnames
 
         for name in filenames:
             if name.startswith(_SKIP_FILE_PREFIXES):

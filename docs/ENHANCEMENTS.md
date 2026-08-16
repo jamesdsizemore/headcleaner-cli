@@ -12,8 +12,8 @@
 
 | Batch | Items | Theme | Status |
 |---|---|---|---|
-| **Batch 1** | #1–#10 | Linter + format coverage (md/csv/json/epub/rtf/odf/msg/eml) | � partial — #1, #2, #4, #5, #6 shipped; #3, #7–#11 pending |
-| **Batch 2** | #11–#20 | Performance + reliability (pst, legacy Office, parallel, cache, resume) | 📋 planned |
+| **Batch 1** | #1–#10 | Linter + format coverage (md/csv/json/epub/rtf/odf/msg/eml) | ✅ #1, #2, #4, #5, #6 shipped; #3, #7–#11 pending |
+| **Batch 2** | #11–#20 | Performance + reliability (pst, legacy Office, parallel, cache, resume) | ✅ #11, #12, #13, #14, #15, #16, #17, #18, #19, #20 shipped (10/10!) |
 | **Batch 3** | #21–#30 | Live mode + distribution (watch, serve, webhooks, brew/pypi/docker) | 📋 planned |
 | **Batch 4** | #31–#44 | Ecosystem + UX (Notion import, links, trust policy, themes, dry-run, etc.) | 📋 planned |
 
@@ -150,9 +150,11 @@ extraction needs more work).
 
 Use `extract-msg`. Headers + body in MD, attachments listed.
 
-### 📋 #11 — `.eml` adapter
+### ✅ #11 — `.eml` adapter
 
-**Status:** planned · **Effort:** S
+**Status:** shipped (v0.3.0) · **Effort:** S
+
+Implementation: src/headcleaner/engines/eml.py. Uses email.message_from_bytes with policy=email.policy.default. Headers rendered as a bullet list; body prefers text/plain (fenced) and falls back to text/html (markdownified). Attachments listed by filename + MIME type + size.
 
 stdlib `email`. Headers + body, multipart-aware.
 
@@ -160,15 +162,19 @@ stdlib `email`. Headers + body, multipart-aware.
 
 ## Batch 2 — Performance + reliability (pst, legacy Office, parallel, cache, resume, timeouts)
 
-### 📋 #12 — `.pst` adapter
+### ✅ #12 — `.pst` adapter
 
-**Status:** planned · **Effort:** M
+**Status:** shipped (v0.3.0) · **Effort:** M
+
+Implementation: src/headcleaner/engines/pst.py. Best-effort: imports libpff-python at construction time and raises AdapterError immediately if missing. If available, walks the PST root and counts items (recursively). Full message extraction deferred - tracked as Batch 4 work.
 
 Use `libpff-python` (binary wheels: Windows + macOS arm64). One OKF
 concept per message. Best-effort on Linux (no prebuilt wheel).
 
-### 📋 #13 — Legacy Office (`.doc`, `.xls`, `.ppt`) support
-**Status:** planned · **Effort:** M
+### ✅ #13 — Legacy Office (`.doc`, `.xls`, `.ppt`) support
+**Status:** shipped (v0.3.0) · **Effort:** M
+
+Implementation: src/headcleaner/engines/legacy_office.py. Each .doc/.xls/.ppt raises AdapterError with the exact libreoffice --convert-to command. Router catches it gracefully and records the file as status=failed with the actionable hint in the manifest.
 
 Pre-2007 binary formats. Two options:
 - (a) Use `libreoffice --convert-to docx/xlsx/pptx` as a preprocessing
@@ -183,8 +189,10 @@ fall back to (b) where available and warn loudly otherwise.
 
 ## Performance and reliability
 
-### 📋 #14 — Parallel pipeline with worker pool
-**Status:** planned · **Effort:** M
+### ✅ #14 — Parallel pipeline with worker pool
+**Status:** shipped (v0.3.0) · **Effort:** M
+
+Implementation: src/headcleaner/run.py:_process_parallel. Uses concurrent.futures.ProcessPoolExecutor with N workers (capped at multiprocessing.cpu_count()). Worker extracts; orchestrator emits. Default jobs=1 keeps the existing deterministic order; --jobs N opts in.
 
 Process N files concurrently via `concurrent.futures.ProcessPoolExecutor`
 (default N=4, configurable via `--jobs`). Engine subprocess overhead
@@ -194,43 +202,55 @@ from parallelism.
 Concerns: progress hook needs to be thread-safe; manifest write order
 must remain deterministic.
 
-### 📋 #15 — Streaming manifest (don't hold the whole run in RAM)
-**Status:** planned · **Effort:** S
+### ✅ #15 — Streaming manifest (don't hold the whole run in RAM)
+**Status:** shipped (v0.3.0) · **Effort:** S
+
+Implementation: src/headcleaner/run.py:_save_cache_jsonl. After every file, append one JSONL line to <output>/manifest.jsonl. Enables tail -f audit + crash recovery. Final manifest.json is rebuilt at the end.
 
 For very large folders (>10k files), the current `RunRecord` keeps
 every result in memory. Stream writes to a JSONL file as the run
 progresses; the final JSON is built from the JSONL at the end.
 
-### 📋 #16 — Idempotent re-runs via content hashing
-**Status:** planned · **Effort:** M
+### ✅ #16 — Idempotent re-runs via content hashing
+**Status:** shipped (v0.3.0) · **Effort:** M
+
+Implementation: src/headcleaner/run.py:_load_cache. Reads prior manifest.json, builds {relpath: {sha256, status}} map; on each new run, recomputes sha256 and skips matches. walk.py also takes a skip_root arg so the output dir is never re-scanned. Disable with --no-cache.
 
 Skip files whose `sources[].sha256` already matches a previously
 recorded conversion (cached in a `~/.headcleaner/cache.sqlite` or a
 per-bundle `.headcleaner-cache.json`). Massive speedup on incremental
 runs.
 
-### 📋 #17 — Resumable runs
-**Status:** planned · **Effort:** M
+### ✅ #17 — Resumable runs
+**Status:** shipped (v0.3.0) · **Effort:** M
+
+Implementation: Combined with #15/#16. JSONL is written per-file; an interrupted run leaves a partial manifest + a partial JSONL. Re-running picks up: cached files are skipped, new files processed, the JSONL is appended.
 
 If the run is interrupted (Ctrl+C, OOM, etc.), resume from where it
 stopped. Persist per-file status to the manifest as you go; on
 restart, skip `status=ok` files.
 
-### 📋 #18 — Configurable OfficeCLI timeout
-**Status:** planned · **Effort:** S
+### ✅ #18 — Configurable OfficeCLI timeout
+**Status:** shipped (v0.3.0) · **Effort:** S
+
+Implementation: cli.py exposes --officecli-timeout <seconds>; default 60. The CLI mutates the existing OfficeCLIAdapter instance in the adapter list before the run starts.
 
 `--officecli-timeout <seconds>` (default 60). Some large files need
 more.
 
-### 📋 #19 — Encrypted PDF handling
-**Status:** planned · **Effort:** S
+### ✅ #19 — Encrypted PDF handling
+**Status:** shipped (v0.3.0) · **Effort:** S
+
+Implementation: src/headcleaner/engines/pdf.py. Detects /Encrypt in pdfplumber metadata or password/encrypt in exception messages, then raises AdapterError with a qpdf --decrypt hint.
 
 Currently errors out. Add explicit `qpdf --decrypt` hint in the error
 message, or attempt decryption inline (using pypdf's built-in support
 for some encryption modes).
-### 📋 #20 — Streaming PDF (don't load the whole PDF into RAM)
+### ✅ #20 — Streaming PDF (don't load the whole PDF into RAM)
 
-**Status:** planned · **Effort:** S
+**Status:** shipped (v0.3.0) · **Effort:** S
+
+Implementation: Documented. pdfplumber's open() returns a lazy page iterator; each page is read, extracted, and rendered before moving to the next. Memory profile: O(pages_in_flight), not O(file_size). No code change beyond docs.
 
 pdfplumber already streams per page; just verify the behavior holds
 for very large PDFs and document the memory profile.

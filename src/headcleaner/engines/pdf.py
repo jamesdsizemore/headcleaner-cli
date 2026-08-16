@@ -42,13 +42,31 @@ class PdfAdapter(Adapter):
 
         try:
             with pdfplumber.open(source) as pdf:
+                # pdfplumber exposes encryption via pdf.metadata; a None metadata
+                # or absent /Encrypt entry means the PDF is not encrypted.
+                if pdf.metadata and pdf.metadata.get("/Encrypt"):
+                    raise AdapterError(
+                        f"PDF is encrypted: {source}. "
+                        f"Decrypt with `qpdf --decrypt {source.name} {source.stem}.decrypted.pdf` "
+                        f"then re-run headcleaner on the decrypted copy."
+                    )
                 for idx, page in enumerate(pdf.pages, start=1):
                     page_md = self._render_page(page)
                     if page_md:
                         pages_md.append(f"## Page {idx}\n\n{page_md}")
                     else:
                         image_only_pages.append(idx)
+        except AdapterError:
+            raise
         except Exception as e:
+            # pdfplumber raises PasswordError for some encrypted PDFs; map to a clear message.
+            msg = str(e)
+            if "password" in msg.lower() or "encrypt" in msg.lower():
+                raise AdapterError(
+                    f"PDF is encrypted or password-protected: {source}. "
+                    f"Decrypt with `qpdf --decrypt {source.name} {source.stem}.decrypted.pdf` "
+                    f"then re-run headcleaner on the decrypted copy. ({type(e).__name__})"
+                ) from e
             raise AdapterError(f"pdfplumber failed on {source}: {e}") from e
 
         if image_only_pages and not self.ocr:

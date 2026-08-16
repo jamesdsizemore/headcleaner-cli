@@ -45,8 +45,29 @@ def cli() -> None:
     help="Output directory (created if missing).",
 )
 @click.option("--ocr", is_flag=True, default=False, help="Enable Tesseract OCR for scanned PDFs.")
+@click.option(
+    "--officecli-timeout",
+    type=int,
+    default=60,
+    show_default=True,
+    help="Timeout in seconds for each OfficeCLI subprocess call.",
+)
 @click.option("--include", "-i", multiple=True, help="Include glob (may be repeated).")
 @click.option("--exclude", "-e", multiple=True, help="Exclude glob (may be repeated).")
+@click.option(
+    "--jobs",
+    "-j",
+    type=int,
+    default=1,
+    show_default=True,
+    help="Number of worker processes (1 = sequential).",
+)
+@click.option(
+    "--no-cache",
+    is_flag=True,
+    default=False,
+    help="Disable the SHA-256 skip-cache; re-convert every file.",
+)
 @click.option("--no-continue-on-error", is_flag=True, default=False, help="Stop on the first failure.")
 @click.option("--tui/--no-tui", default=None, help="Force / disable the animated TUI. Default: auto-detect TTY.")
 @click.option("--no-okf-index", is_flag=True, default=False, help="Skip writing OKF directory index.md files.")
@@ -55,13 +76,26 @@ def convert(
     fmt: str,
     output: Path,
     ocr: bool,
+    officecli_timeout: int,
     include: tuple[str, ...],
     exclude: tuple[str, ...],
+    jobs: int,
+    no_cache: bool,
     no_continue_on_error: bool,
     tui: bool | None,
     no_okf_index: bool,
 ) -> None:
     """Convert every supported document under INPUT_DIR."""
+    from .engines.officecli import OfficeCLIAdapter
+    from .router import adapters as get_adapters
+
+    # Rebuild the OfficeCLI adapter with the requested timeout.
+    # Other adapters are constructed once in router._ADAPTERS but their
+    # timeout is irrelevant (they don't subprocess).
+    for a in get_adapters():
+        if isinstance(a, OfficeCLIAdapter):
+            a.timeout = officecli_timeout
+
     opts = RunOptions(
         input_root=input_dir,
         output_root=output,
@@ -71,6 +105,8 @@ def convert(
         exclude_glob=list(exclude) if exclude else None,
         continue_on_error=not no_continue_on_error,
         write_okf_index=not no_okf_index,
+        jobs=jobs,
+        use_cache=not no_cache,
     )
 
     use_tui = tui if tui is not None else sys.stderr.isatty() and sys.stdout.isatty()

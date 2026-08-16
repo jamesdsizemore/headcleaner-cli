@@ -4,6 +4,83 @@ All notable changes to headcleaner are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.0] — 2026-08-16 (Batch 2)
+
+Second batch of the [ENHANCEMENTS.md](ENHANCEMENTS.md) plan shipped.
+Performance, reliability, and the last of the easy format wins.
+
+### Added
+
+- **`.eml` adapter** (Enhancement #11) — RFC 5322 email files. Headers
+  (From, To, Subject, Date, Message-ID) rendered as a bullet list; the
+  preferred body is `text/plain` (fenced) or `text/html` (markdownified);
+  attachments listed by filename + MIME type + size.
+- **`.pst` adapter stub** (Enhancement #12) — best-effort. Reports
+  the item count via `libpff-python` (binary wheels: Windows x64 +
+  macOS arm64); full message extraction deferred. If the library is
+  not installed, emits a clear `AdapterError` with install/convert
+  instructions.
+- **Legacy Office clear-error path** (Enhancement #13) — `.doc`,
+  `.xls`, `.ppt` no longer silently skip with "no adapter". The
+  `legacy_office` adapter surfaces a precise message: "convert with
+  `libreoffice --convert-to docx` first, then re-run".
+- **`--officecli-timeout <seconds>`** (Enhancement #18) — configurable
+  per-subprocess timeout, default 60s.
+- **Encrypted PDF error** (Enhancement #19) — detects `/Encrypt`
+  metadata or `password` exceptions from pdfplumber and surfaces an
+  actionable message: "decrypt with `qpdf --decrypt ...` then re-run".
+- **Parallel pipeline `--jobs N`** (Enhancement #14) — process files
+  in a `ProcessPoolExecutor` with N workers (default 1 = sequential).
+  Significant speedup on folders dominated by OfficeCLI subprocess
+  overhead. Output ordering preserved via per-file progress hooks.
+- **Streaming manifest** (Enhancement #15) — `<output>/manifest.jsonl`
+  is appended to after every file, enabling tail -f audit and crash
+  recovery. The final `manifest.json` is built at the end of the run.
+- **Idempotent SHA-256 cache** (Enhancement #16) — files whose
+  source SHA-256 matches a prior run's `manifest.json` are skipped.
+  Disable with `--no-cache`. The walker now also skips the output
+  directory itself, so the cache can't be invalidated by headcleaner's
+  own writes.
+- **Streaming PDF docs** (Enhancement #20) — pdfplumber already streams
+  per page; documented the memory profile in `docs/FORMAT_MATRIX.md`
+  and `docs/USER_GUIDE.md`.
+
+### Engine coverage at v0.3.0
+
+| Format | Engine | Library |
+|---|---|---|
+| `.docx`, `.xlsx`, `.pptx` | officecli | @officecli/officecli |
+| `.pdf` | pdf | pdfplumber |
+| `.html`, `.htm` | html | beautifulsoup4 + markdownify |
+| `.txt` | txt | chardet |
+| `.md`, `.markdown` | md | stdlib |
+| `.csv`, `.tsv` | csv | stdlib `csv` |
+| `.json` | json | stdlib `json` |
+| `.eml` | eml | stdlib `email` |
+| `.pst` (best-effort) | pst | libpff-python |
+| `.doc`, `.xls`, `.ppt` | legacy_office | (error path; no adapter) |
+
+10 active adapters + 1 error-path shim. 72 pytest tests passing in ~7s.
+
+### Pipeline architecture changes
+
+- `walk()` gained a `skip_root` parameter (defaults to the output dir).
+- `run.run_pipeline()` now branches between `_process_sequential` (default)
+  and `_process_parallel` (when `jobs > 1`).
+- `RunOptions` gained `jobs: int = 1` and `use_cache: bool = True`.
+- `_load_cache()` reads the previous `manifest.json`; `_save_cache_jsonl()`
+  appends after every file.
+
+### Deferred from this batch
+
+- #3 review TUI — still pending (Batch 4 UX)
+- #7 epub — needs `ebooklib` dep (Batch 4)
+- #8 rtf — needs `striprtf` dep (Batch 4)
+- #9 odf — needs `odfpy` dep (Batch 4)
+- #10 msg — `extract-msg` already in deps (Batch 4)
+
+---
+
 ## [0.2.0] — 2026-08-16 (Batch 1)
 
 First batch of the [ENHANCEMENTS.md](ENHANCEMENTS.md) plan shipped.

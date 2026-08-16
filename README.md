@@ -63,9 +63,12 @@ Options:
   -f, --format {md,okf,both}   Output format(s) [default: both]
   -o, --output DIR             Output directory [default: ./out]
   --ocr                        Enable Tesseract OCR for scanned PDFs
-  -i, --include GLOB           Include glob (repeatable)
-  -e, --exclude GLOB           Exclude glob (repeatable)
-  --no-continue-on-error       Stop on first failure
+  --officecli-timeout <secs>   Timeout per OfficeCLI subprocess call (default: 60)
+  --include, -i GLOB           Include glob (may be repeated)
+  --exclude, -e GLOB           Exclude glob (may be repeated)
+  --jobs, -j N                Parallel worker processes (default: 1 = sequential)
+  --no-cache                  Re-convert every file (skip the SHA-256 cache)
+  --no-continue-on-error       Stop on the first failure
   --tui / --no-tui             Force / disable the animated TUI (default: auto-detect TTY)
   --no-okf-index               Skip OKF directory index.md generation
 
@@ -112,6 +115,9 @@ See [docs/FORMAT_MATRIX.md](docs/FORMAT_MATRIX.md) for the full engine × librar
 | `.md`, `.markdown` | pass-through + frontmatter inject | stdlib |
 | `.csv`, `.tsv` | Sniffer dialect + GFM table | stdlib `csv` |
 | `.json` | pretty-print + fenced block | stdlib `json` |
+| `.eml` | headers + text/html body + attachments | stdlib `email` |
+| `.pst` (best-effort) | item count only | `libpff-python` (optional) |
+| `.doc`, `.xls`, `.ppt` | clear error path | needs `libreoffice --convert-to` first |
 
 v1.0 roadmap adds: `.md`, `.csv`, `.json`, `.epub`, `.rtf`, `.odt`/`.ods`/`.odp`, `.eml`, `.msg`, `.pst`.
 

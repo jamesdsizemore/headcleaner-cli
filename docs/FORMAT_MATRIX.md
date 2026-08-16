@@ -25,21 +25,18 @@
 | 7 | `.md`, `.markdown` | `md` | stdlib | ✓ | pass-through + frontmatter inject | none |
 | 8 | `.csv`, `.tsv` | `csv` | stdlib `csv` | ✓ | GFM table | none |
 | 9 | `.json` | `json` | stdlib `json` | ✓ | fenced ```json block + pretty-printed | none |
+| 10 | `.eml` | `eml` | stdlib `email` | ✓ | headers + body MD + attachments | none |
+| 11 | `.pst` | `pst` | `libpff-python` (optional) | ○ | item count stub (full extraction is a Batch 4 task) | best-effort: warn + skip if lib missing |
+| 12 | `.doc`, `.xls`, `.ppt` | `legacy_office` | (none shipped) | ○ | clear error: convert with LibreOffice first | none |
 
 ### v1.0 roadmap (planned, not yet implemented)
 
 | # | Extensions | Engine | Library | Required | Notes |
 |---|---|---|---|---|---|
-| 7 | `.md`, `.markdown` | `md` | stdlib | ✓ | pass-through + frontmatter inject |
-| 8 | `.csv` | `csv` | stdlib `csv` | ✓ | GFM table |
-| 9 | `.json` | `json` | stdlib `json` | ✓ | fenced ```json block + pretty-printed |
-| 10 | `.epub` | `epub` | `ebooklib` | ✓ | per-chapter MD, joined with `---` |
-| 11 | `.rtf` | `rtf` | `striprtf` | ✓ | plain text in fenced block |
-| 12 | `.odt`, `.ods`, `.odp` | `odf` | `odfpy` | ✓ | ODT → MD; ODS → GFM table; ODP → "see source: <uri>" |
-| 13 | `.msg` | `msg` | `extract-msg` | ✓ | headers + body MD |
-| 14 | `.eml` | `eml` | stdlib `email` | ✓ | headers + body MD (multipart-aware) |
-| 15 | `.pst` | `pst` | `libpff-python` (optional) | ○ | one OKF concept per message; best-effort: warn + skip if lib missing |
-| 16 | `.doc`, `.xls`, `.ppt` | `legacy_office` | (none shipped) | ○ | error: legacy binary format; suggest `libreoffice --convert-to docx` first |
+| 13 | `.epub` | `epub` | `ebooklib` | ✓ | per-chapter MD, joined with `---` |
+| 14 | `.rtf` | `rtf` | `striprtf` | ✓ | plain text in fenced block |
+| 15 | `.odt`, `.ods`, `.odp` | `odf` | `odfpy` | ✓ | ODT → MD; ODS → GFM table; ODP → "see source: <uri>" |
+| 16 | `.msg` | `msg` | `extract-msg` | ✓ | headers + body MD |
 
 ## Engine selection
 
