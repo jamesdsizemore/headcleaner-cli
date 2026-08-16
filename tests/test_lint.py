@@ -144,3 +144,78 @@ def test_lint_summary_counts(tmp_path: Path) -> None:
 def test_lint_directory_handles_missing_root(tmp_path: Path) -> None:
     s = lint_directory(tmp_path / "does-not-exist")
     assert s.scanned == 0
+
+
+# --- --fix ------------------------------------------------------------------
+
+def test_build_fix_adds_missing_trust_fields(tmp_path: Path) -> None:
+    """A concept with frontmatter but missing OKF trust fields should be fixable."""
+    from headcleaner.lint import build_fix
+    f = tmp_path / "okf" / "x.md"
+    f.parent.mkdir(parents=True, exist_ok=True)
+    f.write_text(
+        "---\n"
+        "type: Document\n"
+        "title: X\n"
+        "sources:\n"
+        "  - uri: file:///x\n"
+        "    sha256: " + "a" * 64 + "\n"
+        "---\n\n# X\n\nBody.\n",
+        encoding="utf-8",
+    )
+    fix = build_fix(f)
+    assert fix is not None
+    assert "status: unverified" in fix.new_text
+    assert "verified: human:pending" in fix.new_text
+    assert "stale_after:" in fix.new_text
+
+
+def test_build_fix_skips_index_md(tmp_path: Path) -> None:
+    from headcleaner.lint import build_fix
+    f = tmp_path / "okf" / "index.md"
+    f.parent.mkdir(parents=True, exist_ok=True)
+    f.write_text("---\ntype: Index\n---\n\n# Documents\n", encoding="utf-8")
+    assert build_fix(f) is None
+
+
+def test_build_fix_skips_no_frontmatter(tmp_path: Path) -> None:
+    from headcleaner.lint import build_fix
+    f = tmp_path / "okf" / "x.md"
+    f.parent.mkdir(parents=True, exist_ok=True)
+    f.write_text("Just markdown, no frontmatter.\n", encoding="utf-8")
+    assert build_fix(f) is None
+
+
+def test_apply_fixes_writes_to_out_root(tmp_path: Path) -> None:
+    from headcleaner.lint import Fix, apply_fixes
+    src = tmp_path / "okf" / "x.md"
+    src.parent.mkdir(parents=True, exist_ok=True)
+    src.write_text("---\ntype: Document\n---\n\nbody\n", encoding="utf-8")
+    out_root = tmp_path / "fixed"
+    fix = Fix(file=src, new_text="---\ntype: Document\nstatus: unverified\n---\n\nbody\n", description="added status")
+    applied = apply_fixes([fix], out_root)
+    assert len(applied) == 1
+    written = out_root / "x.md"
+    assert written.exists()
+    assert "status: unverified" in written.read_text(encoding="utf-8")
+
+
+def test_fix_does_not_overwrite_source(tmp_path: Path) -> None:
+    """--fix must NEVER modify the original file (writes to <dir>.fixed/ instead)."""
+    from headcleaner.lint import build_fix, apply_fixes
+    src_dir = tmp_path / "okf"
+    src_dir.mkdir()
+    src = src_dir / "x.md"
+    original_text = "---\ntype: Document\nsources:\n  - uri: file:///x\n    sha256: " + "a" * 64 + "\n---\n\nbody\n"
+    src.write_text(original_text, encoding="utf-8")
+
+    fix = build_fix(src)
+    assert fix is not None
+    apply_fixes([fix], tmp_path / "okf.fixed")
+
+    # Original untouched
+    assert src.read_text(encoding="utf-8") == original_text
+    # Fix went to the .fixed dir
+    fixed = tmp_path / "okf.fixed" / "x.md"
+    assert fixed.exists()
+    assert "status: unverified" in fixed.read_text(encoding="utf-8")

@@ -8,7 +8,9 @@ from __future__ import annotations
 from pathlib import Path
 
 from .engines.base import Adapter, AdapterError
+from .engines.csv_json import CsvAdapter, JsonAdapter
 from .engines.html import HtmlAdapter
+from .engines.md import MdAdapter
 from .engines.officecli import OfficeCLIAdapter
 from .engines.pdf import PdfAdapter
 from .engines.txt import TxtAdapter
@@ -19,8 +21,11 @@ from .engines.txt import TxtAdapter
 # so its construction may raise — we tolerate that.
 _ADAPTERS: list[Adapter] = [
     TxtAdapter(),
+    MdAdapter(),
     HtmlAdapter(),
+    CsvAdapter(),
     PdfAdapter(),
+    JsonAdapter(),
     OfficeCLIAdapter(),
 ]
 

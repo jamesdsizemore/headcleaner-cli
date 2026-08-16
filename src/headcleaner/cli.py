@@ -131,7 +131,9 @@ def agents() -> None:
 @click.argument("directory", type=click.Path(exists=True, file_okay=False, path_type=Path))
 @click.option("--strict", is_flag=True, default=False, help="Treat warnings as errors.")
 @click.option("--no-color", is_flag=True, default=False, help="Disable ANSI color output.")
-def lint_cmd(directory: Path, strict: bool, no_color: bool) -> None:
+@click.option("--fix", "do_fix", is_flag=True, default=False, help="Auto-repair safe issues to <DIR>.fixed/.")
+@click.option("--fix-out", type=click.Path(path_type=Path), default=None, help="Override --fix output directory.")
+def lint_cmd(directory: Path, strict: bool, no_color: bool, do_fix: bool, fix_out: Path | None) -> None:
     """Review converted Markdown / OKF for formatting issues.
 
     Run after `headcleaner convert` to catch structural problems before
@@ -158,6 +160,10 @@ def lint_cmd(directory: Path, strict: bool, no_color: bool) -> None:
         argv.append("--strict")
     if no_color:
         argv.append("--no-color")
+    if do_fix:
+        argv.append("--fix")
+    if fix_out is not None:
+        argv.extend(["--fix-out", str(fix_out)])
     raise SystemExit(lint_main(argv))
 
 

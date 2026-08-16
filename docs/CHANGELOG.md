@@ -4,6 +4,59 @@ All notable changes to headcleaner are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.2.0] — 2026-08-16 (Batch 1)
+
+First batch of the [ENHANCEMENTS.md](ENHANCEMENTS.md) plan shipped.
+
+### Added
+
+- **`headcleaner lint --fix`** (Enhancement #2)
+  - Auto-repair safe OKF structural issues
+  - Writes repaired files to `<DIR>.fixed/` (never overwrites source)
+  - Adds missing `status`, `verified`, `stale_after`, `resource` (derived
+    from `sources[0].uri` when present)
+  - Refuses to touch `index.md`, files without frontmatter, files
+    without a `type` key, or anything in the body
+- **`.md` / `.markdown` adapter** (Enhancement #4)
+- **`.csv` / `.tsv` adapter** (Enhancement #5) — Sniffer-detected dialect
+- **`.json` adapter** (Enhancement #6) — pretty-printed fenced block +
+  bulleted summary for flat objects
+- New pytest tests for all of the above (15 new tests)
+
+### Engine coverage at v0.2.0
+
+| Format | Engine | Library |
+|---|---|---|
+| `.docx`, `.xlsx`, `.pptx` | officecli | @officecli/officecli |
+| `.pdf` | pdf | pdfplumber |
+| `.html`, `.htm` | html | beautifulsoup4 + markdownify |
+| `.txt` | txt | chardet |
+| `.md`, `.markdown` | md | stdlib |
+| `.csv`, `.tsv` | csv | stdlib `csv` |
+| `.json` | json | stdlib `json` |
+
+9 active adapters, 58 pytest tests passing in ~5s.
+
+### Docs
+
+- README updated with new format table + `--fix` line in CLI reference
+- docs/FORMAT_MATRIX.md updated with .md/.csv/.json rows in v0.1.0
+  shipped section
+- docs/ENHANCEMENTS.md marks #1, #2, #4, #5, #6 as ✅ shipped
+
+### Deferred from this batch
+
+- #3 review TUI — needs a separate Textual pass (Batch 4 UX work)
+- #7 epub — needs `ebooklib` dep + chapter iteration (Batch 1 partial)
+- #8 rtf — `striprtf` dep (Batch 1 partial)
+- #9 odf — `odfpy` dep + ODP parsing (Batch 1 partial)
+- #10 msg — `extract-msg` already in deps; minor work (Batch 1 partial)
+- #11 eml — stdlib email; minor work (Batch 1 partial)
+
+These will be completed in Batch 2 alongside the perf/reliability work.
+
+---
+
 ## [0.1.0] — 2026-08-16
 
 First public release. Rebranded from `doc-ingest` to `headcleaner`.

@@ -22,6 +22,9 @@
 | 4 | `.pdf` | `pdf` | `pdfplumber` | ✓ | text-layer MD; tables preserved | `--ocr` opt-in: `pytesseract` |
 | 5 | `.html`, `.htm` | `html` | `beautifulsoup4`, `markdownify` | ✓ | semantic MD (h1-h6, p, ul, ol, code, pre, blockquote, table) | none |
 | 6 | `.txt` | `txt` | `chardet` + stdlib | ✓ | raw text in fenced block | none |
+| 7 | `.md`, `.markdown` | `md` | stdlib | ✓ | pass-through + frontmatter inject | none |
+| 8 | `.csv`, `.tsv` | `csv` | stdlib `csv` | ✓ | GFM table | none |
+| 9 | `.json` | `json` | stdlib `json` | ✓ | fenced ```json block + pretty-printed | none |
 
 ### v1.0 roadmap (planned, not yet implemented)
 

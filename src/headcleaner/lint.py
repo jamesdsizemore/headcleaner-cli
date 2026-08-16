@@ -14,7 +14,7 @@ Findings are emitted as colored lines (neon palette) and exit code is
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 
@@ -192,15 +192,11 @@ def check_markdown(path: Path) -> list[Finding]:
 # ---------------------------------------------------------------------------
 
 @dataclass
-class LintSummary:
-    scanned: int = 0
-    errors: int = 0
-    warnings: int = 0
-    info: int = 0
-    findings: list[Finding] = field(default_factory=list) if False else None  # placeholder
-
-
-from dataclasses import field
+class Fix:
+    """One safe auto-repair that the linter can apply."""
+    file: Path
+    new_text: str
+    description: str
 
 
 @dataclass
@@ -210,6 +206,7 @@ class LintSummary:
     warnings: int = 0
     info: int = 0
     findings: list[Finding] = field(default_factory=list)
+    fixes_applied: list[Fix] = field(default_factory=list)
 
 
 def lint_directory(root: Path, *, okf_root: Path | None = None, md_root: Path | None = None) -> LintSummary:
@@ -258,6 +255,17 @@ def main(args: list[str] | None = None) -> int:
     parser.add_argument("directory", type=Path, help="Output directory to lint")
     parser.add_argument("--strict", action="store_true", help="Treat warnings as errors")
     parser.add_argument("--no-color", action="store_true", help="Disable ANSI colors")
+    parser.add_argument(
+        "--fix",
+        action="store_true",
+        help="Auto-repair safe issues to <directory>.fixed/ (never overwrites source)",
+    )
+    parser.add_argument(
+        "--fix-out",
+        type=Path,
+        default=None,
+        help="Override the --fix output directory (default: <directory>.fixed)",
+    )
     args = parser.parse_args(args)
 
     summary = lint_directory(args.directory)
@@ -281,7 +289,107 @@ def main(args: list[str] | None = None) -> int:
         return 1
     if args.strict and summary.warnings:
         return 1
+
+    # --fix: compute and apply safe auto-repairs
+    if args.fix:
+        out_root = args.fix_out or args.directory.with_name(args.directory.name + ".fixed")
+        seen: set[Path] = set()
+        fixes: list[Fix] = []
+        for f in summary.findings:
+            if f.file in seen:
+                continue
+            seen.add(f.file)
+            fix = build_fix(f.file)
+            if fix is not None:
+                fixes.append(fix)
+        applied = apply_fixes(fixes, out_root)
+        for fix in applied:
+            print(
+                "  "
+                + paint("fixed", NEON_CYAN, bold=True)
+                + " "
+                + paint(fix.file.name, FG_MUTED)
+                + "  "
+                + paint(fix.description, NEON_PURPLE)
+            )
+        if applied:
+            print()
+            print(
+                paint(f"  ✓ {len(applied)} fix(es) applied to {out_root}", NEON_CYAN, bold=True)
+            )
+        else:
+            print(paint("  · no safe fixes available", FG_MUTED))
+
     return 0
+
+
+# ---------------------------------------------------------------------------
+# Auto-repair (--fix)
+# ---------------------------------------------------------------------------
+
+def build_fix(path: Path) -> Fix | None:
+    """Compute a single safe auto-repair for the given file.
+
+    Returns None if no repair is possible (or would be unsafe).
+    """
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return None
+
+    if path.name == "index.md":
+        return None  # never auto-edit generated index files
+
+    fm, body, _ = _split_frontmatter(text)
+    if fm is None:
+        return None  # no frontmatter → not an OKF concept → don't auto-touch
+
+    # Determine the trust family additions
+    additions: dict = {}
+    if not fm.get("type"):
+        return None  # can't infer a sensible 'type' — leave for human
+    if not fm.get("status"):
+        additions["status"] = "unverified"
+    if not fm.get("verified"):
+        additions["verified"] = "human:pending"
+    if not fm.get("stale_after"):
+        # OKF §5.2 freshness: 180 days from now
+        from datetime import datetime, timezone, timedelta
+        additions["stale_after"] = (datetime.now(timezone.utc) + timedelta(days=180)).strftime("%Y-%m-%d")
+    if not fm.get("sources"):
+        # Don't invent sources; that's dishonest. Skip.
+        return None
+    if not fm.get("resource"):
+        # Derive resource from sources[0].uri when both exist (both are
+        # file paths the producer already attested to).
+        sources = fm.get("sources") or []
+        if isinstance(sources, list) and sources and isinstance(sources[0], dict) and sources[0].get("uri"):
+            additions["resource"] = sources[0]["uri"]
+        # else: skip — can't safely invent the resource URI
+
+    if not additions:
+        return None  # nothing to fix
+
+    fm.update(additions)
+    yaml_block = yaml.safe_dump(fm, sort_keys=False, allow_unicode=True).strip()
+    new_text = f"---\n{yaml_block}\n---\n\n{body.lstrip()}"
+
+    desc = "; ".join(f"+{k}" for k in additions)
+    return Fix(file=path, new_text=new_text, description=f"added {desc}")
+
+
+def apply_fixes(fixes: list[Fix], out_root: Path) -> list[Fix]:
+    """Write fixes to `<out_root>/<file-relative-path>`; return the fixes actually applied."""
+    applied: list[Fix] = []
+    out_root.mkdir(parents=True, exist_ok=True)
+    for fix in fixes:
+        try:
+            target = out_root / fix.file.name
+            target.write_text(fix.new_text, encoding="utf-8")
+            applied.append(fix)
+        except OSError:
+            continue
+    return applied
 
 
 if __name__ == "__main__":

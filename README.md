@@ -73,6 +73,7 @@ Other commands:
   headcleaner templates        List supported formats
   headcleaner agents           Show engine install status
   headcleaner-lint <DIR>       Review converted Markdown / OKF for formatting issues
+  headcleaner-lint <DIR> --fix Auto-repair safe issues to <DIR>.fixed/
 ```
 
 ## Why OKF?
@@ -100,7 +101,7 @@ A human can grep `human:pending` later to find concepts needing review. See [doc
 
 ## Supported formats
 
-See [docs/FORMAT_MATRIX.md](docs/FORMAT_MATRIX.md) for the full engine × library table. At a glance (v0.1.0):
+See [docs/FORMAT_MATRIX.md](docs/FORMAT_MATRIX.md) for the full engine × library table. At a glance:
 
 | Format | Engine | Library |
 |---|---|---|
@@ -108,6 +109,9 @@ See [docs/FORMAT_MATRIX.md](docs/FORMAT_MATRIX.md) for the full engine × librar
 | `.pdf` | pdfplumber (text-layer), pytesseract if `--ocr` | pdfplumber / pytesseract |
 | `.html`, `.htm` | BeautifulSoup | beautifulsoup4 |
 | `.txt` | chardet + read | chardet |
+| `.md`, `.markdown` | pass-through + frontmatter inject | stdlib |
+| `.csv`, `.tsv` | Sniffer dialect + GFM table | stdlib `csv` |
+| `.json` | pretty-print + fenced block | stdlib `json` |
 
 v1.0 roadmap adds: `.md`, `.csv`, `.json`, `.epub`, `.rtf`, `.odt`/`.ods`/`.odp`, `.eml`, `.msg`, `.pst`.
 
