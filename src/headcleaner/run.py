@@ -60,6 +60,9 @@ class RunOptions:
     dry_run: bool = False        # Eng #42 — emit what would convert without writing
     json_output: bool = False    # Eng #43 — emit one JSON line per event on stdout
 
+    # v0.8.0: heuristic cleanup pipeline (12 stages borrowed from any2md)
+    clean_md: bool = False
+
     # Eng #41: per-engine sub-progress. Called with
     #   (engine_name, current_page, total_pages) for any adapter that
     #   reports sub-progress (PDF, multi-message adapters).
@@ -130,11 +133,17 @@ def _run_adapter(
     relpath: str,
     ocr: bool,
     on_engine_progress: Callable[[str, int, int], None] | None,
+    *,
+    opts: RunOptions | None = None,
 ) -> list[tuple[str, dict]]:
     """Invoke an adapter and return a list of (relpath, extracted_dict) pairs.
 
     For most adapters, this is a single-element list. For multi-concept
     adapters (PST), each message gets its own (relpath, extracted_dict) pair.
+
+    If ``opts.clean_md`` is True, the 12-stage heuristic cleanup pipeline
+    (see headcleaner.heuristics) is applied to each extracted body_md before
+    returning.
     """
     # Honor the OCR flag (PDF adapter only)
     if adapter.name == "pdf" and ocr and hasattr(adapter, "ocr"):
@@ -151,6 +160,14 @@ def _run_adapter(
         extracted_list = adapter.extract_messages(source, progress=_progress)
     else:
         extracted_list = [adapter.extract(source, progress=_progress)]
+
+    # v0.8.0: optional heuristic cleanup pass (12 stages, borrowed from any2md)
+    if opts is not None and getattr(opts, "clean_md", False):
+        from .heuristics import clean_text
+        extracted_list = [
+            {**ext, "body_md": clean_text(ext.get("body_md", ""))}
+            for ext in extracted_list
+        ]
 
     pairs: list[tuple[str, dict]] = []
     for i, extracted in enumerate(extracted_list, start=1):
@@ -207,7 +224,7 @@ def _emit_one(
 
 # ---- Per-file worker (used by ProcessPoolExecutor) ---------------------------
 
-def _process_one(args: tuple[str, str, str, str, bool]) -> list[dict]:
+def _process_one(args: tuple[str, str, str, str, bool, bool]) -> list[dict]:
     """Worker for parallel mode.
 
     Returns a list of FileResult-like dicts (orchestrator converts back).
@@ -215,9 +232,16 @@ def _process_one(args: tuple[str, str, str, str, bool]) -> list[dict]:
     side; the worker only confirms the source is processable and returns
     the extracted list of bodies for the orchestrator to emit.
     """
-    source_str, relpath, engine_name, fmt, ocr = args
+    source_str, relpath, engine_name, fmt, ocr, clean_md = args
     from .engines.base import AdapterError
     from .router import get_adapter as _get_adapter
+
+    # Build a minimal RunOptions shim so heuristics can be enabled in the worker.
+    class _OptsShim:
+        pass
+
+    _opts = _OptsShim()
+    _opts.clean_md = clean_md
 
     source = Path(source_str)
     adapter = _get_adapter(source)
@@ -234,7 +258,7 @@ def _process_one(args: tuple[str, str, str, str, bool]) -> list[dict]:
         }]
 
     try:
-        pairs = _run_adapter(adapter, source, relpath, ocr, None)
+        pairs = _run_adapter(adapter, source, relpath, ocr, None, opts=_opts)
     except AdapterError as e:
         return [{
             "source_path": str(source),
@@ -319,7 +343,7 @@ def _process_sequential(opts: RunOptions, record: RunRecord, cache: dict[str, di
                 continue
 
         try:
-            pairs = _run_adapter(adapter, sf.path, rel, opts.ocr, opts.on_engine_progress)
+            pairs = _run_adapter(adapter, sf.path, rel, opts.ocr, opts.on_engine_progress, opts=opts)
         except AdapterError as e:
             result = FileResult(
                 source_path=str(sf.path),
@@ -409,7 +433,7 @@ def _process_parallel(opts: RunOptions, record: RunRecord, cache: dict[str, dict
             _finish_result(opts, record, result)
             continue
 
-        work.append((str(sf.path), rel, engine_name, opts.fmt, opts.ocr))
+        work.append((str(sf.path), rel, engine_name, opts.fmt, opts.ocr, opts.clean_md))
 
     if not work:
         return

@@ -1,3 +1,3 @@
 """headcleaner — walk a folder, emit Markdown and/or OKF v0.2."""
 
-__version__ = "0.7.0"
+__version__ = "0.8.0"

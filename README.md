@@ -13,6 +13,9 @@ headcleaner convert ~/Documents/inbox --format both --output ~/Documents/inbox.c
 - **TUI:** omp-inspired animated terminal (box-drawing panels, neon palette, powerline separators)
 - **Linter:** `headcleaner lint` reviews the converted Markdown / OKF for formatting issues
 - **Per-message PST:** one OKF concept per email (via readpst) so review/sign-off works file-by-file
+- **office_oxide backend:** Pure-Rust Python bindings for Office formats (~100x faster than OfficeCLI)
+- **Heuristic cleanup:** `headcleaner convert --clean` runs a 12-stage any2md-inspired cleanup pipeline
+- **all2md fallback:** Auto-handles 38 extra formats (Jupyter, LaTeX, reST, sourcecode, etc.) when all2md is installed
 - **Trust attestation:** `headcleaner attest` builds a Merkle root + ed25519 signature; `verify` checks it
 - **Local browse:** `headcleaner serve <bundle>` exposes a FastAPI UI for browsing + search
 - **Honest defaults:** OKF trust fields filled with `unverified` / `human:pending`, never invented
@@ -73,6 +76,7 @@ Options:
   --no-cache                  Re-convert every file (skip the SHA-256 cache)
   --no-continue-on-error       Stop on the first failure
   --obsidian-compat            Add Obsidian-friendly flat fields to OKF frontmatter
+  --clean                       Run the 12-stage heuristic cleanup pipeline (any2md-inspired) on each body
   --tui / --no-tui             Force / disable the animated TUI (default: auto-detect TTY)
   --no-okf-index               Skip OKF directory index.md generation
 ```
@@ -130,6 +134,8 @@ See [docs/FORMAT_MATRIX.md](docs/FORMAT_MATRIX.md) for the full engine × librar
 | `.odt`, `.ods`, `.odp` | paragraph/row extraction + GFM tables | odfpy (+ raw-XML fallback) |
 | `.msg` | Outlook headers + body + attachments | extract-msg |
 | `.pst` | **per-message** (one OKF concept per email) | readpst (libpst) + libpff-python fallback |
+| `.docx`, `.xlsx`, `.pptx` | **office_oxide** (primary, ~100x faster), OfficeCLI binary (fallback) | office_oxide 0.1.8 (PyO3) |
+| `.ipynb`, `.latex`, `.rst`, sourcecode, `.enex`, `.chm`, etc. (38 formats) | all2md (when installed) | all2md 1.12 |
 | `.doc`, `.xls`, `.ppt` | clear error path | needs `libreoffice --convert-to` first |
 
 ## Live mode
@@ -236,7 +242,7 @@ headcleaner templates                        # list supported formats
 git clone <this repo>
 cd headcleaner-cli
 uv sync
-uv run pytest                # 189 tests, ~9s
+uv run pytest                # 249 tests, ~3s
 uv run headcleaner convert ./tests/fixtures --format both --output ./out
 ```
 

@@ -74,6 +74,13 @@ def cli() -> None:
 @click.option("--tui/--no-tui", default=None, help="Force / disable the animated TUI. Default: auto-detect TTY.")
 @click.option("--no-okf-index", is_flag=True, default=False, help="Skip writing OKF directory index.md files.")
 @click.option(
+    "--clean",
+    "clean_md",
+    is_flag=True,
+    default=False,
+    help="Apply the 12-stage heuristic cleanup pipeline (any2md-inspired) to each extracted body before emission.",
+)
+@click.option(
     "--obsidian-compat",
     is_flag=True,
     default=False,
@@ -210,6 +217,7 @@ def convert(
         write_bundle_manifest=write_bundle_manifest,
         dry_run=dry_run,
         json_output=json_output,
+        clean_md=clean_md,
     )
 
     # Eng #34: cross-concept link inference (second pass)

@@ -4,6 +4,23 @@ All notable changes to headcleaner are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.8.0] - 2026-08-16
+
+### Added
+
+- **office_oxide integration**: Replaced OfficeCLI binary subprocess path with the pure-Rust `office_oxide` Python bindings (PyO3) for DOCX/XLSX/PPTX extraction. ~100x faster (0.8ms DOCX, 5.0ms XLSX, 0.7ms PPTX per upstream benchmark). 100% pass rate on valid Office files. The OfficeCLI binary remains as a graceful fallback if `office_oxide` is not installed. Apache-2.0/MIT.
+- **all2md fallback adapter** (`All2mdAdapter`): New adapter covering 38 formats headcleaner does not have a native adapter for (`.ipynb`, `.latex`, `.rst`, `.asciidoc`, `.textile`, `.mediawiki`, `.org`, `.bbcode`, `.fb2`, `.chm`, `.mhtml`, `.webarchive`, sourcecode, `.enex`, `.yaml`, `.toml`, `.ini`, etc.). Opt-in via router; silently skipped if `all2md` is not installed. MIT.
+- **Heuristic cleanup pipeline** (`headcleaner/heuristics.py`): 12-stage Markdown cleanup pipeline borrowed from `rocklambros/any2md`. Stages: `nfc_normalize`, `strip_soft_hyphens`, `normalize_ligatures`, `normalize_quotes_dashes`, `decode_html_entities` (iterative), `collapse_whitespace`, `dehyphenate`, `repair_line_wraps`, `strip_orphan_punctuation`, `strip_repeated_byline`, `dedupe_toc_block`, `enforce_heading_hierarchy`. Each is a pure `text -> text` function with its own tests.
+- **`--clean` flag** (`headcleaner convert --clean`): Runs the 12-stage heuristic pipeline on every extracted `body_md` before emission. Off by default. Works in both sequential and `--jobs N` parallel modes.
+
+### Dependencies
+
+- Added `office-oxide>=0.1.8` and `all2md>=1.12` to core dependencies. Both are MIT/Apache-2.0 licensed.
+
+### Tests
+
+- 189 -> 249 (+60 tests): 39 heuristics, 7 office_oxide, 10 all2md adapter, 4 clean-pipeline e2e.
+
 ## [0.7.0] — 2026-08-16 (Batch 6)
 
 The remaining "post-Batch 5" work: full `headcleaner serve`, real glob REPL,

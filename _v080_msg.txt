@@ -1,0 +1,43 @@
+feat(v0.8.0): adopt office_oxide + any2md heuristics + all2md fallback
+
+Three adoptions from the v0.7.0 scoring research:
+
+1. **office_oxide** (yfedoseev/office_oxide, Apache-2.0/MIT) replaces
+   the OfficeCLI binary subprocess path for DOCX/XLSX/PPTX extraction.
+   Pure-Rust Python bindings (PyO3) — 0.8ms mean DOCX, 5.0ms XLSX,
+   0.7ms PPTX per upstream benchmark. ~100x faster than the previous
+   OfficeCLI pipeline. OfficeCLI binary remains as a graceful fallback
+   if office_oxide is not installed.
+
+2. **any2md heuristics** (rocklambros/any2md, MIT) — 12-stage Markdown
+   cleanup pipeline borrowed as `headcleaner/heuristics.py`. Stages:
+   nfc_normalize, strip_soft_hyphens, normalize_ligatures,
+   normalize_quotes_dashes, decode_html_entities (iterative),
+   collapse_whitespace, dehyphenate, repair_line_wraps,
+   strip_orphan_punctuation, strip_repeated_byline, dedupe_toc_block,
+   enforce_heading_hierarchy. Each stage is a pure `text -> text`
+   function with its own tests. Wired into `run.py` via a new
+   `--clean` flag (default off). Works in both sequential and
+   `--jobs N` parallel modes.
+
+3. **all2md** (thomas-villani/all2md, MIT) — opt-in fallback adapter
+   that handles 38 formats headcleaner does not have a native adapter
+   for: .ipynb, .latex, .rst, .asciidoc, .textile, .mediawiki, .org,
+   .bbcode, .fb2, .chm, .mhtml, .webarchive, sourcecode (.py/.js/.ts/
+   .go/.rs/etc.), .enex, .yaml, .toml, .ini, .zip. Registered in
+   router; silently skipped if all2md is not installed.
+
+New CLI surface:
++ headcleaner convert --clean       Run 12-stage heuristic pipeline
+
+Version: 0.7.0 -> 0.8.0
+Tag: v0.8.0
+
+Tests: 189 -> 249 (+60)
+- 39 heuristics (test_heuristics.py)
+- 7 office_oxide adapter (test_office_oxide.py)
+- 10 all2md adapter (test_all2md_adapter.py)
+- 4 clean-pipeline e2e (test_clean_pipeline.py)
+
+BREAKING: tests/test_router.py updated; .zip is now handled by all2md
+fallback (was previously "unsupported").

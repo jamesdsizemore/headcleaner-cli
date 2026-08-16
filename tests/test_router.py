@@ -32,7 +32,8 @@ def test_get_adapter_routes_correctly(tmp_path: Path) -> None:
 
 
 def test_get_adapter_returns_none_for_unsupported(tmp_path: Path) -> None:
-    assert get_adapter(tmp_path / "x.zip") is None
+    # Use extensions that no headcleaner or all2md adapter claims.
+    assert get_adapter(tmp_path / "x.unknown_xyz") is None
     assert get_adapter(tmp_path / "x") is None
 
 

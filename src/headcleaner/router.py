@@ -47,6 +47,15 @@ _ADAPTERS: list[Adapter] = [
     OfficeCLIAdapter(),
 ]
 
+# Opt-in all2md fallback adapter (formats headcleaner does not have a
+# native adapter for: jupyter, latex, rst, sourcecode, enex, chm, etc.).
+# Tolerated if all2md is not installed (registers nothing).
+try:
+    from .engines.all2md_engine import All2mdAdapter as _All2mdAdapter
+    _ADAPTERS.append(_All2mdAdapter())
+except Exception:
+    pass  # all2md not installed or failed to construct; skip silently
+
 
 def adapters() -> list[Adapter]:
     """Return the registered adapters (read-only snapshot)."""
