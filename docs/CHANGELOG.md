@@ -4,6 +4,22 @@ All notable changes to headcleaner are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.9.0] - 2026-08-16
+
+### Added
+
+- **zsv SIMD CSV adapter** (`ZsvAdapter`): Adopted from `liquidaty/zsv` (MIT, 396 stars), the world's-fastest SIMD CSV parser. When the `zsv` binary is on PATH, headcleaner routes `.csv`/`.tsv` files through zsv for the validation pass (column-count + UTF-8 check) before parsing, giving ~10-100x speedup on large CSVs. Falls back to stdlib silently when zsv is not installed. Adapter name remains transparent — the engine reported in OKF metadata is `zsv` so downstream tools can see which backend ran.
+
+### Install
+
+- macOS: `brew install zsv` (formula in homebrew-core)
+- Linux: `./configure && sudo make install` (or distro packages)
+- Windows: download `zsv-<ver>-amd64-windows-mingw.zip` from https://github.com/liquidaty/zsv/releases and put `zsv.exe` on PATH
+
+### Tests
+
+- 249 -> 257 (+8 tests for the zsv adapter)
+
 ## [0.8.0] - 2026-08-16
 
 ### Added

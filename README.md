@@ -16,6 +16,7 @@ headcleaner convert ~/Documents/inbox --format both --output ~/Documents/inbox.c
 - **office_oxide backend:** Pure-Rust Python bindings for Office formats (~100x faster than OfficeCLI)
 - **Heuristic cleanup:** `headcleaner convert --clean` runs a 12-stage any2md-inspired cleanup pipeline
 - **all2md fallback:** Auto-handles 38 extra formats (Jupyter, LaTeX, reST, sourcecode, etc.) when all2md is installed
+- **zsv CSV:** World's-fastest SIMD CSV parser (~10-100x stdlib) when `zsv` is on PATH
 - **Trust attestation:** `headcleaner attest` builds a Merkle root + ed25519 signature; `verify` checks it
 - **Local browse:** `headcleaner serve <bundle>` exposes a FastAPI UI for browsing + search
 - **Honest defaults:** OKF trust fields filled with `unverified` / `human:pending`, never invented
@@ -126,7 +127,7 @@ See [docs/FORMAT_MATRIX.md](docs/FORMAT_MATRIX.md) for the full engine × librar
 | `.html`, `.htm` | BeautifulSoup | beautifulsoup4 |
 | `.txt` | chardet + read | chardet |
 | `.md`, `.markdown` | pass-through + frontmatter inject | stdlib |
-| `.csv`, `.tsv` | Sniffer dialect + GFM table | stdlib `csv` |
+| `.csv`, `.tsv` | Sniffer dialect + GFM table (zsv SIMD when installed) | stdlib `csv` (or `zsv` binary) |
 | `.json` | pretty-print + fenced block | stdlib `json` |
 | `.eml` | headers + text/html body + attachments | stdlib `email` |
 | `.epub` | per-chapter HTML → MD | ebooklib (+ bs4 fallback) |
@@ -242,7 +243,7 @@ headcleaner templates                        # list supported formats
 git clone <this repo>
 cd headcleaner-cli
 uv sync
-uv run pytest                # 249 tests, ~3s
+uv run pytest                # 257 tests, ~3s
 uv run headcleaner convert ./tests/fixtures --format both --output ./out
 ```
 

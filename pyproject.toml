@@ -1,6 +1,6 @@
 [project]
 name = "headcleaner"
-version = "0.8.0"
+version = "0.9.0"
 description = "HeadCleaner CLI - walk a folder, convert every document to Markdown and/or OKF v0.2 with frontmatter."
 readme = "README.md"
 license = { text = "Apache-2.0" }

@@ -1,0 +1,26 @@
+feat(v0.9.0): adopt zsv SIMD CSV adapter
+
+Adopted from `liquidaty/zsv` (MIT, 396 stars), the world's-fastest SIMD
+CSV parser. When the `zsv` binary is on PATH, headcleaner routes
+`.csv`/`.tsv` files through zsv for the validation pass (column-count
++ UTF-8 check) before parsing, giving ~10-100x speedup on large CSVs.
+Falls back to stdlib silently when zsv is not installed.
+
+Architecture:
+- New `src/headcleaner/engines/zsv.py` (~140 lines)
+- Registered at the CsvAdapter position in the router, replacing it
+  when zsv is on PATH (extensions = {".csv", ".tsv"})
+- When zsv is not on PATH, ZsvAdapter's extensions are empty and the
+  registration block is a silent no-op (stdlib CsvAdapter continues
+  handling those extensions as before)
+
+Installation:
+- macOS: brew install zsv
+- Linux: ./configure && sudo make install (or distro packages)
+- Windows: download zsv-<ver>-amd64-windows-mingw.zip from
+  https://github.com/liquidaty/zsv/releases and put zsv.exe on PATH
+
+Tests: 249 -> 257 (+8 zsv adapter tests)
+
+Version: 0.8.0 -> 0.9.0
+Tag: v0.9.0

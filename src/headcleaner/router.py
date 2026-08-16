@@ -50,6 +50,28 @@ _ADAPTERS: list[Adapter] = [
 # Opt-in all2md fallback adapter (formats headcleaner does not have a
 # native adapter for: jupyter, latex, rst, sourcecode, enex, chm, etc.).
 # Tolerated if all2md is not installed (registers nothing).
+# v0.9.0: zsv SIMD CSV adapter (liquidaty/zsv, MIT). Inserted at the
+# CsvAdapter position so that when the zsv binary is on PATH, ZsvAdapter
+# replaces CsvAdapter for .csv/.tsv. When zsv is not installed, ZsvAdapter's
+# extensions are empty (it claims nothing) and the entry is silently dropped.
+try:
+    from .engines.zsv import ZsvAdapter as _ZsvAdapter
+    _zsv_instance = _ZsvAdapter()
+    if _zsv_instance.extensions:
+        # Find the CsvAdapter in _ADAPTERS and replace it in place.
+        for _i, _a in enumerate(_ADAPTERS):
+            if _a.name == "csv":
+                _ADAPTERS[_i] = _zsv_instance
+                break
+        else:
+            # CsvAdapter not present (unusual); append.
+            _ADAPTERS.append(_zsv_instance)
+except Exception:
+    pass  # zsv not installed or failed to construct; skip silently
+
+# Opt-in all2md fallback adapter (formats headcleaner does not have a
+# native adapter for: jupyter, latex, rst, sourcecode, enex, chm, etc.).
+# Tolerated if all2md is not installed (registers nothing).
 try:
     from .engines.all2md_engine import All2mdAdapter as _All2mdAdapter
     _ADAPTERS.append(_All2mdAdapter())
