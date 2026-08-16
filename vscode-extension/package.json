@@ -2,7 +2,7 @@
   "name": "headcleaner",
   "displayName": "HeadCleaner",
   "description": "Browse and lint headcleaner OKF bundles in VS Code.",
-  "version": "0.1.0",
+  "version": "0.7.0",
   "publisher": "local",
   "engines": {
     "vscode": "^1.85.0"
@@ -10,7 +10,10 @@
   "categories": ["Other"],
   "activationEvents": [
     "onLanguage:markdown",
-    "workspaceContains:**/bundle.manifest.json"
+    "workspaceContains:**/manifest.json",
+    "workspaceContains:**/bundle.manifest.json",
+    "onView:headcleaner.concepts",
+    "onView:headcleaner.trust"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -24,8 +27,46 @@
         "command": "headcleaner.attest",
         "title": "HeadCleaner: Attest Bundle",
         "category": "HeadCleaner"
+      },
+      {
+        "command": "headcleaner.verify",
+        "title": "HeadCleaner: Verify Bundle",
+        "category": "HeadCleaner"
+      },
+      {
+        "command": "headcleaner.refreshBundle",
+        "title": "HeadCleaner: Refresh Bundle",
+        "category": "HeadCleaner"
+      },
+      {
+        "command": "headcleaner.openConcept",
+        "title": "HeadCleaner: Open Concept",
+        "category": "HeadCleaner"
       }
     ],
+    "views": {
+      "headcleaner-explorer": [
+        {
+          "id": "headcleaner.concepts",
+          "name": "Concept Explorer",
+          "when": "workspaceFolderCount > 0"
+        },
+        {
+          "id": "headcleaner.trust",
+          "name": "Trust Inspector",
+          "when": "workspaceFolderCount > 0"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "headcleaner-explorer",
+          "title": "HeadCleaner",
+          "icon": "resources/headcleaner.svg"
+        }
+      ]
+    },
     "configuration": {
       "title": "HeadCleaner",
       "properties": {

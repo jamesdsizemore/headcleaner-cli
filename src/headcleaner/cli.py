@@ -10,6 +10,8 @@ For v0.1 we ship `convert` only; the others are stubs that print a TODO.
 """
 from __future__ import annotations
 
+import json
+
 import sys
 from pathlib import Path
 
@@ -387,11 +389,36 @@ def watch(
 
 @cli.command()
 @click.argument("directory", type=click.Path(exists=True, file_okay=False, path_type=Path))
-def attest(directory: Path) -> None:
-    """Eng #36: compute an Attested Computations payload for a bundle."""
+@click.option("--private-key", type=click.Path(exists=True, dir_okay=False, path_type=Path), default=None, help="PEM ed25519 key for signing the Merkle root.")
+@click.option("--output", type=click.Path(dir_okay=False, path_type=Path), default=None, help="Output path for attestation.json (default: <bundle>/attestation.json).")
+def attest(directory: Path, private_key: Path | None, output: Path | None) -> None:
+    """Eng #36: compute an Attested Computations payload for a bundle (Merkle root + optional ed25519 signature)."""
     from .attest import write_attestation
-    out = write_attestation(directory)
+    out = write_attestation(directory, output=output, private_key_path=private_key)
+    payload = json.loads(out.read_text(encoding="utf-8"))
     click.echo(f"Attestation written: {out}")
+    click.echo(f"  concepts: {payload['concept_count']}")
+    click.echo(f"  merkle_root: {payload['merkle_root']}")
+    if payload.get("signature"):
+        click.echo(f"  signature: {payload['signature'][:32]}...")
+        click.echo(f"  public_key: {payload['public_key']}")
+
+
+@cli.command()
+@click.argument("directory", type=click.Path(exists=True, file_okay=False, path_type=Path))
+@click.option("--public-key", type=click.Path(exists=True, dir_okay=False, path_type=Path), default=None, help="PEM ed25519 public key for verifying the signature.")
+@click.option("--attestation", type=click.Path(exists=True, dir_okay=False, path_type=Path), default=None, help="Path to attestation.json (default: <bundle>/attestation.json).")
+def verify(directory: Path, public_key: Path | None, attestation: Path | None) -> None:
+    """Eng #36: verify an attestation against the bundle contents."""
+    from .verify import verify_attestation
+    attest_path = attestation or (directory / "attestation.json")
+    result = verify_attestation(directory, attest_path, public_key_path=public_key)
+    sig = result.get("signature_valid")
+    if result.get("valid") and sig is not False:
+        click.echo(f"OK: bundle matches attestation (merkle_valid={result['merkle_valid']}, signature_valid={sig})")
+    else:
+        click.echo(f"FAIL: {result.get('errors')}")
+        raise SystemExit(1)
 
 
 @cli.command()
@@ -414,6 +441,16 @@ def glob(directory: Path) -> None:
     """Eng #44: launch the interactive glob REPL (stub: prints hint)."""
     from .glob_repl import launch_repl
     launch_repl(directory)
+
+
+@cli.command()
+@click.argument("bundle", type=click.Path(exists=True, file_okay=False, path_type=Path))
+@click.option("--host", default="127.0.0.1", show_default=True, help="Bind host.")
+@click.option("--port", default=8765, show_default=True, type=int, help="Bind port.")
+def serve(bundle: Path, host: str, port: int) -> None:
+    """Eng #22: serve an OKF bundle over HTTP for browsing + search."""
+    from .serve import run_serve
+    run_serve(bundle, host=host, port=port)
 
 
 @cli.command()
@@ -496,3 +533,16 @@ def main(args: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
+@cli.command(name="notion-import")
+@click.argument("export", type=click.Path(exists=True, dir_okay=False, path_type=Path))
+@click.argument("output", type=click.Path(file_okay=False, path_type=Path))
+def notion_import(export: Path, output: Path) -> None:
+    """Eng #31: reverse a Notion workspace export into an OKF bundle."""
+    from .notion import import_notion_export, detect_export
+    counts = detect_export(export)
+    click.echo(f"Detected {counts['databases']} databases, {counts['pages']} pages, {counts['files']} files in {export}")
+    n = import_notion_export(export, output)
+    click.echo(f"Imported {n} concepts to {output}")
+

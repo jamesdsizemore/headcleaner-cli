@@ -11,7 +11,10 @@ headcleaner convert ~/Documents/inbox --format both --output ~/Documents/inbox.c
 - **Output formats:** `--format md` (Markdown), `--format okf` (OKF v0.2 bundle), `--format both` (default)
 - **Engine coverage:** 7 formats out of the box (XLSX, DOCX, PPTX, PDF, HTML, HTM, TXT) — see [docs/FORMAT_MATRIX.md](docs/FORMAT_MATRIX.md) for the 16-format v1.0 roadmap
 - **TUI:** omp-inspired animated terminal (box-drawing panels, neon palette, powerline separators)
-- **Linter:** `headcleaner-lint` reviews the converted Markdown / OKF for formatting issues
+- **Linter:** `headcleaner lint` reviews the converted Markdown / OKF for formatting issues
+- **Per-message PST:** one OKF concept per email (via readpst) so review/sign-off works file-by-file
+- **Trust attestation:** `headcleaner attest` builds a Merkle root + ed25519 signature; `verify` checks it
+- **Local browse:** `headcleaner serve <bundle>` exposes a FastAPI UI for browsing + search
 - **Honest defaults:** OKF trust fields filled with `unverified` / `human:pending`, never invented
 
 ## Install
@@ -78,8 +81,12 @@ Other commands:
   headcleaner templates        List supported formats
   headcleaner agents           Show engine install status
   headcleaner watch IN [--webhook-url URL]   Re-convert on file changes (Ctrl+C to stop)
-  headcleaner-lint <DIR>       Review converted Markdown / OKF for formatting issues
-  headcleaner-lint <DIR> --fix Auto-repair safe issues to <DIR>.fixed/
+  headcleaner lint <DIR>       Review converted Markdown / OKF for formatting issues
+  headcleaner lint <DIR> --fix  Auto-repair safe issues to <DIR>.fixed/
+  headcleaner serve <DIR>        Local HTTP browser for the OKF bundle
+  headcleaner notion-import <EXPORT.zip> <OUT>  Reverse a Notion workspace export
+  headcleaner attest <DIR>       Compute Merkle root + optional ed25519 signature
+  headcleaner verify <DIR>       Verify an attestation against the bundle
 ```
 ## Why OKF?
 
@@ -122,7 +129,7 @@ See [docs/FORMAT_MATRIX.md](docs/FORMAT_MATRIX.md) for the full engine × librar
 | `.rtf` | control-word stripping | striprtf (+ regex fallback) |
 | `.odt`, `.ods`, `.odp` | paragraph/row extraction + GFM tables | odfpy (+ raw-XML fallback) |
 | `.msg` | Outlook headers + body + attachments | extract-msg |
-| `.pst` (best-effort) | item count only | libpff-python (optional) |
+| `.pst` | **per-message** (one OKF concept per email) | readpst (libpst) + libpff-python fallback |
 | `.doc`, `.xls`, `.ppt` | clear error path | needs `libreoffice --convert-to` first |
 
 ## Live mode
@@ -181,14 +188,17 @@ Full release checklist in [RELEASE.md](RELEASE.md).
 ## CLI surface
 
 ```bash
-headcleaner convert   IN_DIR [flags]    # walk + convert
-headcleaner watch     IN_DIR [flags]    # live mode + webhooks
-headcleaner review    BUNDLE            # human sign-off TUI/REPL
-headcleaner attest    BUNDLE            # SHA-256 manifest per concept
-headcleaner glob      DIR               # interactive include REPL (stub)
-headcleaner lint      DIR [--fix]       # OKF + MD rule checks
-headcleaner agents    [stdout]          # emit AGENTS.md
-headcleaner templates                   # list supported formats
+headcleaner convert         IN_DIR [flags]    # walk + convert
+headcleaner watch           IN_DIR [flags]    # live mode + webhooks
+headcleaner review          BUNDLE            # human sign-off TUI/REPL
+headcleaner attest          BUNDLE [--private-key PEM]   # Merkle root + optional ed25519 sig
+headcleaner verify          BUNDLE [--public-key PEM]    # verify an attestation
+headcleaner serve           BUNDLE [--host] [--port]    # local HTTP browser for the bundle
+headcleaner glob            DIR               # interactive include REPL (Textual)
+headcleaner notion-import   EXPORT.zip OUT    # reverse a Notion workspace export
+headcleaner lint            DIR [--fix]       # OKF + MD rule checks
+headcleaner agents          [stdout]          # emit AGENTS.md
+headcleaner templates                        # list supported formats
 ```
 
 ## Documentation
@@ -205,7 +215,8 @@ headcleaner templates                   # list supported formats
 | [docs/FAQ.md](docs/FAQ.md) | frequently asked questions |
 | [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) | how to add a new format / engine / emitter |
 | [docs/CHANGELOG.md](docs/CHANGELOG.md) | release history |
-| [docs/ENHANCEMENTS.md](docs/ENHANCEMENTS.md) | 25+ proposed improvements (including the post-conversion linter) |
+| [docs/ENHANCEMENTS.md](docs/ENHANCEMENTS.md) | 44+ shipped enhancements + future ideas |
+| [vscode-extension/README.md](vscode-extension/README.md) | HeadCleaner VS Code extension (Concept Explorer + Trust Inspector) |
 
 ## Troubleshooting
 
@@ -225,7 +236,7 @@ headcleaner templates                   # list supported formats
 git clone <this repo>
 cd headcleaner-cli
 uv sync
-uv run pytest                # 30 tests, ~5s
+uv run pytest                # 189 tests, ~9s
 uv run headcleaner convert ./tests/fixtures --format both --output ./out
 ```
 

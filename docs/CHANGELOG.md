@@ -4,6 +4,47 @@ All notable changes to headcleaner are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.7.0] — 2026-08-16 (Batch 6)
+
+The remaining "post-Batch 5" work: full `headcleaner serve`, real glob REPL,
+PDF engine hooked into the per-engine sub-progress bar, and the long-awaited
+PST per-message extraction (one OKF concept per message).
+
+### Added
+
+- **PST per-message extraction** (Eng #7) — `PstAdapter.extract_messages()`
+  returns one dict per message. New backends: `readpst` subprocess (preferred,
+  cross-platform) + `libpff-python` fallback. The runner detects adapters that
+  override `extract_messages()` and emits one OKF concept per message with
+  derived relpaths like `archive-0001.md`, `archive-0002.md`, ...
+- **`headcleaner serve`** (Eng #1, full impl) — local FastAPI server for
+  browsing an OKF bundle. 7 routes: `/` (paginated index), `/c/{relpath}`,
+  `/raw/{relpath}`, `/search?q=`, `/api/concepts`, `/api/concept/{relpath}`.
+  Frontmatter parsed once at startup; HTML styled to match the TUI palette.
+- **Glob REPL Textual UI** (Eng #5, full impl) — interactive match-count
+  REPL with live preview. Plain-mode fallback when Textual isn't available.
+- **PDF per-page progress** (Eng #6) — `PdfAdapter.extract()` now calls the
+  `progress(cur, total)` callback per page, hooked into the TUI sub-bar.
+- **Multi-concept adapter contract** — `Adapter.extract_messages()` default
+  returns `[extract()]`. Overrides signal "one source → many concepts" to the
+  runner. Crucial building block for #7 and future archive formats (OST, MBOX).
+
+### Added dependencies
+
+- `fastapi>=0.115`
+- `uvicorn>=0.32`
+- `jinja2>=3.1`
+
+### Tests
+
+- **+17 tests** (113 → 135): 5 glob REPL, 7 PST unit, 3 PST end-to-end,
+  7 serve. Final test count: **135 passed in ~9s**.
+
+### CLI surface
+
+- `headcleaner serve BUNDLE [--host 127.0.0.1] [--port 8765]` — new
+- All other subcommands unchanged.
+
 ## [0.6.0] — 2026-08-16 (Batch 5)
 
 Final Batch 1 leftovers + the last planned format-adapter items. All

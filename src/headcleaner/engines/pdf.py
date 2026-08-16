@@ -27,7 +27,7 @@ class PdfAdapter(Adapter):
         self.ocr = ocr
         self.ocr_lang = ocr_lang
 
-    def extract(self, source: Path) -> dict:
+    def extract(self, source: Path, *, progress=None) -> dict:
         if self.ocr:
             try:
                 import pytesseract  # noqa: F401  (presence check)
@@ -50,7 +50,13 @@ class PdfAdapter(Adapter):
                         f"Decrypt with `qpdf --decrypt {source.name} {source.stem}.decrypted.pdf` "
                         f"then re-run headcleaner on the decrypted copy."
                     )
+                total_pages = len(pdf.pages)
                 for idx, page in enumerate(pdf.pages, start=1):
+                    if progress is not None:
+                        try:
+                            progress(idx, total_pages)
+                        except Exception:
+                            pass  # progress is best-effort; never block extraction
                     page_md = self._render_page(page)
                     if page_md:
                         pages_md.append(f"## Page {idx}\n\n{page_md}")

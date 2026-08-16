@@ -20,7 +20,7 @@ class CsvAdapter(Adapter):
     def __init__(self, sample_bytes: int = 64 * 1024) -> None:
         self.sample_bytes = sample_bytes
 
-    def extract(self, source: Path) -> dict:
+    def extract(self, source: Path, *, progress=None) -> dict:
         raw = source.read_bytes()[: self.sample_bytes].decode("utf-8", errors="replace")
         try:
             dialect = csv.Sniffer().sniff(raw, delimiters=",;\t|")
@@ -102,7 +102,7 @@ class JsonAdapter(Adapter):
         self.indent = indent
         self.max_bytes = max_bytes
 
-    def extract(self, source: Path) -> dict:
+    def extract(self, source: Path, *, progress=None) -> dict:
         size = source.stat().st_size
         if size > self.max_bytes:
             raise AdapterError(

@@ -26,7 +26,7 @@ class HtmlAdapter(Adapter):
     def __init__(self, encoding_hint: str = "utf-8") -> None:
         self.encoding_hint = encoding_hint
 
-    def extract(self, source: Path) -> dict:
+    def extract(self, source: Path, *, progress=None) -> dict:
         try:
             raw = source.read_text(encoding=self.encoding_hint, errors="replace")
         except OSError as e:

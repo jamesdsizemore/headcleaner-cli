@@ -1,0 +1,7 @@
+"""End-to-end test: PST adapter with monkey-patched readpst + full run pipeline.
+
+Verifies:
+- _extract_documents returns N pairs for a multi-message adapter
+- run_pipeline emits N concepts for a single PST file
+- Each concept gets its own derived relpath
+"""

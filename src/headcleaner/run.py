@@ -8,6 +8,11 @@ Batch 2 enhancements (#14, #15, #16, #17):
   - **#15 Streaming manifest** — incremental JSONL append + final JSON
   - **#16 Idempotent cache** — skip files whose sha256 matches prior run's manifest
   - **#17 Resumable runs** — interrupted runs pick up where they left off
+
+Batch 6 enhancement (#7):
+  - **Multi-concept adapters** — PST/OST adapters returning one dict per
+    message override `extract_messages()`. The runner detects this and
+    emits one OKF concept per message instead of one per source file.
 """
 from __future__ import annotations
 
@@ -23,7 +28,7 @@ from .emit import markdown as md_emit
 from .emit import okf as okf_emit
 from .emit import okf_index
 from .emit.manifest import FileResult, RunRecord
-from .engines.base import AdapterError
+from .engines.base import Adapter, AdapterError
 from .normalize import normalize
 from .router import get_adapter
 from .walk import walk
@@ -57,7 +62,7 @@ class RunOptions:
 
     # Eng #41: per-engine sub-progress. Called with
     #   (engine_name, current_page, total_pages) for any adapter that
-    #   reports sub-progress (currently only the PDF OCR adapter).
+    #   reports sub-progress (PDF, multi-message adapters).
     on_engine_progress: Callable[[str, int, int], None] | None = None
 
     # Optional progress hook: called with (current_index, total, result_so_far)
@@ -98,67 +103,171 @@ def _save_cache_jsonl(output_root: Path, result: FileResult) -> None:
         f.write(json.dumps(result.__dict__, ensure_ascii=False) + "\n")
 
 
-# ---- Per-file worker (used by ProcessPoolExecutor) ---------------------------
+# ---- Multi-concept adapter dispatch (Eng #7) ---------------------------------
 
-def _process_one(args: tuple[str, str, str, str, bool]) -> FileResult:
-    """Worker for parallel mode. Args are pickle-safe (all strings + bool).
+def _is_multi_concept(adapter) -> bool:
+    """True if the adapter overrides Adapter.extract_messages (multi-concept per source)."""
+    return type(adapter).extract_messages is not Adapter.extract_messages
 
-    Returns a FileResult; the orchestrator is responsible for emitting
-    MD/OKF and recording progress. This separation lets the worker run
-    in a subprocess without sharing the parent's filesystem state.
+
+def _make_sf(path: Path, relpath: str | Path) -> object:
+    """Build a small file-facts object that matches the ShapeFile ducktype."""
+    return type("SF", (), {"path": path, "relpath": Path(relpath), "size_bytes": path.stat().st_size})()
+
+
+def _per_message_relpath(source: Path, relpath: str, idx: int) -> str:
+    """Derive a per-message relpath like `<relparent>/<stem>-0001.md`."""
+    src = Path(relpath)
+    parent = str(src.parent)
+    if parent == ".":
+        return f"{source.stem}-{idx:04d}.md"
+    return f"{parent}/{source.stem}-{idx:04d}.md"
+
+
+def _run_adapter(
+    adapter,
+    source: Path,
+    relpath: str,
+    ocr: bool,
+    on_engine_progress: Callable[[str, int, int], None] | None,
+) -> list[tuple[str, dict]]:
+    """Invoke an adapter and return a list of (relpath, extracted_dict) pairs.
+
+    For most adapters, this is a single-element list. For multi-concept
+    adapters (PST), each message gets its own (relpath, extracted_dict) pair.
     """
-    source_str, relpath, engine_name, fmt, ocr = args
-    from pathlib import Path
-    from .engines.base import AdapterError
-    from .normalize import normalize as _normalize
-    from .router import get_adapter
+    # Honor the OCR flag (PDF adapter only)
+    if adapter.name == "pdf" and ocr and hasattr(adapter, "ocr"):
+        adapter.ocr = True
 
-    source = Path(source_str)
+    def _progress(cur: int, total: int) -> None:
+        if on_engine_progress is not None:
+            try:
+                on_engine_progress(adapter.name, cur, total)
+            except Exception:
+                pass
+
+    if _is_multi_concept(adapter):
+        extracted_list = adapter.extract_messages(source, progress=_progress)
+    else:
+        extracted_list = [adapter.extract(source, progress=_progress)]
+
+    pairs: list[tuple[str, dict]] = []
+    for i, extracted in enumerate(extracted_list, start=1):
+        if _is_multi_concept(adapter) and len(extracted_list) > 1:
+            pairs.append((_per_message_relpath(source, relpath, i), extracted))
+        else:
+            pairs.append((relpath, extracted))
+    return pairs
+
+
+def _emit_one(
+    opts: RunOptions,
+    record: RunRecord,
+    source: Path,
+    msg_rp: str,
+    engine_name: str,
+    extracted: dict,
+    md_root: Path,
+    okf_root: Path,
+) -> FileResult:
+    """Normalize + emit one adapter output dict. Returns the FileResult."""
     result = FileResult(
         source_path=str(source),
-        relpath=relpath,
+        relpath=msg_rp,
         engine=engine_name,
         sha256=None,
         md_path=None,
         okf_path=None,
         status="skipped",
     )
-
-    adapter = get_adapter(source)
-    if adapter is None:
-        result.error = "no adapter"
-        return result
-
-    # Honor the OCR flag (PDF adapter only)
-    if adapter.name == "pdf" and ocr and hasattr(adapter, "ocr"):
-        adapter.ocr = True
-
-    try:
-        extracted = adapter.extract(source)
-    except AdapterError as e:
-        result.status = "failed"
-        result.error = str(e)
-        return result
-    except Exception as e:
-        result.status = "failed"
-        result.error = f"{type(e).__name__}: {e}"
-        return result
-
-    sf = type("SF", (), {"path": source, "relpath": Path(relpath), "size_bytes": source.stat().st_size})()
-    doc = _normalize(sf, extracted, engine=adapter.name)
+    doc = normalize(_make_sf(source, msg_rp), extracted, engine=engine_name)
     result.sha256 = doc.source_sha256
 
-    # In parallel mode, the orchestrator handles emit; we just hand back
-    # the canonical doc + the engine info. We return it via a wrapper.
-    # To keep the worker signature simple, we only return the FileResult
-    # populated with engine/sha256. The orchestrator will re-extract to
-    # emit — no, that's wasteful. Instead, embed the body in the result.
-    # For v0.3 we accept the re-extraction cost (cheap for most formats);
-    # OfficeCLI subprocess overhead is the only slow path and that
-    # benefits from parallelism anyway.
-    result.md_path = "(emitted by orchestrator)"
-    result.okf_path = "(emitted by orchestrator)"
+    if not opts.dry_run:
+        if opts.fmt in {"md", "both"}:
+            try:
+                p = md_emit.write(doc, md_root)
+                result.md_path = str(p)
+            except OSError as e:
+                result.error = f"md write: {e}"
+        if opts.fmt in {"okf", "both"}:
+            try:
+                p = okf_emit.write(doc, okf_root, obsidian_compat=opts.obsidian_compat)
+                result.okf_path = str(p)
+            except OSError as e:
+                result.error = (result.error + "; " if result.error else "") + f"okf write: {e}"
+
+    if opts.dry_run:
+        result.status = "ok" if doc.body_md else "failed"
+    else:
+        result.status = "ok" if (result.md_path or result.okf_path) else "failed"
     return result
+
+
+# ---- Per-file worker (used by ProcessPoolExecutor) ---------------------------
+
+def _process_one(args: tuple[str, str, str, str, bool]) -> list[dict]:
+    """Worker for parallel mode.
+
+    Returns a list of FileResult-like dicts (orchestrator converts back).
+    To avoid pickling the adapter, we re-rode the adapter on the orchestrator
+    side; the worker only confirms the source is processable and returns
+    the extracted list of bodies for the orchestrator to emit.
+    """
+    source_str, relpath, engine_name, fmt, ocr = args
+    from .engines.base import AdapterError
+    from .router import get_adapter as _get_adapter
+
+    source = Path(source_str)
+    adapter = _get_adapter(source)
+    if adapter is None:
+        return [{
+            "source_path": str(source),
+            "relpath": relpath,
+            "engine": engine_name,
+            "sha256": None,
+            "md_path": None,
+            "okf_path": None,
+            "status": "skipped",
+            "error": "no adapter",
+        }]
+
+    try:
+        pairs = _run_adapter(adapter, source, relpath, ocr, None)
+    except AdapterError as e:
+        return [{
+            "source_path": str(source),
+            "relpath": relpath,
+            "engine": engine_name,
+            "sha256": None,
+            "md_path": None,
+            "okf_path": None,
+            "status": "failed",
+            "error": str(e),
+        }]
+    except Exception as e:
+        return [{
+            "source_path": str(source),
+            "relpath": relpath,
+            "engine": engine_name,
+            "sha256": None,
+            "md_path": None,
+            "okf_path": None,
+            "status": "failed",
+            "error": f"{type(e).__name__}: {e}",
+        }]
+
+    return [{
+        "source_path": str(source),
+        "relpath": msg_rp,
+        "engine": engine_name,
+        "sha256": None,
+        "md_path": None,
+        "okf_path": None,
+        "status": "ok",
+        "_extracted": extracted,
+    } for msg_rp, extracted in pairs]
 
 
 # ---- Sequential pipeline (default) ----------------------------------------
@@ -174,102 +283,89 @@ def _process_sequential(opts: RunOptions, record: RunRecord, cache: dict[str, di
 
     for i, sf in enumerate(all_files, start=1):
         rel = str(sf.relpath)
-        result = FileResult(
-            source_path=str(sf.path),
-            relpath=rel,
-            engine=None,
-            sha256=None,
-            md_path=None,
-            okf_path=None,
-            status="skipped",
-        )
-
         adapter = get_adapter(sf.path)
         if adapter is None:
-            result.error = "no adapter"
+            result = FileResult(
+                source_path=str(sf.path),
+                relpath=rel,
+                engine=None,
+                sha256=None,
+                md_path=None,
+                okf_path=None,
+                status="skipped",
+                error="no adapter",
+            )
             _finish_result(opts, record, result)
             continue
 
         # Cache hit?
         cached = cache.get(rel) if opts.use_cache else None
         if cached:
-            # We trust the prior manifest's status='ok' if the source
-            # still has the same sha256. Recompute sha256 to verify.
             from .walk import sha256_of
             current_sha = sha256_of(sf.path)
             if current_sha == cached["sha256"]:
-                result.engine = adapter.name
-                result.sha256 = current_sha
-                # Reconstruct output paths so the manifest is correct
-                if opts.fmt in {"md", "both"}:
-                    result.md_path = str(md_root / (Path(rel).name + ".md"))
-                if opts.fmt in {"okf", "both"}:
-                    result.okf_path = str(okf_root / Path(rel).with_suffix(".md"))
-                result.status = "ok"
+                result = FileResult(
+                    source_path=str(sf.path),
+                    relpath=rel,
+                    engine=adapter.name,
+                    sha256=current_sha,
+                    md_path=str(md_root / (Path(rel).name + ".md")) if opts.fmt in {"md", "both"} else None,
+                    okf_path=str(okf_root / Path(rel).with_suffix(".md")) if opts.fmt in {"okf", "both"} else None,
+                    status="ok",
+                )
                 record.results.append(result)
                 if opts.on_progress:
                     opts.on_progress(i, total, result)
                 continue
 
         try:
-            extracted = adapter.extract(sf.path)
-            if adapter.name == "pdf" and opts.ocr and hasattr(adapter, "ocr"):
-                adapter.ocr = True
-                extracted = adapter.extract(sf.path)
-            doc = normalize(sf, extracted, engine=adapter.name)
+            pairs = _run_adapter(adapter, sf.path, rel, opts.ocr, opts.on_engine_progress)
         except AdapterError as e:
-            result.engine = adapter.name
-            result.status = "failed"
-            result.error = str(e)
+            result = FileResult(
+                source_path=str(sf.path),
+                relpath=rel,
+                engine=adapter.name,
+                sha256=None,
+                md_path=None,
+                okf_path=None,
+                status="failed",
+                error=str(e),
+            )
             _finish_result(opts, record, result)
             if not opts.continue_on_error:
                 return
             continue
         except Exception as e:
-            result.engine = adapter.name
-            result.status = "failed"
-            result.error = f"{type(e).__name__}: {e}"
+            result = FileResult(
+                source_path=str(sf.path),
+                relpath=rel,
+                engine=adapter.name,
+                sha256=None,
+                md_path=None,
+                okf_path=None,
+                status="failed",
+                error=f"{type(e).__name__}: {e}",
+            )
             _finish_result(opts, record, result)
             if not opts.continue_on_error:
                 return
             continue
 
-        result.engine = adapter.name
-        result.sha256 = doc.source_sha256
-
-        if not opts.dry_run:
-            if opts.fmt in {"md", "both"}:
-                try:
-                    p = md_emit.write(doc, md_root)
-                    result.md_path = str(p)
-                except OSError as e:
-                    result.error = f"md write: {e}"
-            if opts.fmt in {"okf", "both"}:
-                try:
-                    p = okf_emit.write(doc, okf_root, obsidian_compat=opts.obsidian_compat)
-                    result.okf_path = str(p)
-                except OSError as e:
-                    result.error = (result.error + "; " if result.error else "") + f"okf write: {e}"
-
-        # Eng #42: in dry-run we don't write files, but the conversion itself
-        # succeeded — mark "ok" if the adapter produced a doc with non-empty body.
-        if opts.dry_run:
-            result.status = "ok" if doc.body_md else "failed"
-        else:
-            result.status = "ok" if (result.md_path or result.okf_path) else "failed"
-        _finish_result(opts, record, result)
+        for msg_rp, extracted in pairs:
+            result = _emit_one(
+                opts, record, sf.path, msg_rp, adapter.name,
+                extracted, md_root, okf_root,
+            )
+            _finish_result(opts, record, result)
 
 
 # ---- Parallel pipeline (--jobs N) ------------------------------------------
 
 def _process_parallel(opts: RunOptions, record: RunRecord, cache: dict[str, dict], total: int, all_files) -> None:
-    """Process files via ProcessPoolExecutor.
-
-    Note: each worker extracts the source; the orchestrator then emits
-    MD/OKF on the main process (subprocess can't easily write to the
-    parent's filesystem state). For Office formats the extraction is
-    the slow part (subprocess to officecli), so this still helps a lot.
-    """
+    """Process files via ProcessPoolExecutor. For multi-message adapters,
+    the worker returns the full extracted list; the orchestrator re-emits
+    on the main process (subprocess can't easily write to the parent's
+    filesystem state)."""
     md_root = opts.output_root / "_md"
     okf_root = opts.output_root / "okf"
     if opts.fmt in {"md", "both"}:
@@ -287,7 +383,6 @@ def _process_parallel(opts: RunOptions, record: RunRecord, cache: dict[str, dict
         if opts.use_cache and engine_name and rel in cache:
             from .walk import sha256_of
             if sha256_of(sf.path) == cache[rel]["sha256"]:
-                # Build a synthetic FileResult that records the cache hit
                 result = FileResult(
                     source_path=str(sf.path),
                     relpath=rel,
@@ -320,46 +415,30 @@ def _process_parallel(opts: RunOptions, record: RunRecord, cache: dict[str, dict
         return
 
     jobs = max(1, min(opts.jobs, multiprocessing.cpu_count()))
-    completed = 0
     with ProcessPoolExecutor(max_workers=jobs) as pool:
         futures = {pool.submit(_process_one, w): w for w in work}
         for fut in as_completed(futures):
-            completed += 1
-            tmp_result = fut.result()
-            # Re-extract on the main process to emit (cheap except for officecli)
-            result = tmp_result
-            if result.status == "ok" or result.md_path == "(emitted by orchestrator)":
-                # Re-run extraction on main process to actually emit files
-                source = Path(result.source_path)
-                adapter = get_adapter(source)
-                if adapter is not None:
-                    try:
-                        extracted = adapter.extract(source)
-                        if adapter.name == "pdf" and opts.ocr and hasattr(adapter, "ocr"):
-                            adapter.ocr = True
-                            extracted = adapter.extract(source)
-                        sf = type("SF", (), {"path": source, "relpath": Path(result.relpath), "size_bytes": source.stat().st_size})()
-                        doc = normalize(sf, extracted, engine=adapter.name)
-                        result.sha256 = doc.source_sha256
-                        if not opts.dry_run:
-                            if opts.fmt in {"md", "both"}:
-                                try:
-                                    p = md_emit.write(doc, md_root)
-                                    result.md_path = str(p)
-                                except OSError as e:
-                                    result.error = f"md write: {e}"
-                            if opts.fmt in {"okf", "both"}:
-                                try:
-                                    p = okf_emit.write(doc, okf_root, obsidian_compat=opts.obsidian_compat)
-                                    result.okf_path = str(p)
-                                except OSError as e:
-                                    result.error = (result.error + "; " if result.error else "") + f"okf write: {e}"
-                    except Exception as e:
-                        result.status = "failed"
-                        result.error = f"{type(e).__name__}: {e}"
-                        result.md_path = None
-                        result.okf_path = None
-            _finish_result(opts, record, result)
+            results = fut.result()
+            for r_dict in results:
+                source = Path(r_dict["source_path"])
+                if r_dict["status"] == "ok" and "_extracted" in r_dict:
+                    result = _emit_one(
+                        opts, record, source, r_dict["relpath"], r_dict["engine"],
+                        r_dict["_extracted"], md_root, okf_root,
+                    )
+                else:
+                    # Failed or synthetic — convert dict back to FileResult
+                    result = FileResult(
+                        source_path=r_dict["source_path"],
+                        relpath=r_dict["relpath"],
+                        engine=r_dict["engine"],
+                        sha256=r_dict["sha256"],
+                        md_path=r_dict["md_path"],
+                        okf_path=r_dict["okf_path"],
+                        status=r_dict["status"],
+                        error=r_dict.get("error"),
+                    )
+                _finish_result(opts, record, result)
 
 
 # ---- Shared helpers ---------------------------------------------------------
@@ -374,7 +453,6 @@ def _finish_result(opts: RunOptions, record: RunRecord, result: FileResult) -> N
             total = record.options.get("_total", 0) if hasattr(record, "options") else 0
         except Exception:
             total = 0
-        # We don't have i/total in scope here; pass the running counts from record
         opts.on_progress(len(record.results), max(total, len(record.results)), result)
 
 
@@ -396,9 +474,6 @@ def run_pipeline(opts: RunOptions) -> RunRecord:
     )
 
     cache = _load_cache(opts.output_root) if opts.use_cache else {}
-    # Pre-scan to get a total count for progress.
-    # IMPORTANT: skip the output directory — otherwise we'd re-process
-    # manifest.json, manifest.jsonl, _md/*.md, okf/*.md on subsequent runs.
     all_files = [
         sf for sf in walk(
             opts.input_root,

@@ -24,7 +24,7 @@ def test_canonical_hash_is_deterministic(tmp_path: Path) -> None:
 
 
 def test_build_attestation_enumerates_concepts(tmp_path: Path) -> None:
-    """build_attestation includes a SHA-256 for every concept."""
+    """build_attestation enumerates concepts and computes a real Merkle root (v0.7 full impl)."""
     bundle = tmp_path / "okf"
     bundle.mkdir()
     (bundle / "a.md").write_text(
@@ -37,9 +37,10 @@ def test_build_attestation_enumerates_concepts(tmp_path: Path) -> None:
     assert payload["concept_count"] == 2
     assert "a.md" in payload["concepts"]
     assert "b.md" in payload["concepts"]
-    # Merkle root + signature still pending v0.6
-    assert payload["merkle_root"] is None
+    # v0.7: real Merkle root (no signature without a key)
+    assert payload["merkle_root"] is not None
     assert payload["signature"] is None
+    assert payload["public_key"] is None
 
 
 def test_build_attestation_skips_index_log(tmp_path: Path) -> None:
@@ -75,15 +76,15 @@ def test_detect_export_missing_path(tmp_path: Path) -> None:
         detect_export(tmp_path / "no-such-file.zip")
 
 
-def test_import_notion_export_raises_with_hint(tmp_path: Path) -> None:
-    """import_notion_export raises with a useful hint until v0.6."""
+def test_import_notion_export_returns_count(tmp_path: Path) -> None:
+    """import_notion_export returns the number of imported concepts (v0.7 full impl)."""
     from headcleaner.notion import import_notion_export
     export = tmp_path / "notion.zip"
     with zipfile.ZipFile(export, "w") as zf:
-        zf.writestr("x.md", "x")
-    with pytest.raises(NotionImportError) as excinfo:
-        import_notion_export(export, tmp_path / "out")
-    assert "v0.6" in str(excinfo.value)
+        zf.writestr("x.md", "# x\nbody")
+    n = import_notion_export(export, tmp_path / "out")
+    assert isinstance(n, int)
+    assert n >= 1
 
 
 # --- Eng #44: glob REPL --------------------------------------------------

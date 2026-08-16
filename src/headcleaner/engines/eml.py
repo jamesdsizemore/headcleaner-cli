@@ -23,7 +23,7 @@ class EmlAdapter(Adapter):
     name = "eml"
     extensions = {".eml"}
 
-    def extract(self, source: Path) -> dict:
+    def extract(self, source: Path, *, progress=None) -> dict:
         try:
             raw = source.read_bytes()
             msg = email.message_from_bytes(raw, policy=email.policy.default)

@@ -21,7 +21,7 @@ class LegacyOfficeAdapter(Adapter):
     name = "legacy_office"
     extensions = {".doc", ".xls", ".ppt"}
 
-    def extract(self, source: Path) -> dict:
+    def extract(self, source: Path, *, progress=None) -> dict:
         ext = source.suffix.lower()
         converter = {
             ".doc": "libreoffice --convert-to docx",

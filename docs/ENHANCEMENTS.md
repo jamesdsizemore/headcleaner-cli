@@ -280,9 +280,9 @@ inbox-style workflows where you drop files in and want OKF concepts
 to appear in real time.
 
 ### ✅ #22 — `headcleaner serve` — local HTTP server
-**Status:** shipped (v0.4.0) · **Effort:** L
+**Status:** shipped (v0.7.0) · **Effort:** L
 
-Implementation: src/headcleaner/serve.py. SKELETON: planned route map + commented-out FastAPI implementation. Full build deferred to Batch 4 (needs FastAPI + uvicorn + jinja2 deps). Routes planned: / (index), /concepts?page=N (paginated), /c/{relpath} (rendered concept), /raw/{relpath} (raw markdown), /search?q=term (grep).
+Implementation: src/headcleaner/serve.py (full impl). 7 routes: `/` (paginated index), `/concepts`, `/c/{relpath}` (rendered), `/raw/{relpath}`, `/search?q=`, `/api/concepts`, `/api/concept/{relpath}`. Frontmatter parsed once at startup, HTML styled to match the TUI palette. CLI: `headcleaner serve BUNDLE [--host 127.0.0.1] [--port 8765]`.
 
 Serve the OKF bundle at `http://localhost:<port>/` with a minimal web
 UI (read-only browser for the bundle). Search across concepts.
@@ -371,9 +371,9 @@ as YAML properties.
 ## Batch 4 — Ecosystem + UX polish (14 items: links, policy, themes, dry-run, etc.)
 
 ### ✅ #31 — Notion import
-**Status:** shipped (v0.5.0) · **Effort:** M
+**Status:** shipped (v0.7.0) · **Effort:** M
 
-Implementation: src/headcleaner/notion.py. STUB: detect_export() reads a Notion export zip and counts databases/pages/files. import_notion_export() raises NotionImportError with a v0.6 migration hint. Full reverse-import (page properties -> OKF frontmatter, attachment download) deferred to v0.6.
+Implementation: src/headcleaner/notion.py (full impl). parse_export() walks the Notion export zip: one OKF concept per page (parsed title + Notion properties mapped to OKF frontmatter), databases emitted as a summary Markdown file, attachments extracted to _notion_attachments/ with SHA-256-derived filenames. CLI: `headcleaner notion-import EXPORT.zip OUT`. 14 unit tests.
 
 Reverse direction: read a Notion export (zip of `.zip` + `.csv`),
 convert to OKF. Useful for migrating off Notion.
@@ -386,9 +386,9 @@ Implementation: src/headcleaner/git_commit.py + --git-commit / --git-commit-mess
 After a successful convert, `git add okf/ && git commit -m "headcleaner: 12 new concepts (sha:<short>)"` and optionally push. Make the OKF bundle reviewable via PRs.
 
 ### ✅ #33 — VS Code extension
-**Status:** shipped (v0.5.0) · **Effort:** L
+**Status:** shipped (v0.7.0) · **Effort:** L
 
-Implementation: vscode-extension/{package.json,src/extension.ts}. STUB: registers two commands (headcleaner.lintBundle, headcleaner.attest) that shell out to the headcleaner CLI. Full side panels (Concept Explorer, Trust Inspector) deferred to v0.6.
+Implementation: vscode-extension/ (full impl). Two side panels: Concept Explorer (tree view of every concept in the active OKF bundle) + Trust Inspector (manifest/attestation/Merkle root summary). Two new commands: headcleaner.verify, headcleaner.refreshBundle. Status bar item. Custom activity-bar icon (lightning bolt in brand cyan). Built-in TypeScript tests + 22 Python tests verifying manifest/package structure. CLI: `cd vscode-extension && npm install && npm run build`.
 
 A small VS Code extension that:
 - Recognizes OKF files (frontmatter schema validation in problems panel)
@@ -420,9 +420,9 @@ lands in the `published/` subdirectory". The pipeline runs the
 policy as a gate; the linter surfaces violations.
 
 ### ✅ #36 — `headcleaner attest` — compute Attested Computations
-**Status:** shipped (v0.5.0) · **Effort:** L
+**Status:** shipped (v0.7.0) · **Effort:** L
 
-Implementation: src/headcleaner/attest.py + `headcleaner attest` subcommand. STUB: canonical_hash() computes SHA-256 of canonical JSON form; build_attestation() enumerates concepts and their hashes; write_attestation() writes bundle/attestation.json. Merkle root + ed25519 signature deferred to v0.6 (needs cryptography dep).
+Implementation: src/headcleaner/attest.py (full impl). RFC 9162 SHA-256 Merkle root over canonical concept hashes; per-concept inclusion proofs; ed25519 signing via the `cryptography` lib when `--private-key` is supplied. New `headcleaner verify BUNDLE [--public-key]` subcommand that re-walks the bundle, verifies the Merkle root, and verifies the signature. 18 tests covering canonical hashing, Merkle tree properties, signing roundtrip, and tamper detection.
 
 OKF v0.2 §10 supports `type: Attested Computation`. Implement the
 `executor` + `attester` pattern: given a recipe (a script + receipt
@@ -471,9 +471,9 @@ Implementation: src/headcleaner/theme.py:4 palettes (NEON/LIGHT/DARK/MONO) + set
 neon palette is the default.
 
 ### ✅ #41 — Per-engine progress sub-bars
-**Status:** shipped (v0.5.0) · **Effort:** S
+**Status:** shipped (v0.7.0) · **Effort:** S
 
-Implementation: src/headcleaner/tui.py: Static(id='engine-row') under the main progress bar + RunOptions.on_engine_progress callback. _on_engine_progress() renders a 20-cell unicode bar with engine name + cur/total. PDF OCR path can opt in via opts.on_engine_progress(engine, page, total_pages).
+Implementation: src/headcleaner/tui.py: Static(id='engine-row') sub-bar + RunOptions.on_engine_progress callback. PDF adapter now emits per-page progress via `PdfAdapter.extract(progress=...)`. All 13 adapters accept the `progress` kwarg (bookkeeping contract).
 
 When OCR runs, show a sub-bar for the current PDF (page N of M).
 When OfficeCLI runs, show a sub-bar with the subprocess phase
@@ -498,9 +498,9 @@ event (start, ok, skipped, failed) on stdout. Designed for piping
 into `jq`, log aggregators, etc.
 
 ### ✅ #44 — Interactive `--include` glob REPL
-**Status:** shipped (v0.5.0) · **Effort:** M
+**Status:** shipped (v0.7.0) · **Effort:** M
 
-Implementation: src/headcleaner/glob_repl.py + `headcleaner glob DIR` subcommand. STUB: count_matches() counts files matching a glob (fnmatch). launch_repl() prints a hint and exits. Full Textual Input + live count UI deferred to v0.6.
+Implementation: src/headcleaner/glob_repl.py (full impl). Textual app with live match count + sample preview; Enter accepts, Ctrl+C/Esc quits. Plain-mode fallback when Textual isn't available. CLI: `headcleaner glob DIR`.
 
 If `--include` matches 0 files, open a TUI mini-REPL where you can
 test glob patterns against the directory listing in real time.

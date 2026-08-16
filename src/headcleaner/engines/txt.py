@@ -21,7 +21,7 @@ class TxtAdapter(Adapter):
     def __init__(self, sample_bytes: int = 64 * 1024) -> None:
         self.sample_bytes = sample_bytes
 
-    def extract(self, source: Path) -> dict:
+    def extract(self, source: Path, *, progress=None) -> dict:
         raw = source.read_bytes()
         detected = chardet.detect(raw[: self.sample_bytes]) or {}
         encoding = detected.get("encoding") or "utf-8"

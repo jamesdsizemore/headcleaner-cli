@@ -17,7 +17,7 @@ class MdAdapter(Adapter):
     name = "md"
     extensions = {".md", ".markdown"}
 
-    def extract(self, source: Path) -> dict:
+    def extract(self, source: Path, *, progress=None) -> dict:
         text = source.read_text(encoding="utf-8", errors="replace")
         title = self._extract_title(text) or source.stem
         body_md = self._clean_body(text)

@@ -38,7 +38,7 @@ class OfficeCLIAdapter(Adapter):
         self._resolved = resolved
         self._use_shell = resolved.lower().endswith((".cmd", ".bat"))
 
-    def extract(self, source: Path) -> dict:
+    def extract(self, source: Path, *, progress=None) -> dict:
         try:
             html = self._run(source)
         except subprocess.TimeoutExpired as e:
