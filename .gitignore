@@ -1,0 +1,39 @@
+# Build artifacts
+dist/
+build/
+*.egg-info/
+*.egg
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Test / coverage artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+.ruff_cache/
+.mypy_cache/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Test fixtures (generated at test-time)
+tests/fixtures/_generated/
+
+# Local secrets / config
+.env
+.env.*
+!.env.example
+
+# Node (we only use npm globally; no node_modules in-repo)
+node_modules/

@@ -1,0 +1,406 @@
+# headcleaner Enhancements
+
+> **30 proposed improvements** that would make headcleaner 100× better.
+> Each item lists: status (planned / in-progress / shipped), effort, rationale,
+> and a concrete proposal. Items are grouped by theme and ordered roughly by
+> impact-per-effort within each group.
+
+**Legend for status:**
+- 📋 **planned** — designed, not started
+- � **in progress** — being built
+- ✅ **shipped** — available in current release
+
+**Legend for effort:**
+- **S** = < 1 day
+- **M** = 1-3 days
+- **L** = 1+ week
+
+---
+
+## Post-conversion linter & review (your explicit request — kept #1)
+
+### ✅ #1 — `headcleaner lint` command with OKF + Markdown rules
+
+**Status:** shipped (v0.1.0)
+**Effort:** S (already done)
+
+A post-conversion linter that walks the output dir and checks every `.md`
+file against a rule set:
+
+- **OKF structural**: required `type`, valid `resource` URI, valid SHA-256,
+  sources[] shape, trust family present
+- **Markdown body**: orphan code fences, heading hierarchy, line length
+
+Flags: `--strict` (warnings as errors), `--no-color` (plain output).
+Exit code 0 if clean, 1 if any error.
+
+**Next:** add a `--fix` flag that auto-repairs safe issues (see #2 below).
+
+### 📋 #2 — `headcleaner lint --fix` — auto-repair safe issues
+
+**Status:** planned
+**Effort:** M
+
+Auto-fix the issues the linter catches that have unambiguous fixes:
+- Add `type: Document` to a concept that has frontmatter but no `type`
+- Fill in `status: unverified` and `verified: human:pending` if missing
+- Recompute `sources[].sha256` if the file is still on disk
+
+Reject (don't auto-fix):
+- Any change to the body
+- `verified: human:pending` → `human:reviewed` (that's a human decision)
+- Reordering concepts (could break cross-concept links)
+
+Output: writes to `<output>.fixed/` by default (never overwrites source).
+Diff is shown before applying if `--interactive`.
+
+### 📋 #3 — `headcleaner review` — interactive TUI for human sign-off
+
+**Status:** planned
+**Effort:** L
+
+A second TUI mode that walks the bundle one concept at a time. For each
+concept, it shows:
+- The OKF frontmatter (with `verified: human:pending` highlighted)
+- The Markdown body in rendered form (using Textual's Markdown widget)
+- An action bar: `[A]pprove / [R]eject / [S]kip / [E]dit / [?]help`
+
+Approving writes `verified: human:<user>@<host>` and updates
+`verified_at`. Rejecting sets `status: rejected` and adds the reason to
+`rejected_reason`. Skip leaves the file alone.
+
+Keyboard-driven (j/k to move, A/R/S/E to act). Saves to a session log
+so you can resume after a break.
+
+This is what makes `verified: human:pending` actually mean something —
+right now it's a placeholder. The `review` command gives humans a way
+to clear the placeholder.
+
+---
+
+## Format coverage expansion (v1.0 engine work)
+
+### 📋 #4 — `.md` / `.markdown` pass-through adapter
+**Status:** planned · **Effort:** S
+
+Read a Markdown file, add the OKF trust family frontmatter, write to
+both `_md/` and `okf/`. If the file already has frontmatter, preserve it
+and only add missing OKF keys.
+
+### 📋 #5 — `.csv` adapter
+**Status:** planned · **Effort:** S
+
+Parse with stdlib `csv`. First row becomes header, remaining rows become
+GFM table. Detect dialect (comma vs tab vs semicolon) automatically.
+
+### 📋 #6 — `.json` adapter
+**Status:** planned · **Effort:** S
+
+`json.load`, pretty-print with 2-space indent, wrap in fenced
+```json block.
+
+### 📋 #7 — `.epub` adapter
+**Status:** planned · **Effort:** M
+
+Use `ebooklib` to extract chapters. One OKF concept per chapter, joined
+in the body with `---` separators.
+
+### 📋 #8 — `.rtf` adapter
+**Status:** planned · **Effort:** S
+
+Use `striprtf` to strip formatting, emit as fenced ```text block.
+
+### 📋 #9 — `.odt` / `.ods` / `.odp` (OpenDocument) adapter
+**Status:** planned · **Effort:** M
+
+Use `odfpy`. ODT → MD with structure preserved; ODS → GFM table per
+sheet; ODP → stub concept pointing to the source (PPTX-style
+extraction needs more work).
+
+### 📋 #10 — `.msg` adapter
+**Status:** planned · **Effort:** S
+
+Use `extract-msg`. Headers + body in MD, attachments listed.
+
+### 📋 #11 — `.eml` adapter
+**Status:** planned · **Effort:** S
+
+stdlib `email`. Headers + body, multipart-aware.
+
+### 📋 #12 — `.pst` adapter
+**Status:** planned · **Effort:** M
+
+Use `libpff-python` (binary wheels: Windows + macOS arm64). One OKF
+concept per message. Best-effort on Linux (no prebuilt wheel).
+
+### 📋 #13 — Legacy Office (`.doc`, `.xls`, `.ppt`) support
+**Status:** planned · **Effort:** M
+
+Pre-2007 binary formats. Two options:
+- (a) Use `libreoffice --convert-to docx/xlsx/pptx` as a preprocessing
+  step (heavy — needs LibreOffice installed)
+- (b) Use dedicated libs: `antiword` for `.doc`, `xlrd` for `.xls`,
+  and skip `.ppt` (no good OSS parser)
+
+Recommended: ship (a) with auto-detect; if LibreOffice is missing,
+fall back to (b) where available and warn loudly otherwise.
+
+---
+
+## Performance and reliability
+
+### 📋 #14 — Parallel pipeline with worker pool
+**Status:** planned · **Effort:** M
+
+Process N files concurrently via `concurrent.futures.ProcessPoolExecutor`
+(default N=4, configurable via `--jobs`). Engine subprocess overhead
+(OfficeCLI) and OCR (Tesseract) are CPU-bound and benefit enormously
+from parallelism.
+
+Concerns: progress hook needs to be thread-safe; manifest write order
+must remain deterministic.
+
+### 📋 #15 — Streaming manifest (don't hold the whole run in RAM)
+**Status:** planned · **Effort:** S
+
+For very large folders (>10k files), the current `RunRecord` keeps
+every result in memory. Stream writes to a JSONL file as the run
+progresses; the final JSON is built from the JSONL at the end.
+
+### 📋 #16 — Idempotent re-runs via content hashing
+**Status:** planned · **Effort:** M
+
+Skip files whose `sources[].sha256` already matches a previously
+recorded conversion (cached in a `~/.headcleaner/cache.sqlite` or a
+per-bundle `.headcleaner-cache.json`). Massive speedup on incremental
+runs.
+
+### 📋 #17 — Resumable runs
+**Status:** planned · **Effort:** M
+
+If the run is interrupted (Ctrl+C, OOM, etc.), resume from where it
+stopped. Persist per-file status to the manifest as you go; on
+restart, skip `status=ok` files.
+
+### 📋 #18 — Configurable OfficeCLI timeout
+**Status:** planned · **Effort:** S
+
+`--officecli-timeout <seconds>` (default 60). Some large files need
+more.
+
+### 📋 #19 — Encrypted PDF handling
+**Status:** planned · **Effort:** S
+
+Currently errors out. Add explicit `qpdf --decrypt` hint in the error
+message, or attempt decryption inline (using pypdf's built-in support
+for some encryption modes).
+
+### 📋 #20 — Streaming PDF (don't load the whole PDF into RAM)
+**Status:** planned · **Effort:** S
+
+pdfplumber already streams per page; just verify the behavior holds
+for very large PDFs and document the memory profile.
+
+---
+
+## Live mode (always-on conversion)
+
+### 📋 #21 — `headcleaner watch` — file system watcher
+**Status:** planned · **Effort:** M
+
+Use `watchfiles` (already a dep of textual) to monitor `--input` for
+new/changed/deleted files. Re-converts automatically. Useful for
+inbox-style workflows where you drop files in and want OKF concepts
+to appear in real time.
+
+### 📋 #22 — `headcleaner serve` — local HTTP server
+**Status:** planned · **Effort:** L
+
+Serve the OKF bundle at `http://localhost:<port>/` with a minimal web
+UI (read-only browser for the bundle). Search across concepts.
+Click a concept to see frontmatter + body. No editing.
+
+Built with FastAPI + Jinja templates (no JS framework dependency).
+
+### 📋 #23 — Webhook integration
+**Status:** planned · **Effort:** S
+
+After `headcleaner convert`, optionally POST to a webhook with the
+manifest. Useful for: notify a Slack channel when a new concept lands,
+trigger a downstream pipeline, etc.
+
+---
+
+## Distribution and packaging
+
+### 📋 #24 — Homebrew formula
+**Status:** planned · **Effort:** S
+
+`brew install headcleaner`. Submit to homebrew-core after the project
+gets a public GitHub repo.
+
+### 📋 #25 — PyPI publish pipeline
+**Status:** planned · **Effort:** S
+
+`uv build` + `uv publish` (or `twine upload`) on tag push. Get a
+real `pip install headcleaner` path working.
+
+### 📋 #26 — Docker image
+**Status:** planned · **Effort:** S
+
+Multi-stage Dockerfile: builder with `uv sync`, runtime with the
+resulting wheel. ~50MB image. Tag as `ghcr.io/local/headcleaner`.
+
+### 📋 #27 — Winget / Scoop / Chocolatey manifests
+**Status:** planned · **Effort:** S (per package manager)
+
+Windows package manager manifests so `winget install headcleaner` and
+`scoop install headcleaner` work.
+
+### 📋 #28 — Static binary (PyInstaller / Nuitka)
+**Status:** planned · **Effort:** M
+
+Ship a single `headcleaner` executable with no Python dependency. Use
+PyInstaller (simpler) or Nuitka (faster). Useful for distribution to
+non-Python shops.
+
+### 📋 #29 — Public GitHub repo
+**Status:** planned · **Effort:** S
+
+Move from `~/developer/headcleaner-cli` to a public repo (e.g.
+`github.com/yourname/headcleaner`). CI/CD runs there. Issues and PRs
+from the community.
+
+---
+
+## Integration with other tools
+
+### 📋 #30 — Obsidian vault sync
+**Status:** planned · **Effort:** S
+
+`headcleaner convert inbox --format okf --output /path/to/ObsidianVault/Concepts/`
+copies concepts directly into an Obsidian vault, preserving frontmatter
+as YAML properties.
+
+### 📋 #31 — Notion import
+**Status:** planned · **Effort:** M
+
+Reverse direction: read a Notion export (zip of `.zip` + `.csv`),
+convert to OKF. Useful for migrating off Notion.
+
+### 📋 #32 — Git-backed bundle with auto-commit
+**Status:** planned · **Effort:** M
+
+After a successful convert, `git add okf/ && git commit -m "headcleaner: 12 new concepts (sha:<short>)"` and optionally push. Make the OKF bundle reviewable via PRs.
+
+### 📋 #33 — VS Code extension
+**Status:** planned · **Effort:** L
+
+A small VS Code extension that:
+- Recognizes OKF files (frontmatter schema validation in problems panel)
+- Provides `> headcleaner: convert this file` command
+- Provides `> headcleaner: lint this bundle` command
+- Renders the neon palette in the editor's status bar
+
+---
+
+## OKF ecosystem features
+
+### 📋 #34 — Cross-concept link inference
+**Status:** planned · **Effort:** M
+
+When emitting an OKF bundle, scan every concept's body for mentions of
+other concepts (by title, by tag, by resource URI) and add markdown
+links. Result: a navigable knowledge graph without manual linking.
+
+### 📋 #35 — Pluggable trust policy
+**Status:** planned · **Effort:** M
+
+A `policy.toml` config that lets orgs REQUIRE certain trust fields:
+e.g., "every concept must have `verified: human:reviewed` before it
+lands in the `published/` subdirectory". The pipeline runs the
+policy as a gate; the linter surfaces violations.
+
+### 📋 #36 — `headcleaner attest` — compute Attested Computations
+**Status:** planned · **Effort:** L
+
+OKF v0.2 §10 supports `type: Attested Computation`. Implement the
+`executor` + `attester` pattern: given a recipe (a script + receipt
+schema), headcleaner runs the script, captures the receipt, and
+emits an Attested Computation concept.
+
+Out of scope for v1.0 (no clear user yet) but worth prototyping when
+the first adopter asks.
+
+### 📋 #37 — `log.md` (OKF §9) generation
+**Status:** planned · **Effort:** S
+
+After every convert run, append a dated entry to `<bundle>/log.md`
+listing what was added/changed/removed in this run.
+
+### � #38 — `index.md` enrichment (descriptions, summaries)
+**Status:** planned · **Effort:** M
+
+The current index.md only lists titles and statuses. Add: first
+sentence of each concept as a description; word count; last-modified
+date. Renders the bundle much more browseable.
+
+### 📋 #39 — Bundle-level `manifest.json` (different from run-level)
+**Status:** planned · **Effort:** S
+
+Currently we write `manifest.json` per-run. Add a persistent
+`bundle.manifest.json` at the OKF root that aggregates across all
+runs — total concept count, last run timestamp, formats breakdown.
+
+---
+
+## UX polish
+
+### 📋 #40 — TUI theme switching (light, dark, neon, monochrome)
+**Status:** planned · **Effort:** S
+
+`--theme neon|light|dark|mono`. Ship 4 themes; let users pick. The
+neon palette is the default.
+
+### 📋 #41 — Per-engine progress sub-bars
+**Status:** planned · **Effort:** S
+
+When OCR runs, show a sub-bar for the current PDF (page N of M).
+When OfficeCLI runs, show a sub-bar with the subprocess phase
+(extract, parse, render).
+
+### 📋 #42 — `--dry-run` mode
+**Status:** planned · **Effort:** S
+
+Print what would be converted, in what engine, with what output path.
+Don't write any files. Exit code 0 if everything would succeed, 1 if
+any file would fail.
+
+### 📋 #43 — `--json` output for plain mode
+**Status:** planned · **Effort:** S
+
+`headcleaner convert --no-tui --json` emits a JSON line per file
+event (start, ok, skipped, failed) on stdout. Designed for piping
+into `jq`, log aggregators, etc.
+
+### 📋 #44 — Interactive `--include` glob REPL
+**Status:** planned · **Effort:** M
+
+If `--include` matches 0 files, open a TUI mini-REPL where you can
+test glob patterns against the directory listing in real time.
+Helpful when you don't remember whether it's `*.md` or `**/*.md`.
+
+---
+
+## Quick-win summary (impact ÷ effort)
+
+If you only have time for 5 of these, do these:
+
+1. **#1 — linter** (shipped ✓)
+2. **#3 — review TUI** (most leverage on the trust stance)
+3. **#4-12 — format coverage** (turns v0.1 into v1.0)
+4. **#14 — parallel pipeline** (10× speedup, cheap to build)
+5. **#25 — PyPI publish** (lowers the install barrier massively)
+
+The full list is the roadmap. Pick the ones that matter to your
+deployment and ship them.
