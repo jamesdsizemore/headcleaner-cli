@@ -1,23 +1,37 @@
 # headcleaner Enhancements
 
-> **30 proposed improvements** that would make headcleaner 100× better.
-> Each item lists: status (planned / in-progress / shipped), effort, rationale,
-> and a concrete proposal. Items are grouped by theme and ordered roughly by
-> impact-per-effort within each group.
+> **44 proposed improvements** that would make headcleaner 100× better,
+> split into 4 implementation batches (3 batches of 10 + 1 batch of 14).
+> Each item lists: status (planned / in-progress / shipped), effort,
+> rationale, and a concrete proposal.
+>
+> Each batch ships **with docs updates** — an expanded GitHub-ready
+> `README.md`, a `USER_GUIDE.md`, and any per-feature doc additions.
 
-**Legend for status:**
+## Batch manifest
+
+| Batch | Items | Theme | Status |
+|---|---|---|---|
+| **Batch 1** | #1–#10 | Linter + format coverage (md/csv/json/epub/rtf/odf/msg/eml) | 📋 planned |
+| **Batch 2** | #11–#20 | Performance + reliability (pst, legacy Office, parallel, cache, resume) | 📋 planned |
+| **Batch 3** | #21–#30 | Live mode + distribution (watch, serve, webhooks, brew/pypi/docker) | 📋 planned |
+| **Batch 4** | #31–#44 | Ecosystem + UX (Notion import, links, trust policy, themes, dry-run, etc.) | 📋 planned |
+
+## Legend
+
+**Status:**
 - 📋 **planned** — designed, not started
-- � **in progress** — being built
+- 🔨 **in progress** — being built
 - ✅ **shipped** — available in current release
 
-**Legend for effort:**
+**Effort:**
 - **S** = < 1 day
 - **M** = 1-3 days
 - **L** = 1+ week
 
 ---
 
-## Post-conversion linter & review (your explicit request — kept #1)
+## Batch 1 — Linter depth + format coverage (md/csv/json/epub/rtf/odf/msg/eml)
 
 ### ✅ #1 — `headcleaner lint` command with OKF + Markdown rules
 
@@ -118,16 +132,23 @@ sheet; ODP → stub concept pointing to the source (PPTX-style
 extraction needs more work).
 
 ### 📋 #10 — `.msg` adapter
+
 **Status:** planned · **Effort:** S
 
 Use `extract-msg`. Headers + body in MD, attachments listed.
 
 ### 📋 #11 — `.eml` adapter
+
 **Status:** planned · **Effort:** S
 
 stdlib `email`. Headers + body, multipart-aware.
 
+---
+
+## Batch 2 — Performance + reliability (pst, legacy Office, parallel, cache, resume, timeouts)
+
 ### 📋 #12 — `.pst` adapter
+
 **Status:** planned · **Effort:** M
 
 Use `libpff-python` (binary wheels: Windows + macOS arm64). One OKF
@@ -194,8 +215,8 @@ more.
 Currently errors out. Add explicit `qpdf --decrypt` hint in the error
 message, or attempt decryption inline (using pypdf's built-in support
 for some encryption modes).
-
 ### 📋 #20 — Streaming PDF (don't load the whole PDF into RAM)
+
 **Status:** planned · **Effort:** S
 
 pdfplumber already streams per page; just verify the behavior holds
@@ -203,7 +224,7 @@ for very large PDFs and document the memory profile.
 
 ---
 
-## Live mode (always-on conversion)
+## Batch 3 — Live mode + distribution (watch, serve, webhooks, brew/pypi/docker)
 
 ### 📋 #21 — `headcleaner watch` — file system watcher
 **Status:** planned · **Effort:** M
@@ -274,13 +295,17 @@ from the community.
 ---
 
 ## Integration with other tools
-
 ### 📋 #30 — Obsidian vault sync
+
 **Status:** planned · **Effort:** S
 
 `headcleaner convert inbox --format okf --output /path/to/ObsidianVault/Concepts/`
 copies concepts directly into an Obsidian vault, preserving frontmatter
 as YAML properties.
+
+---
+
+## Batch 4 — Ecosystem + UX polish (14 items: links, policy, themes, dry-run, etc.)
 
 ### 📋 #31 — Notion import
 **Status:** planned · **Effort:** M
@@ -338,7 +363,7 @@ the first adopter asks.
 After every convert run, append a dated entry to `<bundle>/log.md`
 listing what was added/changed/removed in this run.
 
-### � #38 — `index.md` enrichment (descriptions, summaries)
+### 📋 #38 — `index.md` enrichment (descriptions, summaries)
 **Status:** planned · **Effort:** M
 
 The current index.md only lists titles and statuses. Add: first
@@ -398,9 +423,21 @@ If you only have time for 5 of these, do these:
 
 1. **#1 — linter** (shipped ✓)
 2. **#3 — review TUI** (most leverage on the trust stance)
-3. **#4-12 — format coverage** (turns v0.1 into v1.0)
+3. **#4-#12 — format coverage** (turns v0.1 into v1.0)
 4. **#14 — parallel pipeline** (10× speedup, cheap to build)
 5. **#25 — PyPI publish** (lowers the install barrier massively)
 
 The full list is the roadmap. Pick the ones that matter to your
 deployment and ship them.
+
+---
+
+## Bonus items (not numbered, but tracked)
+
+These don't fit the 4-batch structure cleanly but are worth a line:
+
+- **i18n** — localize the TUI strings (currently English-only). Use `gettext`; ship en + es + zh-CN to start.
+- **`headcleaner doctor`** — diagnose common issues: check Python version, OfficeCLI install, PATH, write permissions on output dir, etc. Single command that prints a go/no-go summary.
+- **Plugin protocol** — let third parties ship a `headcleaner_plugin` package that registers custom adapters via entry points. Avoids `headcleaner` having to grow to thousands of formats.
+- **Schema validation** — emit a JSON Schema for the OKF frontmatter so editors (VS Code, IntelliJ) can autocomplete and validate.
+- **Conversion report** — after `convert`, write a Markdown summary file (`<output>/REPORT.md`) with per-format stats (engine, count, avg time, error rate). Useful for org-wide adoption dashboards.
