@@ -79,10 +79,38 @@ source URI, format, engine, sha256, generated_at).
 | `.md`, `.markdown` | pass-through | strips frontmatter, uses H1 as title |
 | `.csv`, `.tsv` | stdlib `csv` + Sniffer | dialect auto-detected |
 | `.json` | stdlib `json` | pretty-printed fenced block + summary for flat objects |
+| `.eml` | stdlib `email` | headers + text body + attachments list |
+| `.epub` | ebooklib | one MD section per chapter, joined with `---` |
+| `.rtf` | striprtf | control words stripped, plain text body |
+| `.odt`, `.ods`, `.odp` | odfpy | text → paragraphs; spreadsheets → GFM tables; slides → per-slide text |
+| `.msg` | extract-msg | Outlook headers + body + attachments |
+| `.pst` (best-effort) | libpff-python | item count only; full extraction ships in v1.0 |
+| `.doc`, `.xls`, `.ppt` | (clear-error path) | convert with LibreOffice first |
 
 Run `headcleaner templates` to see the live list.
 
-## 4. Glob filters
+## 4. Human sign-off (`headcleaner review`)
+
+Auto-conversion always sets `verified: human:pending`. The `review`
+subcommand walks every pending concept in a bundle and lets you flip it:
+
+```bash
+headcleaner review ./out/okf
+# Textual TUI keys:
+#   a = approve (verified → human:reviewed, status → verified)
+#   r = reject  (verified → human:rejected, status → rejected)
+#   s = skip    (leaves the concept as pending)
+#   n / p = next / previous concept
+#   q = quit    (already-approved changes persist)
+```
+
+When Textual isn't available (e.g. headless CI), the same flow falls
+back to a plain-mode REPL with the same key set.
+
+The `headcleaner lint --strict` rule on `verified: human:pending` will
+flag any concept you skipped when you ship the bundle.
+
+## 5. Glob filters
 
 Restrict the walker by filename glob:
 
@@ -99,7 +127,7 @@ headcleaner inbox -i "*.pdf" -i "*.docx" -e "*old*" --output out
 
 Globs match against the **filename**, not the full path.
 
-## 5. OCR for scanned PDFs
+## 6. OCR for scanned PDFs
 
 PDFs without a text layer (scans, image-only exports) need OCR:
 
@@ -117,7 +145,7 @@ headcleaner scan.pdf --ocr --output out
 OCR is slow (~1 sec/page). Pages without a text layer are flagged in
 the body and listed in `metadata.image_only_pages`.
 
-## 6. TUI vs plain mode
+## 7. TUI vs plain mode
 
 headcleaner ships two run modes:
 
@@ -140,7 +168,7 @@ headcleaner inbox --tui        # TUI
 headcleaner inbox --no-tui     # plain
 ```
 
-## 7. The linter
+## 8. The linter
 
 `headcleaner lint <DIR>` reviews every `.md` file under the OKF bundle
 and emits findings:
@@ -196,7 +224,7 @@ headcleaner lint ./clean --fix --fix-out /tmp/fixed/
 
 The source directory is **never modified**. Diff before applying.
 
-## 9. Trust stance (read this before shipping)
+## 10. Trust stance (read this before shipping)
 
 Every auto-converted concept gets:
 
@@ -218,7 +246,7 @@ grep -l "verified: human:pending" okf/**/*.md
 (`headcleaner review` — a TUI for clearing the placeholder — is
 tracked in ENHANCEMENTS.md #3.)
 
-## 10. Common recipes
+## 11. Common recipes
 
 ### Migrate a Notion export
 
@@ -261,7 +289,7 @@ while true; do
 done
 ```
 
-## 11. Troubleshooting
+## 12. Troubleshooting
 
 | Problem | Fix |
 |---|---|
@@ -274,7 +302,7 @@ done
 
 Full troubleshooting guide: `docs/TROUBLESHOOTING.md`.
 
-## 12. Where to go next
+## 13. Where to go next
 
 - **`docs/INSTALL.md`** — every install path
 - **`docs/USAGE.md`** — short usage guide (this file is the long version)

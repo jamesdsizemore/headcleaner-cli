@@ -395,6 +395,20 @@ def attest(directory: Path) -> None:
 
 
 @cli.command()
+@click.argument("bundle", type=click.Path(exists=True, file_okay=False, path_type=Path))
+def review(bundle: Path) -> None:
+    """Eng #3: interactively review every `verified: human:pending` concept."""
+    from .review import run_review_tui
+    summary = run_review_tui(bundle)
+    click.echo(
+        f"reviewed: approved={summary['approved']} "
+        f"rejected={summary['rejected']} "
+        f"skipped={summary['skipped']} "
+        f"quit={summary['quit']}"
+    )
+
+
+@cli.command()
 @click.argument("directory", type=click.Path(exists=True, file_okay=False, path_type=Path))
 def glob(directory: Path) -> None:
     """Eng #44: launch the interactive glob REPL (stub: prints hint)."""

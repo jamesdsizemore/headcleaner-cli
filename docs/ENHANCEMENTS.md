@@ -12,10 +12,11 @@
 
 | Batch | Items | Theme | Status |
 |---|---|---|---|
-| **Batch 1** | #1–#10 | Linter + format coverage (md/csv/json/epub/rtf/odf/msg/eml) | ✅ #1, #2, #4, #5, #6 shipped; #3, #7–#11 pending |
+| **Batch 1** | #1–#10 | Linter + format coverage (md/csv/json/epub/rtf/odf/msg/eml) | ✅ 10/10 shipped (v0.2.0 + v0.6.0) |
 | **Batch 2** | #11–#20 | Performance + reliability (pst, legacy Office, parallel, cache, resume) | ✅ #11, #12, #13, #14, #15, #16, #17, #18, #19, #20 shipped (10/10!) |
 | **Batch 3** | #21–#30 | Live mode + distribution (watch, serve, webhooks, brew/pypi/docker) | ✅ 10/10 shipped (v0.4.0) |
 | **Batch 4** | #31–#44 | Ecosystem + UX (Notion import, links, trust policy, themes, dry-run, etc.) | ✅ 14/14 shipped (v0.5.0) |
+| **Batch 5** | #3, #7–#10 | Final Batch 1 leftovers (review TUI + 4 format adapters) | ✅ 5/5 shipped (v0.6.0) |
 
 ## Legend
 
@@ -72,10 +73,11 @@ Refuses to touch:
 
 Use: `headcleaner lint out/ --fix` or `headcleaner lint out/ --fix --fix-out /tmp/fixed/`.
 
-### 📋 #3 — `headcleaner review` — interactive TUI for human sign-off
+### ✅ #3 — `headcleaner review` — interactive TUI for human sign-off
 
-**Status:** planned
-**Effort:** L
+**Status:** shipped (v0.6.0) · **Effort:** L
+
+Implementation: src/headcleaner/review.py + `headcleaner review BUNDLE` subcommand. iter_pending() finds every concept with verified: human:pending. approve() flips to human:reviewed + status:verified + reviewed_at/by/via. reject() flips to human:rejected + status:rejected + optional rejection_reasons[]. Textual TUI (a/r/s/n/p/q) with plain-mode REPL fallback for headless CI. 4 unit tests cover iter_pending, approve, reject, and the empty-bundle case.
 
 A second TUI mode that walks the bundle one concept at a time. For each
 concept, it shows:
@@ -126,27 +128,35 @@ the first existing key among `title`, `name`, `label`, `id`. 50 MB
 hard cap (raises AdapterError if exceeded). Implemented in
 `src/headcleaner/engines/csv_json.py:JsonAdapter`.
 
-### 📋 #7 — `.epub` adapter
-**Status:** planned · **Effort:** M
+### ✅ #7 — `.epub` adapter
+**Status:** shipped (v0.6.0) · **Effort:** M
+
+Implementation: src/headcleaner/engines/epub.py. Uses ebooklib to enumerate spine items; each XHTML is converted to MD via a small BeautifulSoup helper (h1-h4, p, li). Chapters joined with `---` separators. Fallback walks the raw zip and renders any .xhtml/.html/.htm found.
 
 Use `ebooklib` to extract chapters. One OKF concept per chapter, joined
 in the body with `---` separators.
 
-### 📋 #8 — `.rtf` adapter
-**Status:** planned · **Effort:** S
+### ✅ #8 — `.rtf` adapter
+**Status:** shipped (v0.6.0) · **Effort:** S
+
+Implementation: src/headcleaner/engines/rtf.py. Main path uses striprtf.rtf_to_text(). Fallback path strips RTF control words with regex (drops {...} groups, \<word>N, \'hh, punctuation).
 
 Use `striprtf` to strip formatting, emit as fenced ```text block.
 
-### 📋 #9 — `.odt` / `.ods` / `.odp` (OpenDocument) adapter
-**Status:** planned · **Effort:** M
+### ✅ #9 — `.odt` / `.ods` / `.odp` (OpenDocument) adapter
+**Status:** shipped (v0.6.0) · **Effort:** M
+
+Implementation: src/headcleaner/engines/odf.py. One adapter handles .odt (paragraphs), .ods (GFM tables with header row + data rows), and .odp (per-slide text). odfpy path; raw-XML fallback wraps content.xml in a namespace-declaring root and iterates local-name 'p'/'span'/'h' elements.
 
 Use `odfpy`. ODT → MD with structure preserved; ODS → GFM table per
 sheet; ODP → stub concept pointing to the source (PPTX-style
 extraction needs more work).
 
-### 📋 #10 — `.msg` adapter
+### ✅ #10 — `.msg` adapter
 
-**Status:** planned · **Effort:** S
+**Status:** shipped (v0.6.0) · **Effort:** S
+
+Implementation: src/headcleaner/engines/msg.py. Uses extract-msg to read subject/sender/to/cc/date/body/attachments. Renders as a Markdown document with From/To/Cc/Date bullets + Body section + Attachments list. Clear 'extract-msg not installed' fallback when the dep is missing.
 
 Use `extract-msg`. Headers + body in MD, attachments listed.
 

@@ -4,6 +4,66 @@ All notable changes to headcleaner are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.6.0] — 2026-08-16 (Batch 5)
+
+Final Batch 1 leftovers + the last planned format-adapter items. All
+44 + 5 = 49 enhancements from the master plan are now shipped.
+
+### Added
+
+- **`.epub` adapter** (Enhancement #7) — `src/headcleaner/engines/epub.py`.
+  Uses `ebooklib` to enumerate spine items + render each XHTML as MD
+  via a small BeautifulSoup helper. Fallback walks the raw zip.
+- **`.rtf` adapter** (Enhancement #8) — `src/headcleaner/engines/rtf.py`.
+  Uses `striprtf` for the main path; regex fallback strips control
+  words if the dep is unavailable.
+- **ODF adapter** (Enhancement #9) — `src/headcleaner/engines/odf.py`.
+  Handles `.odt` (paragraphs), `.ods` (GFM tables), and `.odp`
+  (per-slide text) via `odfpy`. Raw-XML fallback handles corrupt
+  files.
+- **`.msg` adapter** (Enhancement #10) — `src/headcleaner/engines/msg.py`.
+  Uses `extract-msg` to read Outlook headers + body + attachments.
+  Clear "extract-msg not installed" fallback if the dep is missing.
+- **`headcleaner review` TUI** (Enhancement #3) —
+  `src/headcleaner/review.py` + `headcleaner review BUNDLE` subcommand.
+  Walks every concept with `verified: human:pending` and lets a human
+  approve (→ `human:reviewed`), reject (→ `human:rejected`), or skip.
+  Textual TUI with keybindings (`a`/`r`/`s`/`n`/`p`/`q`) + plain REPL
+  fallback for headless environments.
+
+### Dependencies added
+
+- `ebooklib>=0.18`
+- `striprtf>=0.0.26`
+- `odfpy>=1.4.1`
+
+### Tests
+
+113 passing in ~8s (13 new across `tests/test_batch5_adapters.py` +
+`tests/test_batch5_review.py`).
+
+### CLI surface at v0.6.0
+
+```
+headcleaner convert    IN_DIR [--format md|okf|both] [-o DIR] [-i GLOB]
+                       [-e GLOB] [-j N] [--no-cache] [--officecli-timeout N]
+                       [--obsidian-compat] [--enriched-index] [--write-log]
+                       [--write-bundle-manifest] [--crossref]
+                       [--policy FILE] [--git-commit] [--git-commit-message MSG]
+                       [--git-commit-verify] [--dry-run] [--json]
+                       [--theme neon|light|dark|mono] [--tui|--no-tui]
+                       [--no-continue-on-error] [--no-okf-index] [--ocr]
+headcleaner watch      IN_DIR [...] [--webhook-url URL] [--debounce-ms N]
+headcleaner review     BUNDLE             # NEW: human sign-off TUI
+headcleaner attest     BUNDLE_DIR
+headcleaner glob       DIR
+headcleaner lint       DIR [--fix] [--strict]
+headcleaner agents     [stdout]
+headcleaner templates
+```
+
+---
+
 ## [0.5.0] — 2026-08-16 (Batch 4)
 
 Final batch of the [ENHANCEMENTS.md](ENHANCEMENTS.md) plan shipped.

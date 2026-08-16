@@ -26,17 +26,12 @@
 | 8 | `.csv`, `.tsv` | `csv` | stdlib `csv` | ✓ | GFM table | none |
 | 9 | `.json` | `json` | stdlib `json` | ✓ | fenced ```json block + pretty-printed | none |
 | 10 | `.eml` | `eml` | stdlib `email` | ✓ | headers + body MD + attachments | none |
-| 11 | `.pst` | `pst` | `libpff-python` (optional) | ○ | item count stub (full extraction is a Batch 4 task) | best-effort: warn + skip if lib missing |
+| 11 | `.pst` | `pst` | `libpff-python` (optional) | ○ | item count stub (full extraction deferred to v1.0) | best-effort: warn + skip if lib missing |
 | 12 | `.doc`, `.xls`, `.ppt` | `legacy_office` | (none shipped) | ○ | clear error: convert with LibreOffice first | none |
-
-### v1.0 roadmap (planned, not yet implemented)
-
-| # | Extensions | Engine | Library | Required | Notes |
-|---|---|---|---|---|---|
-| 13 | `.epub` | `epub` | `ebooklib` | ✓ | per-chapter MD, joined with `---` |
-| 14 | `.rtf` | `rtf` | `striprtf` | ✓ | plain text in fenced block |
-| 15 | `.odt`, `.ods`, `.odp` | `odf` | `odfpy` | ✓ | ODT → MD; ODS → GFM table; ODP → "see source: <uri>" |
-| 16 | `.msg` | `msg` | `extract-msg` | ✓ | headers + body MD |
+| 13 | `.epub` | `epub` | `ebooklib` | ✓ | per-chapter MD, joined with `---` | raw zip + bs4 fallback |
+| 14 | `.rtf` | `rtf` | `striprtf` | ✓ | plain text in fenced block | regex fallback |
+| 15 | `.odt`, `.ods`, `.odp` | `odf` | `odfpy` | ✓ | ODT → MD; ODS → GFM table; ODP → per-slide text | raw-XML fallback |
+| 16 | `.msg` | `msg` | `extract-msg` | ✓ | headers + body MD + attachments | error-stub fallback |
 
 ## Engine selection
 

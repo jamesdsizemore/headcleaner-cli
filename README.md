@@ -118,7 +118,11 @@ See [docs/FORMAT_MATRIX.md](docs/FORMAT_MATRIX.md) for the full engine × librar
 | `.csv`, `.tsv` | Sniffer dialect + GFM table | stdlib `csv` |
 | `.json` | pretty-print + fenced block | stdlib `json` |
 | `.eml` | headers + text/html body + attachments | stdlib `email` |
-| `.pst` (best-effort) | item count only | `libpff-python` (optional) |
+| `.epub` | per-chapter HTML → MD | ebooklib (+ bs4 fallback) |
+| `.rtf` | control-word stripping | striprtf (+ regex fallback) |
+| `.odt`, `.ods`, `.odp` | paragraph/row extraction + GFM tables | odfpy (+ raw-XML fallback) |
+| `.msg` | Outlook headers + body + attachments | extract-msg |
+| `.pst` (best-effort) | item count only | libpff-python (optional) |
 | `.doc`, `.xls`, `.ppt` | clear error path | needs `libreoffice --convert-to` first |
 
 ## Live mode
@@ -144,7 +148,48 @@ Adds Obsidian-friendly flat fields (`source`, `sha256`, `generated_by`,
 up correctly in Obsidian's property panel. Original OKF fields stay
 intact for round-tripping.
 
-v1.0 roadmap adds: `.md`, `.csv`, `.json`, `.epub`, `.rtf`, `.odt`/`.ods`/`.odp`, `.eml`, `.msg`, `.pst`.
+## Review (human sign-off)
+
+Auto-conversion sets `verified: human:pending`. The `headcleaner review`
+TUI walks every pending concept in a bundle and lets a human flip each
+to:
+
+- **approved** → `verified: human:reviewed`, `status: verified`,
+  `reviewed_at`, `reviewed_by`, `reviewed_via`
+- **rejected** → `verified: human:rejected`, `status: rejected`,
+  optional `rejection_reasons[]`
+- **skipped** → leaves the concept as `pending`
+
+```bash
+headcleaner review ./out/okf
+# Textual TUI: a=approve, r=reject, s=skip, n=next, p=prev, q=quit
+```
+
+If Textual isn't available (e.g. headless CI), a plain-mode REPL falls
+back automatically.
+
+## Distribution
+
+- **PyPI**: `pip install headcleaner` (built via uv, published via OIDC trusted publishing on tag push)
+- **Homebrew**: `brew install headcleaner` (formula in `packaging/homebrew/`)
+- **Docker**: `docker pull ghcr.io/local/headcleaner` (multi-stage image with tesseract)
+- **Windows**: `winget install headcleaner`, `scoop install headcleaner`, `choco install headcleaner`
+- **Static binary**: `pip install pyinstaller && pyinstaller packaging/pyinstaller/headcleaner.spec`
+
+Full release checklist in [RELEASE.md](RELEASE.md).
+
+## CLI surface
+
+```bash
+headcleaner convert   IN_DIR [flags]    # walk + convert
+headcleaner watch     IN_DIR [flags]    # live mode + webhooks
+headcleaner review    BUNDLE            # human sign-off TUI/REPL
+headcleaner attest    BUNDLE            # SHA-256 manifest per concept
+headcleaner glob      DIR               # interactive include REPL (stub)
+headcleaner lint      DIR [--fix]       # OKF + MD rule checks
+headcleaner agents    [stdout]          # emit AGENTS.md
+headcleaner templates                   # list supported formats
+```
 
 ## Documentation
 
