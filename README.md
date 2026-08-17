@@ -195,7 +195,7 @@ Full release checklist in [RELEASE.md](RELEASE.md).
 
 ## CLI surface
 
-`headcleaner view <bundle>` renders an OKF bundle as a single self-contained HTML graph (no backend, opens in any browser). See `docs/VIEWER.md` for full options.
+`headcleaner view <bundle>` (add `--tui` to browse in the terminal) renders an OKF bundle as a single self-contained HTML graph (no backend, opens in any browser). See `docs/VIEWER.md` for full options.
 
 
 ```bash
@@ -247,7 +247,7 @@ headcleaner templates                        # list supported formats
 git clone <this repo>
 cd headcleaner-cli
 uv sync
-uv run pytest                # 291 tests, ~14s (MCP extra installed)
+uv run pytest                # 314 tests, ~14s
 uv run headcleaner convert ./tests/fixtures --format both --output ./out
 ```
 

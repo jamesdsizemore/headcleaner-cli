@@ -563,9 +563,12 @@ if __name__ == "__main__":
               help="Serve the rendered file on a local HTTP server after writing.")
 @click.option("--host", default="127.0.0.1", help="--serve host (default: 127.0.0.1).")
 @click.option("--port", type=int, default=8765, help="--serve port (default: 8765).")
+@click.option("--tui", "tui_mode", is_flag=True, default=False,
+              help="Browse the bundle interactively in the terminal (whole-frame TUI).")
 def view_cmd(bundle: Path, out: Path | None, title: str | None, link: str | None,
              layout: str | None, max_nodes: int | None, og_image: str | None,
-             open_browser: bool, serve_local: bool, host: str, port: int) -> None:
+             open_browser: bool, serve_local: bool, host: str, port: int,
+             tui_mode: bool) -> None:
     """Render an OKF bundle as a self-contained interactive HTML graph.
 
     The output is one HTML file: concepts as graph nodes (colored by type,
@@ -578,6 +581,10 @@ def view_cmd(bundle: Path, out: Path | None, title: str | None, link: str | None
 
     Adopts scaccogatto/okf-skills (MIT) as the rendering engine.
     """
+    if tui_mode:
+        from .okf_tui import run_tui
+        raise SystemExit(run_tui(bundle))
+
     from .viewer import render
 
     out_path = out or (bundle / "viz.html")

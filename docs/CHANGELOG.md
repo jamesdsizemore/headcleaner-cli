@@ -4,6 +4,28 @@ All notable changes to headcleaner are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.12.0] - 2026-08-16
+
+### Added
+
+- **`headcleaner view <bundle> --tui`** — browse an OKF bundle interactively in the terminal.
+  - Three-pane layout: concept list (left), detail panel (right), key hints (footer)
+  - OKF v0.2 trust badge in the detail panel: `unverified` / `machine-confirmed` / `human-reviewed`, derived from `verified[].by` prefix (per §5.3); also flags `stale` and `deprecated`
+  - Whole-frame paint pattern borrowed from `serradura/okf-tui` (Apache-2.0): each repaint is one screen-sized string with every row padded to exact column width — no diff machinery, no flicker
+  - Keys: `j`/`k` (or arrow keys) move selection, `/` filters by substring (Enter applies, Backspace clears), `q` quits
+  - New file `src/headcleaner/okf_tui.py` (~230 LOC) — separate module from `tui.py` (the convert-progress TUI from v0.5.0)
+  - Non-TTY stdout falls back to a single-frame print, so `headcleaner view --tui | cat` still produces useful output
+- **`viewer.build_with_unresolved()`** (already added in v0.11.0 — used here too) — supplies the broken-link count shown in the header
+
+### Reference
+
+- Whole-frame paint pattern + okf-tui tool verbs reference `serradura/okf-tui` (Apache-2.0, 122★).
+- Built without a TUI framework — `render_frame()` is pure (returns a string) so it's easy to unit-test.
+
+### Tests
+
+- 291 -> 314 (+23 TUI tests)
+
 ## [0.11.0] - 2026-08-16
 
 ### Added

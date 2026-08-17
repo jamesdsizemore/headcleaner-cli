@@ -1,0 +1,33 @@
+feat(v0.12.0): `headcleaner view --tui` — OKF bundle terminal viewer
+
+Browse an OKF bundle interactively in the terminal. Three-pane
+layout (concept list | detail panel | key hints), whole-frame paint
+pattern borrowed from serradura/okf-tui (Apache-2.0, 122★).
+
+The whole-frame paint approach: each repaint is one screen-sized
+string with every row padded to exact column width, then a single
+"\x1b[H\x1b[2J" (cursor home + clear) precedes it. No diff machinery,
+no flicker. `render_frame()` is a pure function returning a string,
+so unit tests don't need a TTY.
+
+Keys: j/k (or arrow keys) move selection; / opens a one-line filter
+prompt; q (or Ctrl+C / Ctrl+D) quits. Non-TTY stdout falls back to a
+single-frame print so `headcleaner view --tui | cat` is useful too.
+
+Architecture:
+- src/headcleaner/okf_tui.py — new module (~230 LOC), separate from
+  tui.py (the convert-progress TUI from v0.5.0, which this version
+  restores intact after a brief collision)
+- src/headcleaner/cli.py — view subcommand gains --tui flag
+- tests/test_okf_tui.py — 23 unit tests (clip, pad, trust badges,
+  frame width invariants, non-TTY fallback)
+
+Trust badges in the detail panel follow OKF v0.2 §5.3:
+- no `verified` → unverified
+- any `verified.by` starts with "human:" → human-reviewed
+- otherwise → machine-confirmed
+Plus stale / deprecated flags derived from frontmatter.
+
+Tests: 291 -> 314 (+23)
+Version: 0.11.0 -> 0.12.0
+Tag: v0.12.0
