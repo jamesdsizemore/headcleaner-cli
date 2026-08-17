@@ -38,6 +38,9 @@ import threading
 from pathlib import Path
 from typing import Optional
 
+from . import registry as _registry
+from .viewer import build_with_unresolved
+
 try:
     from mcp.server.mcpserver import MCPServer
 except ImportError as e:
@@ -72,8 +75,6 @@ class BundleEntry:
         self._ingest()
 
     def _ingest(self) -> None:
-        from .viewer import build_with_unresolved
-
         self.nodes, self.edges, self.unresolved = build_with_unresolved(self.path)
         self.by_id = {n["id"]: n for n in self.nodes}
         self.out = {n["id"]: [] for n in self.nodes}
@@ -139,14 +140,45 @@ class BundleRegistry:
 # ---------------------------------------------------------------------------
 
 
+def _resolve_slug(target: str) -> tuple[str | None, str]:
+    """If target starts with `@`, resolve the slug to a registered bundle name.
+    Returns (None, target) if no @ prefix or no slash after slug.
+    """
+    if not target or not target.startswith("@"):
+        return None, target
+    rest = target[1:]
+    if not rest or "/" not in rest:
+        return None, target
+    slug, concept = rest.split("/", 1)
+    mapping = _registry.load_registry()
+    if slug not in mapping:
+        return slug, concept
+    return slug, concept
+
+
 def _resolve_concept_id(
     reg: BundleRegistry, target: str, bundle_name: Optional[str]
 ) -> tuple[str | None, list[str]]:
     """Resolve a wikilink-style name to a concept id. Returns (id, candidates).
 
+    Supports `@slug/concept` prefix for registered bundles.
     Mirrors upstream okf-mcp semantics: id, alias, title, or filename stem.
     Ambiguous names return candidates.
     """
+    if target.startswith("@"):
+        slug, rest = _resolve_slug(target)
+        if slug is None:
+            return None, []
+        if bundle_name is None and slug:
+            if reg.get(slug) is None:
+                mapping = _registry.load_registry()
+                if slug in mapping:
+                    try:
+                        reg.add(slug, mapping[slug])
+                    except Exception:
+                        return None, []
+            bundle_name = slug
+        target = rest
     entry = reg.get(bundle_name)
     if not entry:
         return None, []
@@ -190,27 +222,47 @@ def okf_list_bundles(reg: BundleRegistry) -> list[dict]:
 
 
 def okf_search(
-    reg: BundleRegistry, term: str, bundle_name: Optional[str], limit: int
+    reg: BundleRegistry,
+    term: str,
+    bundle_name: Optional[str],
+    limit: int,
+    all_bundles: bool = False,
 ) -> list[dict]:
-    entry = reg.get(bundle_name)
-    if not entry:
-        return []
+    """Search for `term` in concept titles, descriptions, bodies.
+
+    With all_bundles=True, search every loaded bundle and tag each hit
+    with its bundle name.
+    """
     t = term.lower()
-    hits = []
-    for n in entry.nodes:
-        if (
-            t in n.get("title", "").lower()
-            or t in n.get("description", "").lower()
-            or t in n.get("body", "").lower()
-        ):
-            hits.append(
-                {
+    hits: list[dict] = []
+    with reg.lock:
+        if all_bundles:
+            entries = [(name, reg._bundles[name]) for name in reg._order]
+        elif bundle_name and bundle_name in reg._bundles:
+            entries = [(bundle_name, reg._bundles[bundle_name])]
+        elif reg._order:
+            entries = [(reg._order[0], reg._bundles[reg._order[0]])]
+        else:
+            entries = []
+
+    for bname, entry in entries:
+        if entry is None:
+            continue
+        for n in entry.nodes:
+            if (
+                t in n.get("title", "").lower()
+                or t in n.get("description", "").lower()
+                or t in n.get("body", "").lower()
+            ):
+                hit = {
                     "id": n["id"],
                     "type": n.get("type", ""),
                     "title": n.get("title", ""),
                     "description": n.get("description", ""),
                 }
-            )
+                if all_bundles:
+                    hit["bundle"] = bname
+                hits.append(hit)
     return hits[: max(1, limit)]
 
 
@@ -509,10 +561,20 @@ def okf_list_bundles_tool() -> list[dict]:
 
 
 @mcp.tool()
-def okf_search_tool(term: str, bundle: Optional[str] = None, limit: int = 20) -> list[dict]:
+def okf_search_tool(
+    term: str,
+    bundle: Optional[str] = None,
+    limit: int = 20,
+    all_bundles: bool = False,
+) -> list[dict]:
+    """Search one or all loaded bundles.
+
+    Set all_bundles=True to search across every bundle currently registered
+    with the server. Hits from other bundles include a `bundle` field.
+    """
     """Find concepts whose title, description, or body contains `term`."""
     with reg.lock:
-        return okf_search(reg, term, bundle, limit)
+        return okf_search(reg, term, bundle, limit, all_bundles=all_bundles)
 
 
 @mcp.tool()
@@ -602,6 +664,52 @@ def main(argv: Optional[list[str]] = None) -> int:
     except KeyboardInterrupt:
         return 0
     return 0
+
+
+
+
+@mcp.tool()
+def okf_registry_list() -> list[dict]:
+    """List all bundles registered under @slug aliases."""
+    mapping = _registry.load_registry()
+    return [{"slug": slug, "path": str(p)} for slug, p in sorted(mapping.items())]
+
+
+@mcp.tool()
+def okf_registry_add(slug: str, bundle_path: str) -> dict:
+    """Add a bundle under a slug alias. Then reference it as @<slug>/... .
+
+    Example:
+        okf_registry_add(slug="docs", bundle_path="C:/Users/me/Documents/okf")
+        okf_get_concept("@docs/readme")
+    """
+    try:
+        _registry.add_slug(slug, bundle_path)
+    except ValueError as e:
+        return {"ok": False, "error": str(e)}
+    return {"ok": True, "slug": slug, "path": str(Path(bundle_path).expanduser().resolve())}
+
+
+@mcp.tool()
+def okf_registry_remove(slug: str) -> dict:
+    """Remove a slug from the registry."""
+    _registry.remove_slug(slug)
+    return {"ok": True, "slug": slug}
+
+
+@mcp.tool()
+def okf_registry_resolve(target: str) -> dict:
+    """Resolve `@slug/concept` to the bundle path + concept id."""
+    slug, bundle_path = _registry.resolve_slug(target)
+    if bundle_path is None:
+        return {"ok": False, "error": f"unknown slug {slug!r}" if slug else "not a slug"}
+    rest = target[len(f"@{slug}/"):] if target.startswith(f"@{slug}/") else ""
+    return {
+        "ok": True,
+        "slug": slug,
+        "bundle_path": str(bundle_path),
+        "concept": rest or None,
+    }
 
 
 if __name__ == "__main__":

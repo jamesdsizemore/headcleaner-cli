@@ -1,6 +1,6 @@
 [project]
 name = "headcleaner"
-version = "0.12.0"
+version = "0.13.0"
 description = "HeadCleaner CLI - walk a folder, convert every document to Markdown and/or OKF v0.2 with frontmatter."
 readme = "README.md"
 license = { text = "Apache-2.0" }
@@ -27,6 +27,7 @@ dependencies = [
   "chardet>=5.2",
   "markdownify>=0.13",
   "pyyaml>=6.0",
+  "tomli-w>=1.0",
   "click>=8.1",
   "rich>=13.7",
   "textual>=0.86",
