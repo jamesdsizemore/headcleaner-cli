@@ -17,12 +17,14 @@ Batch 6 enhancement (#7):
 
 from __future__ import annotations
 
+import datetime as _dt
 import json
 import multiprocessing
+import time
+from collections.abc import Callable
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable
 
 from .emit import manifest as manifest_emit
 from .emit import markdown as md_emit
@@ -30,10 +32,10 @@ from .emit import okf as okf_emit
 from .emit import okf_index
 from .emit.manifest import FileResult, RunRecord
 from .engines.base import Adapter, AdapterError
+from .jsonlog import emit_json_event  # Batch 4 / Eng #43
 from .normalize import normalize
 from .router import get_adapter
 from .walk import walk
-from .jsonlog import emit_json_event  # Batch 4 / Eng #43
 
 
 @dataclass
@@ -250,6 +252,7 @@ def _process_one(args: tuple[str, str, str, str, bool, bool]) -> list[dict]:
     _opts.clean_md = clean_md
 
     source = Path(source_str)
+    started = time.perf_counter()
     adapter = _get_adapter(source)
     if adapter is None:
         return [
@@ -262,6 +265,7 @@ def _process_one(args: tuple[str, str, str, str, bool, bool]) -> list[dict]:
                 "okf_path": None,
                 "status": "skipped",
                 "error": "no adapter",
+                "duration_seconds": time.perf_counter() - started,
             }
         ]
 
@@ -278,6 +282,7 @@ def _process_one(args: tuple[str, str, str, str, bool, bool]) -> list[dict]:
                 "okf_path": None,
                 "status": "failed",
                 "error": str(e),
+                "duration_seconds": time.perf_counter() - started,
             }
         ]
     except Exception as e:
@@ -291,9 +296,11 @@ def _process_one(args: tuple[str, str, str, str, bool, bool]) -> list[dict]:
                 "okf_path": None,
                 "status": "failed",
                 "error": f"{type(e).__name__}: {e}",
+                "duration_seconds": time.perf_counter() - started,
             }
         ]
 
+    elapsed_per_result = (time.perf_counter() - started) / max(1, len(pairs))
     return [
         {
             "source_path": str(source),
@@ -303,6 +310,7 @@ def _process_one(args: tuple[str, str, str, str, bool, bool]) -> list[dict]:
             "md_path": None,
             "okf_path": None,
             "status": "ok",
+            "duration_seconds": elapsed_per_result,
             "_extracted": extracted,
         }
         for msg_rp, extracted in pairs
@@ -336,6 +344,7 @@ def _process_sequential(
                 okf_path=None,
                 status="skipped",
                 error="no adapter",
+                duration_seconds=0.0,
             )
             _finish_result(opts, record, result)
             continue
@@ -359,12 +368,14 @@ def _process_sequential(
                     if opts.fmt in {"okf", "both"}
                     else None,
                     status="ok",
+                    duration_seconds=0.0,
                 )
                 record.results.append(result)
                 if opts.on_progress:
                     opts.on_progress(i, total, result)
                 continue
 
+        started = time.perf_counter()
         try:
             pairs = _run_adapter(
                 adapter, sf.path, rel, opts.ocr, opts.on_engine_progress, opts=opts
@@ -379,6 +390,7 @@ def _process_sequential(
                 okf_path=None,
                 status="failed",
                 error=str(e),
+                duration_seconds=time.perf_counter() - started,
             )
             _finish_result(opts, record, result)
             if not opts.continue_on_error:
@@ -394,14 +406,15 @@ def _process_sequential(
                 okf_path=None,
                 status="failed",
                 error=f"{type(e).__name__}: {e}",
+                duration_seconds=time.perf_counter() - started,
             )
             _finish_result(opts, record, result)
             if not opts.continue_on_error:
                 return
             continue
 
-        for msg_rp, extracted in pairs:
-            result = _emit_one(
+        emitted = [
+            _emit_one(
                 opts,
                 record,
                 sf.path,
@@ -411,6 +424,11 @@ def _process_sequential(
                 md_root,
                 okf_root,
             )
+            for msg_rp, extracted in pairs
+        ]
+        elapsed_per_result = (time.perf_counter() - started) / max(1, len(emitted))
+        for result in emitted:
+            result.duration_seconds = elapsed_per_result
             _finish_result(opts, record, result)
 
 
@@ -454,6 +472,7 @@ def _process_parallel(
                     if opts.fmt in {"okf", "both"}
                     else None,
                     status="ok",
+                    duration_seconds=0.0,
                 )
                 _finish_result(opts, record, result)
                 continue
@@ -468,6 +487,7 @@ def _process_parallel(
                 okf_path=None,
                 status="skipped",
                 error="no adapter",
+                duration_seconds=0.0,
             )
             _finish_result(opts, record, result)
             continue
@@ -485,6 +505,7 @@ def _process_parallel(
             for r_dict in results:
                 source = Path(r_dict["source_path"])
                 if r_dict["status"] == "ok" and "_extracted" in r_dict:
+                    emission_started = time.perf_counter()
                     result = _emit_one(
                         opts,
                         record,
@@ -494,6 +515,9 @@ def _process_parallel(
                         r_dict["_extracted"],
                         md_root,
                         okf_root,
+                    )
+                    result.duration_seconds = float(r_dict.get("duration_seconds") or 0.0) + (
+                        time.perf_counter() - emission_started
                     )
                 else:
                     # Failed or synthetic — convert dict back to FileResult
@@ -506,6 +530,7 @@ def _process_parallel(
                         okf_path=r_dict["okf_path"],
                         status=r_dict["status"],
                         error=r_dict.get("error"),
+                        duration_seconds=r_dict.get("duration_seconds"),
                     )
                 _finish_result(opts, record, result)
 
@@ -591,6 +616,32 @@ def run_pipeline(opts: RunOptions) -> RunRecord:
             from .bundle_manifest import write_bundle_manifest
 
             write_bundle_manifest(opts.output_root, record)
+
+        # Conversion report (v0.13.x — bonus item)
+        from .emit.report import write_report
+
+        try:
+            started = _dt.datetime.fromisoformat(record.started_at)
+            finished = _dt.datetime.fromisoformat(record.finished_at)
+        except (TypeError, ValueError):
+            started = finished = _dt.datetime.now()
+        write_report(
+            opts.output_root / "REPORT.md",
+            [
+                {
+                    "relpath": r.relpath,
+                    "engine": r.engine or "",
+                    "status": r.status,
+                    "sha256": r.sha256,
+                    "error": r.error,
+                    "duration_seconds": r.duration_seconds,
+                }
+                for r in record.results
+            ],
+            started_at=started,
+            finished_at=finished,
+            bundle_root=opts.input_root,
+        )
 
     if opts.json_output:
         emit_json_event(

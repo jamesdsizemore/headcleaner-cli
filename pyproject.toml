@@ -56,8 +56,8 @@ headcleaner = "headcleaner.cli:main"
 headcleaner-lint = "headcleaner.lint:main"
 
 [project.urls]
-Homepage = "https://github.com/local/headcleaner"
-Issues = "https://github.com/local/headcleaner/issues"
+Homepage = "https://github.com/jamesdsizemore/headcleaner-cli"
+Issues = "https://github.com/jamesdsizemore/headcleaner-cli/issues"
 
 [build-system]
 requires = ["hatchling"]
@@ -90,8 +90,13 @@ target-version = "py312"
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP"]
 
+[project.entry-points."headcleaner_plugin"]
+# Third-party adapters go here. Example (not registered):
+# my_format = "yourpkg.adapters:MyFormatAdapter"
+
 [dependency-groups]
 dev = [
+    "jsonschema>=4.23",
     "pytest>=9.1.1",
     "ruff>=0.16",
 ]

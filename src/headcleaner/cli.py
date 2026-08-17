@@ -1,12 +1,10 @@
 """headcleaner CLI entrypoint.
 
-Subcommands:
+Subcommands (all shipped as of v0.13.0):
   convert    Convert a folder to Markdown / OKF / both
-  templates  List supported formats and engines (planned)
-  agents     List detected engines and their install status (planned)
-  config     Show / set per-user defaults (planned)
-
-For v0.1 we ship `convert` only; the others are stubs that print a TODO.
+  templates  List supported formats and engines
+  agents     List detected engines and their install status
+  config     Show / set per-user defaults
 """
 
 from __future__ import annotations
@@ -372,7 +370,7 @@ def watch(
 
     Like `convert`, but runs forever until Ctrl+C. Each detected change
     triggers a re-conversion of the whole folder (incremental per-file
-    conversion is a future enhancement; tracked as Batch 4).
+    conversion is tracked for a future enhancement; not yet implemented).
 
     Optional webhook: --webhook-url <URL> POSTs the manifest.json after
     each run completes (useful for Slack/Discord notifications).
@@ -488,10 +486,27 @@ def review(bundle: Path) -> None:
 @cli.command()
 @click.argument("directory", type=click.Path(exists=True, file_okay=False, path_type=Path))
 def glob(directory: Path) -> None:
-    """Eng #44: launch the interactive glob REPL (stub: prints hint)."""
+    """Eng #44: launch the interactive glob REPL."""
     from .glob_repl import launch_repl
 
     launch_repl(directory)
+
+
+@cli.command()
+@click.option(
+    "--output-dir",
+    type=click.Path(file_okay=False, path_type=Path),
+    default=None,
+    help="Directory to verify as writable (defaults to a temp dir probe).",
+)
+def doctor(output_dir: Path | None) -> None:
+    """Run diagnostic checks: Python, OfficeCLI, OCR, output perms, registry."""
+    from .doctor import exit_code as doctor_exit
+    from .doctor import render_text, run_all
+
+    results = run_all(output_dir=output_dir)
+    click.echo(render_text(results))
+    sys.exit(doctor_exit(results))
 
 
 @cli.command()

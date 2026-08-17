@@ -16,13 +16,12 @@ from .engines.html import HtmlAdapter
 from .engines.legacy_office import LegacyOfficeAdapter
 from .engines.md import MdAdapter
 from .engines.msg import MsgAdapter
-from .engines.officecli import OfficeCLIAdapter
 from .engines.odf import OdfAdapter
+from .engines.officecli import OfficeCLIAdapter
 from .engines.pdf import PdfAdapter
 from .engines.pst import PstAdapter
 from .engines.rtf import RtfAdapter
 from .engines.txt import TxtAdapter
-
 
 # Order matters: the first adapter whose `supports()` returns True wins.
 # Register the cheap/builtin adapters first; OfficeCLI requires a binary on PATH
@@ -81,15 +80,28 @@ try:
 except Exception:
     pass  # all2md not installed or failed to construct; skip silently
 
+_plugins_loaded = False
+
 
 def adapters() -> list[Adapter]:
-    """Return the registered adapters (read-only snapshot)."""
+    """Return the registered adapters (read-only snapshot).
+
+    On first call, also discovers any third-party adapters registered
+    via the `headcleaner_plugin` entry point group (see plugins.py).
+    Discovery is idempotent — subsequent calls return the same list.
+    """
+    global _plugins_loaded
+    if not _plugins_loaded:
+        from .plugins import discover_once
+
+        discover_once(_ADAPTERS)
+        _plugins_loaded = True
     return list(_ADAPTERS)
 
 
 def get_adapter(path: Path) -> Adapter | None:
     """Return the adapter that handles `path`, or None if no engine supports it."""
-    for adapter in _ADAPTERS:
+    for adapter in adapters():
         try:
             if adapter.supports(path):
                 return adapter
@@ -102,6 +114,6 @@ def get_adapter(path: Path) -> Adapter | None:
 def registered_extensions() -> set[str]:
     """All extensions any registered adapter can handle (for the CLI help text)."""
     out: set[str] = set()
-    for a in _ADAPTERS:
+    for a in adapters():
         out.update(a.extensions)
     return out

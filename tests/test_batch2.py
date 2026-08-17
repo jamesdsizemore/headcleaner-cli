@@ -3,6 +3,7 @@ clear-error, encrypted PDF, parallel pipeline, sha256 cache."""
 
 from __future__ import annotations
 
+import inspect
 import json
 import textwrap
 from pathlib import Path
@@ -12,10 +13,10 @@ import pytest
 from headcleaner.engines.base import AdapterError
 from headcleaner.engines.eml import EmlAdapter
 from headcleaner.engines.legacy_office import LegacyOfficeAdapter
+from headcleaner.engines.pdf import PdfAdapter as PDF
 from headcleaner.engines.pst import PstAdapter
 from headcleaner.router import get_adapter
 from headcleaner.run import RunOptions, run_pipeline
-
 
 # --- .eml adapter -----------------------------------------------------------
 
@@ -129,11 +130,7 @@ def test_pdf_encrypted_gives_actionable_error(tmp_path: Path) -> None:
     """A PDF with /Encrypt in metadata surfaces a qpdf hint."""
     # We can't easily construct a real encrypted PDF here, but we can
     # verify the PDF adapter's error path includes the actionable hint.
-    from headcleaner.engines.pdf import PdfAdapter as PDF
-
     # Verify the hint string by reading the source
-    import inspect
-
     src = inspect.getsource(PDF.extract)
     assert "qpdf" in src
     assert "decrypt" in src.lower()
@@ -161,6 +158,7 @@ def test_run_pipeline_jobs_2_runs(mixed_dir, tmp_path: Path) -> None:
     statuses = [r.status for r in record.results]
     assert "failed" not in statuses
     assert record.options["jobs"] == 2
+    assert all(r.duration_seconds is not None and r.duration_seconds >= 0 for r in record.results)
 
 
 def test_run_pipeline_cache_skip(tmp_path: Path) -> None:
@@ -178,6 +176,7 @@ def test_run_pipeline_cache_skip(tmp_path: Path) -> None:
     # run should still produce the same results (no recompute needed).
     record2 = run_pipeline(RunOptions(input_root=tmp_path, output_root=out, fmt="md"))
     assert all(r.status == "ok" for r in record2.results)
+    assert all(r.duration_seconds == 0.0 for r in record2.results)
 
 
 def test_run_pipeline_no_cache_recomputes(tmp_path: Path) -> None:

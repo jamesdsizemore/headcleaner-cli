@@ -25,7 +25,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -40,6 +40,7 @@ class FileResult:
     okf_path: str | None
     status: str  # "ok" | "skipped" | "failed"
     error: str | None = None
+    duration_seconds: float | None = None  # extraction + emission wall time
 
 
 @dataclass
@@ -71,4 +72,4 @@ def write(record: RunRecord, output_root: Path) -> Path:
 
 
 def _utc_now_iso() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")

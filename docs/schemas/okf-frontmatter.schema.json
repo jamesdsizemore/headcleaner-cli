@@ -1,0 +1,104 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/james/headcleaner-cli/schemas/okf-frontmatter.schema.json",
+  "title": "OKF v0.2 Frontmatter",
+  "description": "JSON Schema for the YAML frontmatter block in headcleaner-emitted OKF v0.2 concept files. Use this in VS Code / IntelliJ YAML schema associations to get autocomplete + validation.",
+  "type": "object",
+  "required": ["type", "title"],
+  "properties": {
+    "type": {
+      "description": "OKF required field — the concept type. headcleaner always emits 'Document'.",
+      "type": "string",
+      "examples": ["Document"]
+    },
+    "title": {
+      "description": "Human-readable concept title. Required by headcleaner.",
+      "type": "string",
+      "minLength": 1
+    },
+    "description": {
+      "description": "Short description (1-2 sentences).",
+      "type": "string"
+    },
+    "resource": {
+      "description": "Primary resource URI (typically file:// path to the source document).",
+      "type": "string",
+      "format": "uri"
+    },
+    "tags": {
+      "description": "List of free-form tags.",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "status": {
+      "description": "OKF v0.2 lifecycle status. headcleaner sets 'unverified' on auto-conversion; review can set 'verified' or 'rejected'.",
+      "type": "string",
+      "enum": ["unverified", "verified", "rejected", "deprecated"],
+      "default": "unverified"
+    },
+    "stale_after": {
+      "description": "ISO 8601 date after which this concept is considered stale.",
+      "type": "string",
+      "format": "date"
+    },
+    "sources": {
+      "description": "Provenance list — at least one entry required.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["uri", "kind"],
+        "properties": {
+          "uri": {
+            "type": "string",
+            "format": "uri"
+          },
+          "kind": {
+            "type": "string",
+            "enum": ["file", "url", "git", "other"]
+          },
+          "sha256": {
+            "description": "Hex SHA-256 of the source bytes (lowercase, 64 chars).",
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "generated": {
+      "description": "Provenance agent that produced this concept. Format: 'kind:<id>@<host>'. headcleaner sets 'human:<user>@<host>'.",
+      "type": "string",
+      "pattern": "^[a-z]+:.+@.+"
+    },
+    "verified": {
+      "description": "Reviewer that signed off on this concept. 'human:pending' is the default after auto-conversion; reviewer tools set this.",
+      "type": "string"
+    },
+    "source": {
+      "description": "Obsidian-compat flat field — equal to sources[0].uri.",
+      "type": "string"
+    },
+    "sha256": {
+      "description": "Obsidian-compat flat field — equal to sources[0].sha256.",
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "generated_by": {
+      "description": "Obsidian-compat flat field — generated with ':' → '_'.",
+      "type": "string"
+    },
+    "verified_by": {
+      "description": "Obsidian-compat flat field — verified with ':' → '_'.",
+      "type": "string"
+    },
+    "stale_on": {
+      "description": "Obsidian-compat flat field — equal to stale_after.",
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "additionalProperties": true
+}

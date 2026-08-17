@@ -16,7 +16,9 @@ headcleaner convert ~/Documents/inbox --format both --output ~/Documents/inbox.c
 - **office_oxide backend:** Pure-Rust Python bindings for Office formats (~100x faster than OfficeCLI)
 - **Heuristic cleanup:** `headcleaner convert --clean` runs a 12-stage any2md-inspired cleanup pipeline
 - **all2md fallback:** Auto-handles 38 extra formats (Jupyter, LaTeX, reST, sourcecode, etc.) when all2md is installed
-- **`headcleaner mcp`:** Run headcleaner as an MCP server exposing 10 `okf_*` tools to any MCP agent host (Claude Code, Cursor, etc.) — install with `uv pip install "headcleaner[mcp]"`
+- **`headcleaner mcp`:** Run headcleaner as an MCP server exposing 14 `okf_*` tools to any MCP agent host (Claude Code, Cursor, etc.) — install with `uv pip install "headcleaner[mcp]"`
+- **Diagnostics:** `headcleaner doctor` checks Python, PATH, OfficeCLI, output permissions, and the `@slug` registry, then prints a GO/NO-GO verdict
+- **Adapter plugins:** Third-party packages register formats through the `headcleaner_plugin` entry-point group
 - **zsv CSV:** World's-fastest SIMD CSV parser (~10-100x stdlib) when `zsv` is on PATH
 - **Trust attestation:** `headcleaner attest` builds a Merkle root + ed25519 signature; `verify` checks it
 - **Local browse:** `headcleaner serve <bundle>` exposes a FastAPI UI for browsing + search
@@ -51,6 +53,7 @@ This produces:
 ```
 clean/
 ├── manifest.json                  # run summary: per-file status, engine, sha256
+├── REPORT.md                      # count, average time, and error rate by engine
 ├── _md/                           # plain Markdown (one file per source)
 │   ├── notes.docx.md
 │   ├── q3.pdf.md
@@ -84,6 +87,7 @@ Options:
 ```
 
 Other commands:
+  headcleaner doctor [--output-dir DIR]  Run install and permission diagnostics
   headcleaner templates        List supported formats
   headcleaner agents           Show engine install status
   headcleaner watch IN [--webhook-url URL]   Re-convert on file changes (Ctrl+C to stop)
@@ -208,6 +212,7 @@ headcleaner serve           BUNDLE [--host] [--port]    # local HTTP browser for
 headcleaner glob            DIR               # interactive include REPL (Textual)
 headcleaner notion-import   EXPORT.zip OUT    # reverse a Notion workspace export
 headcleaner lint            DIR [--fix]       # OKF + MD rule checks
+headcleaner doctor          [--output-dir]    # dependency and permission preflight
 headcleaner agents          [stdout]          # emit AGENTS.md
 headcleaner templates                        # list supported formats
 ```
@@ -222,6 +227,8 @@ headcleaner templates                        # list supported formats
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | how the pipeline fits together, where to extend |
 | [docs/FORMAT_MATRIX.md](docs/FORMAT_MATRIX.md) | every supported format × engine × library |
 | [docs/OKF_NOTES.md](docs/OKF_NOTES.md) | OKF v0.2 contract this CLI emits + trust policy |
+| [docs/SCHEMA.md](docs/SCHEMA.md) | OKF frontmatter JSON Schema and editor/CI integration |
+| [docs/PLUGINS.md](docs/PLUGINS.md) | third-party adapter entry-point protocol |
 | [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | common errors and fixes |
 | [docs/FAQ.md](docs/FAQ.md) | frequently asked questions |
 | [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) | how to add a new format / engine / emitter |
