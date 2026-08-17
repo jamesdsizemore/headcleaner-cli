@@ -7,9 +7,8 @@ from pathlib import Path
 
 import pytest
 
-from headcleaner.engines.officecli import OfficeCLIAdapter, office_oxide_available
 from headcleaner.engines.base import AdapterError
-
+from headcleaner.engines.officecli import OfficeCLIAdapter, office_oxide_available
 
 # ---------------------------------------------------------------------------
 # Smoke test: real docx fixture (built inline)

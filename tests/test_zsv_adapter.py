@@ -44,11 +44,12 @@ def test_adapter_constructs_with_zsv(zsv_on_path: None) -> None:
     assert ".tsv" in a.extensions
 
 
-@pytest.mark.skipif(zsv_available(), reason="zsv is installed; this tests the no-zsv path")
-def test_adapter_no_zsv_extensions_empty(zsv_on_path: None) -> None:
-    """Without zsv on PATH, the adapter claims no extensions (router skips it)."""
+def test_adapter_no_zsv_extensions_empty_when_binary_lookup_fails(monkeypatch) -> None:
+    """Without a resolvable zsv binary, the adapter claims no extensions."""
+    monkeypatch.setattr("headcleaner.engines.zsv.shutil.which", lambda _name: None)
     a = ZsvAdapter()
     assert a.extensions == set()
+    assert a._binary is None
 
 
 @pytest.mark.skipif(not zsv_available(), reason="zsv binary not on PATH")
@@ -104,13 +105,13 @@ def test_adapter_escapes_pipes(zsv_on_path: None, tmp_path: Path) -> None:
 @pytest.mark.skipif(not zsv_available(), reason="zsv binary not on PATH")
 def test_router_picks_zsv_for_csv(zsv_on_path: None, tmp_path: Path) -> None:
     """When zsv is installed, the ZsvAdapter is registered and routable for .csv."""
-    from headcleaner.router import _ADAPTERS, get_adapter
-
     # The router registers zsv at import time only if zsv is on PATH then.
     # If PATH was set after the router was first imported (the common case
     # under pytest), force a reload so the registration block re-runs.
     import importlib
+
     import headcleaner.router
+    from headcleaner.router import _ADAPTERS, get_adapter
 
     importlib.reload(headcleaner.router)
 

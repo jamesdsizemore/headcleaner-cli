@@ -3,6 +3,20 @@ revision = 3
 requires-python = ">=3.12, <3.14"
 
 [[package]]
+name = "all2md"
+version = "1.12.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "platformdirs" },
+    { name = "pyyaml" },
+    { name = "tomli-w" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/4a/cc/b31d070110aeded67b426e2119f1d6b2705da87b2489405358fc96e6baac/all2md-1.12.0.tar.gz", hash = "sha256:cb076882b0ab043ae25c13f6851b7483b646954dd62de74a59cda7da992bf817", size = 1490731, upload-time = "2026-08-12T23:56:30.029Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/0b/06/f08ce47b78d31492e57ef8d3bb7da75bacf755d5fc869d5374332a208e93/all2md-1.12.0-py3-none-any.whl", hash = "sha256:191d1d1006119aca50c9413bbf36e36ef57c5b6a04eca59b73b6c0e29ea20aad", size = 1640735, upload-time = "2026-08-12T23:56:28.164Z" },
+]
+
+[[package]]
 name = "annotated-doc"
 version = "0.0.5"
 source = { registry = "https://pypi.org/simple" }
@@ -388,7 +402,9 @@ pst = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "all2md" },
     { name = "jsonschema" },
+    { name = "office-oxide" },
     { name = "pytest" },
     { name = "ruff" },
 ]
@@ -426,7 +442,9 @@ provides-extras = ["ocr", "pst", "odf", "epub", "mcp", "all"]
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "all2md", specifier = ">=1.12.0" },
     { name = "jsonschema", specifier = ">=4.23" },
+    { name = "office-oxide", specifier = ">=0.1.8" },
     { name = "pytest", specifier = ">=9.1.1" },
     { name = "ruff", specifier = ">=0.16" },
 ]
@@ -752,6 +770,21 @@ dependencies = [
     { name = "defusedxml" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/97/73/8ade73f6749177003f7ce3304f524774adda96e6aaab30ea79fd8fda7934/odfpy-1.4.1.tar.gz", hash = "sha256:db766a6e59c5103212f3cc92ec8dd50a0f3a02790233ed0b52148b70d3c438ec", size = 717045, upload-time = "2020-01-18T16:55:48.852Z" }
+
+[[package]]
+name = "office-oxide"
+version = "0.1.8"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/bd/d2/d39a449c43c7a35026f36d4021d647b3018f9ee8cd23201ca76a7cc6e799/office_oxide-0.1.8.tar.gz", hash = "sha256:bb1cc81deacc640f14510a65af6ccc789ca212c85fc0c334c3dc8a18d9b29380", size = 316767, upload-time = "2026-07-22T05:28:56.796Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/19/dc/065685b7c3f9db5d00e742f40ee55e5512d000fdec8f840c17d9d8e225e9/office_oxide-0.1.8-cp38-abi3-macosx_10_12_x86_64.whl", hash = "sha256:495a2bcb23fd216751351b2bf8994f4f20297317719c0fee75c424889cbfd489", size = 1288032, upload-time = "2026-07-22T05:28:47.687Z" },
+    { url = "https://files.pythonhosted.org/packages/c7/bf/2a8ffc779dbf8bb3e24baa4e6c786fcb775b44059213ad0d6630ab34674b/office_oxide-0.1.8-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:2179881fa81ef1ac590ba23ff088023629a110163d2ee28793a2c196acaf6994", size = 1249162, upload-time = "2026-07-22T05:28:48.922Z" },
+    { url = "https://files.pythonhosted.org/packages/23/bd/e38e100f99c93a94e4091319b205abfe7ed1fc37d3f664a22bee870af56b/office_oxide-0.1.8-cp38-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:85b3b4df9bfffd0f27634d918176cb0c7bdb797824222eac50c47ae5dfaf51c0", size = 1286503, upload-time = "2026-07-22T05:28:49.912Z" },
+    { url = "https://files.pythonhosted.org/packages/0a/13/e2a2ed1a188da6c2c31f8e87a6a0066d243053b5efa4c15e55640503e9cd/office_oxide-0.1.8-cp38-abi3-manylinux_2_34_x86_64.whl", hash = "sha256:cd1cfa7059d5f9dd16ce27a41d35a6454dcb4e1385d0edf03511c24cadd4bab1", size = 1313695, upload-time = "2026-07-22T05:28:51.237Z" },
+    { url = "https://files.pythonhosted.org/packages/1e/7e/ad5d1e425052b87cdb8f16610e145f8a475211487533c0a1adbeda905713/office_oxide-0.1.8-cp38-abi3-musllinux_1_2_aarch64.whl", hash = "sha256:637200bcb0aa79b353a4b9a04d0172418423b865afe88006af6071a79c63eb20", size = 1464291, upload-time = "2026-07-22T05:28:52.53Z" },
+    { url = "https://files.pythonhosted.org/packages/4a/74/f1db5b37e209671005535e2dccf49dde8d8640cf1b0c9857c4a4acb15a0b/office_oxide-0.1.8-cp38-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:e2171d38d0c21da9fe09c71e8747cd7b5072519b8f7330b4a010366e3dc3c733", size = 1527777, upload-time = "2026-07-22T05:28:54.111Z" },
+    { url = "https://files.pythonhosted.org/packages/ce/e6/8690f216067dadb54336d89a8b0adadb91339c47b208f71437ffb7c16de1/office_oxide-0.1.8-cp38-abi3-win_amd64.whl", hash = "sha256:53e557be8c86946731f295a731052c35ab090bb3bda01dae4c1b212dd00888b6", size = 1268448, upload-time = "2026-07-22T05:28:55.785Z" },
+]
 
 [[package]]
 name = "olefile"
