@@ -21,6 +21,7 @@ What this module provides, beyond the upstream CLI:
   headcleaner subsystems (lint, attest) can reuse the OKF parsing logic
   without depending on this file's CLI.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -82,7 +83,7 @@ def split_frontmatter(text: str):
                 meta = yaml.safe_load("".join(lines[1:i])) or {}
             except yaml.YAMLError:
                 meta = {}
-            return (meta if isinstance(meta, dict) else {}), "".join(lines[i + 1:])
+            return (meta if isinstance(meta, dict) else {}), "".join(lines[i + 1 :])
     return {}, text
 
 
@@ -106,8 +107,11 @@ def resolve(target: str, path: Path, bundle: Path):
     if t.startswith("/"):
         return t.lstrip("/")[:-3]
     cand = (path.parent / t).resolve()
-    return cand.relative_to(bundle.resolve()).as_posix()[:-3] \
-        if cand.is_relative_to(bundle.resolve()) else None
+    return (
+        cand.relative_to(bundle.resolve()).as_posix()[:-3]
+        if cand.is_relative_to(bundle.resolve())
+        else None
+    )
 
 
 def read_sources(meta: dict, path: Path, bundle: Path):
@@ -124,16 +128,21 @@ def read_sources(meta: dict, path: Path, bundle: Path):
         # §5.1 — an entry's own `usage_window` overrides the one written once as a
         # sibling of `sources`. A count without its window has no units.
         window = src.get("usage_window", meta.get("usage_window"))
-        out.append({
-            "title": str(src.get("title") or src.get("id") or resource),
-            "resource": resource,
-            "cid": resolve(resource, path, bundle) if resource else None,
-            "author": str(src.get("author", "")),
-            "usage_count": src.get("usage_count"),
-            "usage_window": (f"{window.get('from', '?')}→{window.get('to', '?')}"
-                             if isinstance(window, dict) else ""),
-            "last_modified": str(src.get("last_modified") or ""),
-        })
+        out.append(
+            {
+                "title": str(src.get("title") or src.get("id") or resource),
+                "resource": resource,
+                "cid": resolve(resource, path, bundle) if resource else None,
+                "author": str(src.get("author", "")),
+                "usage_count": src.get("usage_count"),
+                "usage_window": (
+                    f"{window.get('from', '?')}→{window.get('to', '?')}"
+                    if isinstance(window, dict)
+                    else ""
+                ),
+                "last_modified": str(src.get("last_modified") or ""),
+            }
+        )
     return out
 
 
@@ -149,8 +158,11 @@ def read_trust(meta: dict):
     ver = meta.get("verified")
     # a bare mapping is one verification event (§5.2)
     entries = [ver] if isinstance(ver, dict) else (ver if isinstance(ver, list) else [])
-    verified = [{"by": str(e.get("by", "")), "at": str(e.get("at", ""))}
-                for e in entries if isinstance(e, dict)]
+    verified = [
+        {"by": str(e.get("by", "")), "at": str(e.get("at", ""))}
+        for e in entries
+        if isinstance(e, dict)
+    ]
     return generated, verified
 
 
@@ -163,28 +175,33 @@ def build(bundle: Path):
         try:
             raw = p.read_text(encoding="utf-8").lstrip("﻿")
         except (UnicodeDecodeError, OSError) as exc:
-            print(f"warning: skipping {p.relative_to(bundle)}: cannot read file: {exc}", file=sys.stderr)
+            print(
+                f"warning: skipping {p.relative_to(bundle)}: cannot read file: {exc}",
+                file=sys.stderr,
+            )
             ids.discard(cid)
             continue
         meta, body = split_frontmatter(raw)
         body = body.strip()
         generated, verified = read_trust(meta)
         sources = read_sources(meta, p, bundle)
-        nodes.append({
-            "id": cid,
-            "type": str(meta.get("type", "Untyped")),
-            "title": str(meta.get("title", p.stem)),
-            "description": str(meta.get("description", "")),
-            "tags": meta.get("tags", []) if isinstance(meta.get("tags"), list) else [],
-            "group": cid.split("/")[0] if "/" in cid else "(root)",
-            "sz": max(24, min(70, 24 + len(body) // 200)),
-            "status": str(meta.get("status", "")),
-            "stale_after": str(meta.get("stale_after") or ""),
-            "generated": generated,
-            "verified": verified,
-            "sources": sources,
-            "body": body[:8000],
-        })
+        nodes.append(
+            {
+                "id": cid,
+                "type": str(meta.get("type", "Untyped")),
+                "title": str(meta.get("title", p.stem)),
+                "description": str(meta.get("description", "")),
+                "tags": meta.get("tags", []) if isinstance(meta.get("tags"), list) else [],
+                "group": cid.split("/")[0] if "/" in cid else "(root)",
+                "sz": max(24, min(70, 24 + len(body) // 200)),
+                "status": str(meta.get("status", "")),
+                "stale_after": str(meta.get("stale_after") or ""),
+                "generated": generated,
+                "verified": verified,
+                "sources": sources,
+                "body": body[:8000],
+            }
+        )
         targets = link_targets(body) + [s["resource"] for s in sources if s["cid"]]
         for t in targets:
             tgt = resolve(t, p, bundle)
@@ -221,11 +238,13 @@ def build_with_unresolved(bundle: Path):
         meta, _ = split_frontmatter(raw)
         for src in read_sources(meta, f, bundle):
             if src.get("resource") and not src.get("cid"):
-                unresolved.append({
-                    "source": cid,
-                    "target": src["resource"],
-                    "kind": "sources-resource",
-                })
+                unresolved.append(
+                    {
+                        "source": cid,
+                        "target": src["resource"],
+                        "kind": "sources-resource",
+                    }
+                )
     return nodes, edges, unresolved
 
 
@@ -403,9 +422,15 @@ if(QS&&byId[QS])select(QS);else fromHash();
 </script></body></html>"""
 
 
-def render(bundle: Path, out: Path, title: str | None = None, link: str | None = None,
-           layout: str | None = None, og_image: str | None = None,
-           max_nodes: int | None = None):
+def render(
+    bundle: Path,
+    out: Path,
+    title: str | None = None,
+    link: str | None = None,
+    layout: str | None = None,
+    og_image: str | None = None,
+    max_nodes: int | None = None,
+):
     """Render an OKF bundle as a self-contained interactive HTML graph.
 
     Returns ``(n_concepts, n_edges)``. Same behaviour as the upstream CLI;
@@ -417,17 +442,24 @@ def render(bundle: Path, out: Path, title: str | None = None, link: str | None =
     if layout is None:
         layout = "cose" if len(nodes) <= AUTO_COSE_MAX else "concentric"
         if layout != "cose":
-            print(f"note: {len(nodes)} concepts > {AUTO_COSE_MAX} — using the linear 'concentric' "
-                  "layout (force freezes the page at this size; pass --layout cose to override)",
-                  file=sys.stderr)
+            print(
+                f"note: {len(nodes)} concepts > {AUTO_COSE_MAX} — using the linear 'concentric' "
+                "layout (force freezes the page at this size; pass --layout cose to override)",
+                file=sys.stderr,
+            )
     if len(nodes) > SCALE_WARN:
-        print(f"warning: {len(nodes)} concepts — the page will load slowly and read as a hairball; "
-              f"consider rendering a subtree, e.g. headcleaner view {bundle}/<subdir>",
-              file=sys.stderr)
+        print(
+            f"warning: {len(nodes)} concepts — the page will load slowly and read as a hairball; "
+            f"consider rendering a subtree, e.g. headcleaner view {bundle}/<subdir>",
+            file=sys.stderr,
+        )
     html = render_to_string(
-        nodes, edges,
+        nodes,
+        edges,
         title=title or f"{bundle.resolve().parent.name}/{bundle.name}",
-        link=link, layout=layout, og_image=og_image,
+        link=link,
+        layout=layout,
+        og_image=og_image,
     )
     out.write_text(html, encoding="utf-8")
     return len(nodes), len(edges)
@@ -435,17 +467,40 @@ def render(bundle: Path, out: Path, title: str | None = None, link: str | None =
 
 def render_to_string(nodes, edges, *, title, link=None, layout="cose", og_image=None):
     """Render an OKF bundle's nodes+edges to the HTML string (no disk I/O)."""
-    aesc = lambda s: (s or "").replace("&", "&amp;").replace('"', "&quot;").replace("<", "&lt;").replace(">", "&gt;")
+    def aesc(s):
+        return (
+            (s or "")
+            .replace("&", "&amp;")
+            .replace('"', "&quot;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+        )
     og_title = aesc(f"OKF — {title}")
     og_desc = aesc(f"{len(nodes)} concepts · interactive Open Knowledge Format knowledge graph")
-    og_img = (f'<meta property="og:image" content="{aesc(og_image)}">\n'
-              f'<meta name="twitter:image" content="{aesc(og_image)}">') if og_image else ""
-    src_link = f' <a class="src" href="{link}" target="_blank" rel="noopener">source ↗</a>' if link else ""
-    subs = {"__NAME__": title, "__LINK__": src_link, "__LAYOUT__": layout,
-            "__COSEMAX__": str(AUTO_COSE_MAX),
-            "__OGTITLE__": og_title, "__OGDESC__": og_desc, "__OGIMAGE__": og_img,
-            "__N__": str(len(nodes)), "__E__": str(len(edges)),
-            "__NODES__": json_for_script(nodes), "__EDGES__": json_for_script(edges)}
+    og_img = (
+        (
+            f'<meta property="og:image" content="{aesc(og_image)}">\n'
+            f'<meta name="twitter:image" content="{aesc(og_image)}">'
+        )
+        if og_image
+        else ""
+    )
+    src_link = (
+        f' <a class="src" href="{link}" target="_blank" rel="noopener">source ↗</a>' if link else ""
+    )
+    subs = {
+        "__NAME__": title,
+        "__LINK__": src_link,
+        "__LAYOUT__": layout,
+        "__COSEMAX__": str(AUTO_COSE_MAX),
+        "__OGTITLE__": og_title,
+        "__OGDESC__": og_desc,
+        "__OGIMAGE__": og_img,
+        "__N__": str(len(nodes)),
+        "__E__": str(len(edges)),
+        "__NODES__": json_for_script(nodes),
+        "__EDGES__": json_for_script(edges),
+    }
     # One pass, longest marker first: substituted content (e.g. a concept body that
     # mentions "__EDGES__") must never itself be rescanned for other markers.
     marker = re.compile("|".join(sorted(map(re.escape, subs), key=len, reverse=True)))
@@ -469,23 +524,42 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="Render an OKF bundle as a self-contained HTML graph.")
     ap.add_argument("bundle", type=Path)
     ap.add_argument("-o", "--out", type=Path, default=None)
-    ap.add_argument("-t", "--title", default=None, help="graph title (default: parent/bundle dir name)")
+    ap.add_argument(
+        "-t", "--title", default=None, help="graph title (default: parent/bundle dir name)"
+    )
     ap.add_argument("-l", "--link", default=None, help="optional source URL shown in the header")
-    ap.add_argument("--layout", default=None,
-                    choices=["cose", "concentric", "breadthfirst", "circle", "grid"],
-                    help=f"initial graph layout (default: cose, or concentric above {AUTO_COSE_MAX} "
-                         "concepts — force layout freezes the page on large bundles)")
-    ap.add_argument("--max-nodes", type=int, default=None,
-                    help="refuse to render bundles with more concepts than this (useful in CI)")
-    ap.add_argument("--og-image", default=None,
-                    help="absolute URL for the social-preview image (og:image / twitter:image)")
+    ap.add_argument(
+        "--layout",
+        default=None,
+        choices=["cose", "concentric", "breadthfirst", "circle", "grid"],
+        help=f"initial graph layout (default: cose, or concentric above {AUTO_COSE_MAX} "
+        "concepts — force layout freezes the page on large bundles)",
+    )
+    ap.add_argument(
+        "--max-nodes",
+        type=int,
+        default=None,
+        help="refuse to render bundles with more concepts than this (useful in CI)",
+    )
+    ap.add_argument(
+        "--og-image",
+        default=None,
+        help="absolute URL for the social-preview image (og:image / twitter:image)",
+    )
     args = ap.parse_args()
     if not args.bundle.is_dir():
         print(f"error: {args.bundle} is not a directory", file=sys.stderr)
         return 2
     out = args.out or (args.bundle / "viz.html")
-    n, e = render(args.bundle, out, title=args.title, link=args.link, layout=args.layout,
-                  og_image=args.og_image, max_nodes=args.max_nodes)
+    n, e = render(
+        args.bundle,
+        out,
+        title=args.title,
+        link=args.link,
+        layout=args.layout,
+        og_image=args.og_image,
+        max_nodes=args.max_nodes,
+    )
     print(f"rendered {n} concepts, {e} links -> {out}")
     return 0
 

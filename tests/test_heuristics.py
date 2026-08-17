@@ -1,4 +1,5 @@
 """Tests for the heuristic cleanup pipeline (v0.8.0)."""
+
 from __future__ import annotations
 
 import pytest
@@ -24,6 +25,7 @@ from headcleaner.heuristics import (
 
 # ---- T1: nfc_normalize -----------------------------------------------------
 
+
 def test_nfc_normalize_nfd_to_nfc() -> None:
     """NFD decomposition gets recomposed."""
     # 'é' as NFD is 'e' + U+0301
@@ -43,9 +45,10 @@ def test_nfc_normalize_cr_to_lf() -> None:
 
 # ---- T2: strip_soft_hyphens ------------------------------------------------
 
+
 def test_strip_soft_hyphens_basic() -> None:
     """U+00AD soft hyphen is removed."""
-    assert strip_soft_hyphens("hy\u00ADphen") == "hyphen"
+    assert strip_soft_hyphens("hy\u00adphen") == "hyphen"
 
 
 def test_strip_soft_hyphens_no_change() -> None:
@@ -54,6 +57,7 @@ def test_strip_soft_hyphens_no_change() -> None:
 
 
 # ---- T3: normalize_ligatures ----------------------------------------------
+
 
 def test_normalize_ligatures_fi() -> None:
     """fi ligature -> fi."""
@@ -67,10 +71,11 @@ def test_normalize_ligatures_ffi() -> None:
 
 def test_normalize_ligatures_nbsp() -> None:
     """NBSP -> space."""
-    assert normalize_ligatures("hello\u00A0world") == "hello world"
+    assert normalize_ligatures("hello\u00a0world") == "hello world"
 
 
 # ---- T4: normalize_quotes_dashes -------------------------------------------
+
 
 def test_normalize_quotes_curly_to_ascii() -> None:
     """Curly quotes become ASCII."""
@@ -94,6 +99,7 @@ def test_normalize_quotes_ellipsis() -> None:
 
 # ---- T5: collapse_whitespace -----------------------------------------------
 
+
 def test_collapse_whitespace_runs() -> None:
     """Multiple spaces collapse to one."""
     assert collapse_whitespace("hello   world") == "hello world"
@@ -111,6 +117,7 @@ def test_collapse_whitespace_tabs() -> None:
 
 
 # ---- T6: decode_html_entities ---------------------------------------------
+
 
 def test_decode_html_entities_basic() -> None:
     """Common entities decode."""
@@ -135,6 +142,7 @@ def test_decode_html_entities_no_change() -> None:
 
 
 # ---- T7: repair_line_wraps -------------------------------------------------
+
 
 def test_repair_line_wraps_joins_paragraph() -> None:
     """Hard-wrapped lines within a paragraph get joined."""
@@ -170,6 +178,7 @@ def test_repair_line_wraps_preserves_blockquote() -> None:
 
 # ---- T8: dehyphenate ------------------------------------------------------
 
+
 def test_dehyphenate_basic() -> None:
     """Hyphen at line break gets removed."""
     assert dehyphenate("exam-\nple") == "example"
@@ -181,6 +190,7 @@ def test_dehyphenate_no_change() -> None:
 
 
 # ---- T9: dedupe_toc_block --------------------------------------------------
+
 
 def test_dedupe_toc_block_drops_repeat() -> None:
     """TOC that appears again later is dropped from the start."""
@@ -209,6 +219,7 @@ def test_dedupe_toc_block_no_repeat() -> None:
 
 # ---- T10: strip_repeated_byline -------------------------------------------
 
+
 def test_strip_repeated_byline_drops_repeats() -> None:
     """Lines that appear 2+ times get dropped."""
     text = "Author Name\nSome body content.\nAuthor Name\nMore body content.\nAuthor Name\n"
@@ -227,6 +238,7 @@ def test_strip_repeated_byline_no_repeats() -> None:
 
 # ---- T11: strip_orphan_punctuation ----------------------------------------
 
+
 def test_strip_orphan_pipe() -> None:
     """Lone ``|`` line is stripped."""
     text = "Real content.\n|\nMore real content.\n"
@@ -243,6 +255,7 @@ def test_strip_orphan_gt() -> None:
 
 
 # ---- T12: enforce_heading_hierarchy --------------------------------------
+
 
 def test_enforce_heading_hierarchy_first_becomes_h1() -> None:
     """First heading is re-anchored to H1."""
@@ -272,6 +285,7 @@ def test_enforce_heading_hierarchy_caps_at_h6() -> None:
 
 # ---- Runner ---------------------------------------------------------------
 
+
 def test_clean_text_runs_default_pipeline() -> None:
     """clean_text applies all 12 stages by default."""
     text = (
@@ -299,7 +313,9 @@ def test_clean_text_with_subset() -> None:
     # Only dehyphenate ran; no ligature/whitespace work
     assert "example" in out
     # Whitespace runs should still be present
-    assert "\nple" in out or "exam-\nple" in out.replace("exam-\nple", "example") or "example" in out
+    assert (
+        "\nple" in out or "exam-\nple" in out.replace("exam-\nple", "example") or "example" in out
+    )
 
 
 def test_clean_text_unknown_stage_raises() -> None:
@@ -311,10 +327,18 @@ def test_clean_text_unknown_stage_raises() -> None:
 def test_stages_registry_complete() -> None:
     """All 12 stages are in the registry."""
     expected = {
-        "nfc_normalize", "strip_soft_hyphens", "normalize_ligatures",
-        "normalize_quotes_dashes", "collapse_whitespace", "decode_html_entities",
-        "repair_line_wraps", "dehyphenate", "dedupe_toc_block",
-        "strip_repeated_byline", "strip_orphan_punctuation", "enforce_heading_hierarchy",
+        "nfc_normalize",
+        "strip_soft_hyphens",
+        "normalize_ligatures",
+        "normalize_quotes_dashes",
+        "collapse_whitespace",
+        "decode_html_entities",
+        "repair_line_wraps",
+        "dehyphenate",
+        "dedupe_toc_block",
+        "strip_repeated_byline",
+        "strip_orphan_punctuation",
+        "enforce_heading_hierarchy",
     }
     assert set(STAGES.keys()) == expected
     assert len(DEFAULT_ORDER) == 12

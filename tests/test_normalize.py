@@ -1,9 +1,10 @@
 """Tests for normalize.py — CanonicalDoc and frontmatter builders."""
+
 from __future__ import annotations
 
 from pathlib import Path
 
-from headcleaner.normalize import normalize, default_generated, default_stale_after, CanonicalDoc
+from headcleaner.normalize import normalize, default_generated, default_stale_after
 from headcleaner.walk import SourceFile
 
 
@@ -57,6 +58,7 @@ def test_canonical_doc_md_frontmatter(tmp_path: Path) -> None:
 
 def test_default_generated_uses_env_user() -> None:
     import os
+
     os.environ["USER"] = "tester"
     g = default_generated()
     assert g.startswith("human:tester")
@@ -64,6 +66,7 @@ def test_default_generated_uses_env_user() -> None:
 
 def test_default_stale_after_is_future_date() -> None:
     from datetime import datetime, timezone
+
     s = default_stale_after()
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     assert s > today  # strictly after today

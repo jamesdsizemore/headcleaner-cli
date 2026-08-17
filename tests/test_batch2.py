@@ -1,5 +1,6 @@
 """Tests for Batch 2 features: .eml adapter, .pst stub, legacy Office
 clear-error, encrypted PDF, parallel pipeline, sha256 cache."""
+
 from __future__ import annotations
 
 import json
@@ -11,13 +12,13 @@ import pytest
 from headcleaner.engines.base import AdapterError
 from headcleaner.engines.eml import EmlAdapter
 from headcleaner.engines.legacy_office import LegacyOfficeAdapter
-from headcleaner.engines.pdf import PdfAdapter
 from headcleaner.engines.pst import PstAdapter
-from headcleaner.router import get_adapter, registered_extensions
+from headcleaner.router import get_adapter
 from headcleaner.run import RunOptions, run_pipeline
 
 
 # --- .eml adapter -----------------------------------------------------------
+
 
 def _make_eml(tmp_path: Path, name: str = "test.eml") -> Path:
     """Build a minimal valid EML file."""
@@ -73,6 +74,7 @@ def test_eml_routes_via_router(tmp_path: Path) -> None:
 
 # --- .pst stub (best-effort; tests both branches) -----------------------------
 
+
 def test_pst_adapter_raises_when_libpff_missing(tmp_path: Path) -> None:
     f = tmp_path / "x.pst"
     f.write_bytes(b"not a real pst but the adapter should fail before reading")
@@ -92,6 +94,7 @@ def test_pst_routes_via_router(tmp_path: Path) -> None:
 
 
 # --- legacy Office ----------------------------------------------------------
+
 
 def test_legacy_office_adapter_raises_clear_error(tmp_path: Path) -> None:
     f = tmp_path / "old.doc"
@@ -121,19 +124,23 @@ def test_legacy_office_routes_via_router(tmp_path: Path) -> None:
 
 # --- encrypted PDF error ----------------------------------------------------
 
+
 def test_pdf_encrypted_gives_actionable_error(tmp_path: Path) -> None:
     """A PDF with /Encrypt in metadata surfaces a qpdf hint."""
     # We can't easily construct a real encrypted PDF here, but we can
     # verify the PDF adapter's error path includes the actionable hint.
     from headcleaner.engines.pdf import PdfAdapter as PDF
+
     # Verify the hint string by reading the source
     import inspect
+
     src = inspect.getsource(PDF.extract)
     assert "qpdf" in src
     assert "decrypt" in src.lower()
 
 
 # --- parallel + cache -------------------------------------------------------
+
 
 def test_run_pipeline_jobs_1_is_default_sequential(tmp_path: Path) -> None:
     """Default jobs=1 keeps manifest order identical to input order."""
@@ -181,7 +188,9 @@ def test_run_pipeline_no_cache_recomputes(tmp_path: Path) -> None:
     # First run
     run_pipeline(RunOptions(input_root=tmp_path, output_root=out, fmt="md"))
     # Second run with --no-cache
-    record = run_pipeline(RunOptions(input_root=tmp_path, output_root=out, fmt="md", use_cache=False))
+    record = run_pipeline(
+        RunOptions(input_root=tmp_path, output_root=out, fmt="md", use_cache=False)
+    )
     assert record.options["use_cache"] is False
     assert all(r.status == "ok" for r in record.results)
 

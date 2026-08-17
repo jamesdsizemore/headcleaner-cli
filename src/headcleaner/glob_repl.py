@@ -9,11 +9,11 @@ Public entry points:
     - `launch_repl(root, initial_glob="*")` — runs the Textual app or
       falls back to a plain-mode REPL when Textual isn't available.
 """
+
 from __future__ import annotations
 
 import fnmatch
 from pathlib import Path
-from typing import Iterable
 
 
 def count_matches(root: Path, glob: str) -> int:
@@ -43,6 +43,7 @@ def list_matches(root: Path, glob: str, limit: int = 20) -> list[Path]:
 # ---------------------------------------------------------------------------
 # Textual app (preferred path)
 # ---------------------------------------------------------------------------
+
 
 def launch_repl(root: Path, initial_glob: str = "*") -> str:
     """Launch the interactive glob REPL.
@@ -83,6 +84,7 @@ def launch_repl(root: Path, initial_glob: str = "*") -> str:
 
         def compose(self) -> ComposeResult:
             from textual.widgets import Input as _Input
+
             yield Static(f"Glob REPL — root: {self.root}", id="prompt")
             yield _Input(value=self.current_glob, placeholder="*.pdf", id="glob-input")
             yield Static("", id="count")
@@ -107,15 +109,11 @@ def launch_repl(root: Path, initial_glob: str = "*") -> str:
             samples = list_matches(self.root, self.current_glob, limit=8)
             count_text = f"{n} file{'s' if n != 1 else ''} matching  {self.current_glob!r}"
             try:
-                self.query_one("#count", Static).update(
-                    _theme.paint(count_text, _theme.NEON_PINK)
-                )
+                self.query_one("#count", Static).update(_theme.paint(count_text, _theme.NEON_PINK))
                 sample_lines = "\n".join(str(p.relative_to(self.root)) for p in samples)
                 if n > len(samples):
                     sample_lines += f"\n... ({n - len(samples)} more)"
-                self.query_one("#samples", Static).update(
-                    sample_lines or "(no matches)"
-                )
+                self.query_one("#samples", Static).update(sample_lines or "(no matches)")
             except Exception:
                 pass
 

@@ -6,6 +6,7 @@ containing:
 - the body (text/plain preferred; text/html fallback with markdownify)
 - attachments listed as separate sections
 """
+
 from __future__ import annotations
 
 import email

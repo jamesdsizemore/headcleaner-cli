@@ -1,7 +1,7 @@
 """Tests for the OKF TUI viewer (v0.12.0)."""
+
 from __future__ import annotations
 
-import shutil
 from pathlib import Path
 
 import pytest
@@ -174,8 +174,7 @@ def test_run_tui_non_tty_prints_and_returns(tmp_path: Path, capsys):
     """Non-TTY stdout: print once and exit cleanly."""
     d = tmp_path / "okf"
     d.mkdir(parents=True, exist_ok=True)
-    (d / "x.md").write_text(
-        "---\ntype: Doc\ntitle: X\n---\n\nbody", encoding="utf-8")
+    (d / "x.md").write_text("---\ntype: Doc\ntitle: X\n---\n\nbody", encoding="utf-8")
     rc = run_tui(d)
     assert rc == 0
     captured = capsys.readouterr()

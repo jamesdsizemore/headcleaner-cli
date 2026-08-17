@@ -5,6 +5,7 @@ preserve it and add any missing OKF trust family keys. If it doesn't,
 generate a complete OKF frontmatter block from the file's first heading
 (or the filename stem as fallback).
 """
+
 from __future__ import annotations
 
 import re
@@ -40,7 +41,7 @@ class MdAdapter(Adapter):
         body = text
         m = re.match(r"\A---\s*\n(.*?)\n---\s*\n", body, re.DOTALL)
         if m:
-            body = body[m.end():]
+            body = body[m.end() :]
         for line in body.splitlines():
             m = re.match(r"^#\s+(.+?)\s*$", line)
             if m:
@@ -52,5 +53,5 @@ class MdAdapter(Adapter):
         """Strip a leading frontmatter block (normalize will re-emit OKF)."""
         m = re.match(r"\A---\s*\n(.*?)\n---\s*\n", text, re.DOTALL)
         if m:
-            return text[m.end():].lstrip("\n")
+            return text[m.end() :].lstrip("\n")
         return text

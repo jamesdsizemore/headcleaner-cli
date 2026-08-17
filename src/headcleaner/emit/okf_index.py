@@ -9,6 +9,7 @@ every concept.
 The index is generated after all concepts are written, by walking
 the bundle root and inspecting the frontmatter of each concept.
 """
+
 from __future__ import annotations
 
 import re
@@ -85,7 +86,9 @@ def generate(bundle_root: Path) -> int:
         written += 1
 
     # Also write a top-level index if we have anything
-    if bundle_root in by_dir and (bundle_root / "index.md") not in [p for p, _ in by_dir[bundle_root] if p.name == "index.md"]:
+    if bundle_root in by_dir and (bundle_root / "index.md") not in [
+        p for p, _ in by_dir[bundle_root] if p.name == "index.md"
+    ]:
         pass  # already handled by the loop above
 
     return written
@@ -138,12 +141,11 @@ def _enriched_index_md(directory_name: str, concepts: list[tuple[Path, dict]]) -
         body_text = concept_path.read_text(encoding="utf-8")
         m = _FRONTMATTER_RE.match(body_text)
         if m:
-            body_text = body_text[m.end():]
+            body_text = body_text[m.end() :]
         wc = _word_count(body_text)
         desc_text = f" — {desc}" if desc else ""
         bullets.append(
-            f"- [{ctitle}]({rel_link}) — `{ctype}`{status_suffix}{desc_text} "
-            f"_(~{wc} words)_"
+            f"- [{ctitle}]({rel_link}) — `{ctype}`{status_suffix}{desc_text} _(~{wc} words)_"
         )
     body = "\n".join(bullets) if bullets else "_No concepts in this directory._"
     return f"{title}\n\n## Concepts\n\n{body}\n"
@@ -190,7 +192,7 @@ def append_log_entry(bundle_root: Path, record) -> None:
     if log_path.exists():
         existing = log_path.read_text(encoding="utf-8")
     else:
-        existing = "# Bundle history\n\nThis file records every `headcleaner convert` run against this bundle. Newest entries appear at the bottom.\n"
+        existing = "# Bundle history\n\nThis file records every `headcleaner convert` run against this bundle. Newest entries appear at the bottom.\n"  # noqa: E501
     log_path.write_text(existing + entry, encoding="utf-8")
 
 
@@ -212,6 +214,7 @@ def generate(
 
     # Discover concepts
     from collections import defaultdict
+
     by_dir: dict[Path, list[tuple[Path, dict]]] = defaultdict(list)
     for md_path in sorted(bundle_root.rglob("*.md")):
         if md_path.name == "index.md":

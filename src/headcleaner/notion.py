@@ -22,6 +22,7 @@ This parser:
 CLI:
     headcleaner notion-import <export.zip> <output-bundle>
 """
+
 from __future__ import annotations
 
 import csv
@@ -42,16 +43,18 @@ class NotionImportError(RuntimeError):
 @dataclass
 class NotionPage:
     """One Notion page parsed from a Markdown export."""
+
     title: str
     properties: dict[str, str] = field(default_factory=dict)
     body_md: str = ""
-    source_path: str = ""        # path inside the zip
+    source_path: str = ""  # path inside the zip
     attachments: list[str] = field(default_factory=list)  # paths inside the zip
 
 
 @dataclass
 class NotionExport:
     """A parsed Notion workspace export."""
+
     source: Path
     pages: list[NotionPage] = field(default_factory=list)
     databases: list[dict[str, Any]] = field(default_factory=list)  # {name, rows: [[col, ...]]}
@@ -122,6 +125,7 @@ def _utc_now_iso() -> str:
 # Public API
 # ---------------------------------------------------------------------------
 
+
 def detect_export(export_path: Path) -> dict[str, int]:
     """Return counts of {databases, pages, files} in the export zip."""
     if not export_path.exists():
@@ -169,11 +173,13 @@ def parse_export(export_path: Path) -> NotionExport:
                 text = zf.read(info).decode("utf-8", errors="replace")
                 reader = csv.reader(io.StringIO(text))
                 rows = list(reader)
-                export.databases.append({
-                    "name": Path(name).stem,
-                    "source_path": name,
-                    "rows": rows,
-                })
+                export.databases.append(
+                    {
+                        "name": Path(name).stem,
+                        "source_path": name,
+                        "rows": rows,
+                    }
+                )
             else:
                 export.files.append(name)
     return export
@@ -248,7 +254,8 @@ def import_notion_export(export_path: Path, output_root: Path) -> int:
         }
         # Carry remaining Notion properties into the frontmatter as a sub-dict
         notion_extras = {
-            k: v for k, v in page.properties.items()
+            k: v
+            for k, v in page.properties.items()
             if k not in {"Description"}  # already mapped
         }
         if notion_extras:
@@ -256,7 +263,7 @@ def import_notion_export(export_path: Path, output_root: Path) -> int:
 
         # Rewrite attachment links in the body
         body = page.body_md
-        for zip_name, local in attachment_url_map.items():
+        for zip_name, local in attachment_url_map.items():  # noqa: B007
             # Notion links are usually relative; just append a reference list
             pass
         # Append an attachment footer
@@ -267,6 +274,7 @@ def import_notion_export(export_path: Path, output_root: Path) -> int:
 
         # Serialize via PyYAML
         import yaml
+
         fm_text = yaml.safe_dump(frontmatter, sort_keys=False, allow_unicode=True).strip()
         target.write_text(f"---\n{fm_text}\n---\n{body}\n", encoding="utf-8")
         n += 1

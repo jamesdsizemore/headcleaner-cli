@@ -17,6 +17,7 @@ Usage:
     from headcleaner.crossref import linkify_bundle
     linkify_bundle(Path("./out/okf"))
 """
+
 from __future__ import annotations
 
 import re
@@ -78,7 +79,7 @@ def linkify_bundle(bundle_root: Path) -> int:
         return 0
 
     # Build the lookup maps once
-    by_title: dict[str, str] = {}        # title → relative path
+    by_title: dict[str, str] = {}  # title → relative path
     by_resource_basename: dict[str, str] = {}
     for concept_path, fm in concepts:
         try:
@@ -90,6 +91,7 @@ def linkify_bundle(bundle_root: Path) -> int:
         resource = fm.get("resource", "")
         if resource.startswith("file://"):
             from urllib.parse import urlparse, unquote
+
             path = urlparse(resource).path
             basename = unquote(path).rsplit("/", 1)[-1]
             if basename:
@@ -106,7 +108,7 @@ def linkify_bundle(bundle_root: Path) -> int:
         m = _FRONTMATTER_RE.match(text)
         if not m:
             continue
-        body = text[m.end():]
+        body = text[m.end() :]
 
         replacements: dict[str, str] = {}
         for title, target in by_title.items():

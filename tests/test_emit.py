@@ -1,4 +1,5 @@
 """Tests for the markdown and OKF emitters."""
+
 from __future__ import annotations
 
 import re
@@ -87,6 +88,7 @@ def test_okf_index_heading_is_clean(tmp_path: Path) -> None:
 
 def test_manifest_writer_creates_valid_json(tmp_path: Path) -> None:
     import json
+
     record = manifest_emit.RunRecord(
         input_root=str(tmp_path),
         output_root=str(tmp_path),

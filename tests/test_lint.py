@@ -1,16 +1,13 @@
 """Tests for the post-conversion linter (lint.py)."""
+
 from __future__ import annotations
 
 import textwrap
 from pathlib import Path
 
-import pytest
 
 from headcleaner.lint import (
-    LintSummary,
     Severity,
-    check_markdown,
-    check_okf,
     lint_directory,
 )
 
@@ -46,6 +43,7 @@ def _okf_ok(relpath: str = "x.txt") -> str:
 
 
 # --- OKF rules --------------------------------------------------------------
+
 
 def test_okf_passes_clean(tmp_path: Path) -> None:
     _write(tmp_path / "okf" / "x.md", _okf_ok())
@@ -102,6 +100,7 @@ def test_okf_index_md_skipped(tmp_path: Path) -> None:
 
 # --- Markdown rules ---------------------------------------------------------
 
+
 def test_md_orphan_fence(tmp_path: Path) -> None:
     bad = "---\ntitle: x\n---\n\n```text\nunclosed\n"
     _write(tmp_path / "_md" / "x.md", bad)
@@ -131,6 +130,7 @@ def test_md_long_line_info(tmp_path: Path) -> None:
 
 # --- Summary driver ---------------------------------------------------------
 
+
 def test_lint_summary_counts(tmp_path: Path) -> None:
     _write(tmp_path / "okf" / "a.md", _okf_ok("a.txt"))
     _write(tmp_path / "okf" / "b.md", _okf_ok("b.txt"))
@@ -148,9 +148,11 @@ def test_lint_directory_handles_missing_root(tmp_path: Path) -> None:
 
 # --- --fix ------------------------------------------------------------------
 
+
 def test_build_fix_adds_missing_trust_fields(tmp_path: Path) -> None:
     """A concept with frontmatter but missing OKF trust fields should be fixable."""
     from headcleaner.lint import build_fix
+
     f = tmp_path / "okf" / "x.md"
     f.parent.mkdir(parents=True, exist_ok=True)
     f.write_text(
@@ -172,6 +174,7 @@ def test_build_fix_adds_missing_trust_fields(tmp_path: Path) -> None:
 
 def test_build_fix_skips_index_md(tmp_path: Path) -> None:
     from headcleaner.lint import build_fix
+
     f = tmp_path / "okf" / "index.md"
     f.parent.mkdir(parents=True, exist_ok=True)
     f.write_text("---\ntype: Index\n---\n\n# Documents\n", encoding="utf-8")
@@ -180,6 +183,7 @@ def test_build_fix_skips_index_md(tmp_path: Path) -> None:
 
 def test_build_fix_skips_no_frontmatter(tmp_path: Path) -> None:
     from headcleaner.lint import build_fix
+
     f = tmp_path / "okf" / "x.md"
     f.parent.mkdir(parents=True, exist_ok=True)
     f.write_text("Just markdown, no frontmatter.\n", encoding="utf-8")
@@ -188,11 +192,16 @@ def test_build_fix_skips_no_frontmatter(tmp_path: Path) -> None:
 
 def test_apply_fixes_writes_to_out_root(tmp_path: Path) -> None:
     from headcleaner.lint import Fix, apply_fixes
+
     src = tmp_path / "okf" / "x.md"
     src.parent.mkdir(parents=True, exist_ok=True)
     src.write_text("---\ntype: Document\n---\n\nbody\n", encoding="utf-8")
     out_root = tmp_path / "fixed"
-    fix = Fix(file=src, new_text="---\ntype: Document\nstatus: unverified\n---\n\nbody\n", description="added status")
+    fix = Fix(
+        file=src,
+        new_text="---\ntype: Document\nstatus: unverified\n---\n\nbody\n",
+        description="added status",
+    )
     applied = apply_fixes([fix], out_root)
     assert len(applied) == 1
     written = out_root / "x.md"
@@ -203,10 +212,15 @@ def test_apply_fixes_writes_to_out_root(tmp_path: Path) -> None:
 def test_fix_does_not_overwrite_source(tmp_path: Path) -> None:
     """--fix must NEVER modify the original file (writes to <dir>.fixed/ instead)."""
     from headcleaner.lint import build_fix, apply_fixes
+
     src_dir = tmp_path / "okf"
     src_dir.mkdir()
     src = src_dir / "x.md"
-    original_text = "---\ntype: Document\nsources:\n  - uri: file:///x\n    sha256: " + "a" * 64 + "\n---\n\nbody\n"
+    original_text = (
+        "---\ntype: Document\nsources:\n  - uri: file:///x\n    sha256: "
+        + "a" * 64
+        + "\n---\n\nbody\n"
+    )
     src.write_text(original_text, encoding="utf-8")
 
     fix = build_fix(src)

@@ -17,6 +17,7 @@ FORMAT_MATRIX.md for the legacy fallback path.
 `officecli` for the router/router registry, so no other module needs to
 change. We just prefer office_oxide internally.
 """
+
 from __future__ import annotations
 
 import logging
@@ -46,7 +47,9 @@ class OfficeCLIAdapter(Adapter):
     name = "officecli"
     extensions = {".docx", ".xlsx", ".pptx"}
 
-    def __init__(self, binary: str = "officecli", timeout: int = 60, prefer_oxide: bool = True) -> None:
+    def __init__(
+        self, binary: str = "officecli", timeout: int = 60, prefer_oxide: bool = True
+    ) -> None:
         self.binary = binary
         self.timeout = timeout
         # OfficeCLI binary resolution (kept for fallback path)
@@ -55,7 +58,9 @@ class OfficeCLIAdapter(Adapter):
         if shutil.which(binary):
             resolved = shutil.which(binary)  # type: ignore[assignment]
             self._officecli_resolved = resolved
-            self._officecli_use_shell = resolved.lower().endswith((".cmd", ".bat")) if resolved else False
+            self._officecli_use_shell = (
+                resolved.lower().endswith((".cmd", ".bat")) if resolved else False
+            )
         # office_oxide preference
         self._prefer_oxide = prefer_oxide and office_oxide_available()
         if not self._prefer_oxide and not self._officecli_resolved:
@@ -76,7 +81,9 @@ class OfficeCLIAdapter(Adapter):
                 return self._extract_with_oxide(source, progress=progress)
             except Exception as e:
                 # Graceful degradation: if office_oxide fails, fall back to OfficeCLI.
-                logger.warning("office_oxide failed on %s (%s); falling back to OfficeCLI", source, e)
+                logger.warning(
+                    "office_oxide failed on %s (%s); falling back to OfficeCLI", source, e
+                )
                 if self._officecli_resolved:
                     return self._extract_with_officecli(source)
                 raise AdapterError(f"office_oxide failed on {source}: {e}") from e

@@ -2,6 +2,7 @@
 
 Yields SourceFile records the router can dispatch.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -15,7 +16,7 @@ from pathlib import Path
 @dataclass(frozen=True)
 class SourceFile:
     path: Path
-    relpath: Path            # path relative to root
+    relpath: Path  # path relative to root
     size_bytes: int
     sha256: str | None = None  # computed lazily by caller if needed
 
@@ -124,7 +125,9 @@ def sha256_of(path: Path) -> str:
     return h.hexdigest()
 
 
-def manifest_json(root: Path, *, include_glob: list[str] | None = None, exclude_glob: list[str] | None = None) -> str:
+def manifest_json(
+    root: Path, *, include_glob: list[str] | None = None, exclude_glob: list[str] | None = None
+) -> str:
     """Walk `root` and return a JSON string describing every file's routing.
 
     Output shape:
@@ -165,4 +168,5 @@ def manifest_json(root: Path, *, include_glob: list[str] | None = None, exclude_
 
 def _utc_now_iso() -> str:
     from datetime import datetime, timezone
+
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")

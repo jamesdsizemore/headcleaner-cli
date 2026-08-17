@@ -11,6 +11,7 @@ Safe defaults:
   - Uses `--no-verify` to skip pre-commit hooks (you may want hooks to
     run; configure via `--git-commit-verify`)
 """
+
 from __future__ import annotations
 
 import shutil

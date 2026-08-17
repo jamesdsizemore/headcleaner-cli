@@ -4,6 +4,7 @@ These tests bypass the actual MCP transport and call the tool functions
 directly with a synthetic bundle. The MCP wiring itself (decorator,
 stdio transport) is covered by FastMCP's own test suite.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -164,7 +165,8 @@ def test_diff_finds_added_concept(reg, bundle_dir: Path):
     initial = okf_diff(reg, None)
     # Add a new file
     (bundle_dir / "concepts" / "delta.md").write_text(
-        "---\ntype: Document\ntitle: Delta\n---\n\n# Delta", encoding="utf-8",
+        "---\ntype: Document\ntitle: Delta\n---\n\n# Delta",
+        encoding="utf-8",
     )
     after = okf_diff(reg, None)
     assert "concepts/delta.md" in after["added"]
@@ -203,7 +205,7 @@ def test_registry_add_twice_refreshes(reg):
 def test_registry_first_bundle_is_default(reg):
     """With no explicit bundle name, tools default to the first registered one."""
     r = BundleRegistry()
-    r.add("alpha", bundle_dir := reg._bundles["okf"].path)
+    r.add("alpha", reg._bundles["okf"].path)
     r.add("beta", reg._bundles["okf"].path)
     out = okf_search(r, "Alpha", None, 10)
     assert out  # defaults to alpha, finds Alpha
@@ -212,4 +214,5 @@ def test_registry_first_bundle_is_default(reg):
 def test_mcp_help_lists_required_extra():
     """The mcp extra must be installed for import to succeed."""
     from headcleaner import mcp
+
     assert mcp.__doc__

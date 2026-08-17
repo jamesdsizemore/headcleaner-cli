@@ -10,6 +10,7 @@ Event types:
    "error": "..."}
 - {"event": "finish", "tool": "headcleaner", "version": "0.5.0", "ok": N, "failed": N, "skipped": N}
 """
+
 from __future__ import annotations
 
 import json

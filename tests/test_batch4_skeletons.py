@@ -1,4 +1,5 @@
 """Tests for the Batch 4d skeleton modules (notion, attest, glob_repl)."""
+
 from __future__ import annotations
 
 import zipfile
@@ -12,6 +13,7 @@ from headcleaner.notion import NotionImportError, detect_export
 
 
 # --- Eng #36: attest -----------------------------------------------------
+
 
 def test_canonical_hash_is_deterministic(tmp_path: Path) -> None:
     """canonical_hash returns the same SHA-256 for the same content."""
@@ -27,12 +29,8 @@ def test_build_attestation_enumerates_concepts(tmp_path: Path) -> None:
     """build_attestation enumerates concepts and computes a real Merkle root (v0.7 full impl)."""
     bundle = tmp_path / "okf"
     bundle.mkdir()
-    (bundle / "a.md").write_text(
-        "---\ntype: Document\n---\nA body.\n", encoding="utf-8"
-    )
-    (bundle / "b.md").write_text(
-        "---\ntype: Document\n---\nB body.\n", encoding="utf-8"
-    )
+    (bundle / "a.md").write_text("---\ntype: Document\n---\nA body.\n", encoding="utf-8")
+    (bundle / "b.md").write_text("---\ntype: Document\n---\nB body.\n", encoding="utf-8")
     payload = build_attestation(bundle)
     assert payload["concept_count"] == 2
     assert "a.md" in payload["concepts"]
@@ -54,6 +52,7 @@ def test_build_attestation_skips_index_log(tmp_path: Path) -> None:
 
 
 # --- Eng #31: notion -----------------------------------------------------
+
 
 def test_detect_export_on_real_zip(tmp_path: Path) -> None:
     """detect_export reads a synthetic Notion export zip."""
@@ -79,6 +78,7 @@ def test_detect_export_missing_path(tmp_path: Path) -> None:
 def test_import_notion_export_returns_count(tmp_path: Path) -> None:
     """import_notion_export returns the number of imported concepts (v0.7 full impl)."""
     from headcleaner.notion import import_notion_export
+
     export = tmp_path / "notion.zip"
     with zipfile.ZipFile(export, "w") as zf:
         zf.writestr("x.md", "# x\nbody")
@@ -88,6 +88,7 @@ def test_import_notion_export_returns_count(tmp_path: Path) -> None:
 
 
 # --- Eng #44: glob REPL --------------------------------------------------
+
 
 def test_count_matches_returns_correct_number(tmp_path: Path) -> None:
     """count_matches correctly counts files matching a glob."""

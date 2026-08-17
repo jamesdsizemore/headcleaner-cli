@@ -4,6 +4,7 @@ Output: <output>/<mirrored-source-relpath-as-flat-name>.md
 The Markdown frontmatter is a small, human-readable subset; the OKF emitter
 adds the full v0.2 trust family on top.
 """
+
 from __future__ import annotations
 
 from pathlib import Path

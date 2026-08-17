@@ -17,8 +17,8 @@ from __future__ import annotations
 
 # Default palette: neon (the user's spec from Batch 1)
 PALETTE_NEON = {
-    "primary": "#22D3EE",    # neon cyan
-    "accent": "#EC4899",     # neon pink
+    "primary": "#22D3EE",  # neon cyan
+    "accent": "#EC4899",  # neon pink
     "secondary": "#A855F7",  # neon purple
     "primary_dim": "#0E7490",
     "accent_dim": "#9D174D",
@@ -44,8 +44,8 @@ FG_MUTED = PALETTE_NEON["muted"]
 FG_DIM = PALETTE_NEON["dim"]
 
 PALETTE_LIGHT = {
-    "primary": "#0EA5E9",    # sky-500 (cyan-ish, fits light bg)
-    "accent": "#DB2777",     # pink-600
+    "primary": "#0EA5E9",  # sky-500 (cyan-ish, fits light bg)
+    "accent": "#DB2777",  # pink-600
     "secondary": "#7C3AED",  # violet-600
     "primary_dim": "#0369A1",
     "accent_dim": "#9D174D",
@@ -58,15 +58,15 @@ PALETTE_LIGHT = {
 }
 
 PALETTE_DARK = {
-    "primary": "#A78BFA",    # violet-400 (more muted for non-cyan-loving)
-    "accent": "#F472B6",     # pink-400
+    "primary": "#A78BFA",  # violet-400 (more muted for non-cyan-loving)
+    "accent": "#F472B6",  # pink-400
     "secondary": "#22D3EE",  # cyan-400
     "primary_dim": "#7C3AED",
     "accent_dim": "#DB2777",
     "secondary_dim": "#0E7490",
-    "bg": "#1F2937",         # gray-800
-    "bg_panel": "#111827",   # gray-900
-    "fg": "#F3F4F6",         # gray-100
+    "bg": "#1F2937",  # gray-800
+    "bg_panel": "#111827",  # gray-900
+    "fg": "#F3F4F6",  # gray-100
     "muted": "#9CA3AF",
     "dim": "#4B5563",
 }
@@ -131,6 +131,7 @@ STATUS_ACTIVE = NEON_PINK
 STATUS_INFO = NEON_PURPLE
 STATUS_SKIPPED = FG_MUTED
 STATUS_FAILED = NEON_PINK  # bright pink instead of red
+
 
 # Box-drawing characters (omp's two themes)
 class RoundedBox:
@@ -262,4 +263,5 @@ def panel_row(content: str, width: int = 80, *, box: type = RoundedBox) -> str:
 def visible_width(text: str) -> int:
     """Approximate visible width of a string, ignoring ANSI escapes."""
     import re
+
     return len(re.sub(r"\x1b\[[0-9;]*m", "", text))

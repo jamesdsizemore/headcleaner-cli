@@ -4,6 +4,7 @@ Every engine (OfficeCLI, PDF, HTML, etc.) implements `Adapter`. The contract is
 deliberately small: convert a file to a normalized intermediate dict that
 `normalize.py` turns into a `CanonicalDoc`.
 """
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod

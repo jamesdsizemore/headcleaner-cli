@@ -1,12 +1,10 @@
 """Tests for Batch 3 features: watch, webhook, Obsidian compat."""
+
 from __future__ import annotations
 
-import json
-import urllib.error
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import pytest
 
 from headcleaner.normalize import normalize
 from headcleaner.normalize import CanonicalDoc
@@ -17,9 +15,11 @@ from headcleaner.webhook import build_payload, post_webhook
 
 # --- Watch -------------------------------------------------------------------
 
+
 def test_watch_module_importable() -> None:
     """Smoke: the watch module loads and exposes watch_directory."""
     from headcleaner.watch import watch_directory
+
     assert callable(watch_directory)
 
 
@@ -28,6 +28,7 @@ def test_watch_module_handles_missing_rust_extension() -> None:
     module still loads — `watch_directory` raises a clear error at call time."""
     import importlib
     from headcleaner import watch as watch_mod
+
     # Force re-import to simulate the failing path
     importlib.reload(watch_mod) if False else None  # no-op; module already imported
     assert hasattr(watch_mod, "watch_directory")
@@ -35,9 +36,11 @@ def test_watch_module_handles_missing_rust_extension() -> None:
 
 # --- Webhook -----------------------------------------------------------------
 
+
 def test_build_payload_includes_summary() -> None:
     """Payload has tool, version, format, summary counts."""
     from headcleaner.emit.manifest import RunRecord, FileResult
+
     record = RunRecord(
         started_at="2026-08-16T00:00:00Z",
         finished_at="2026-08-16T00:00:01Z",
@@ -47,10 +50,24 @@ def test_build_payload_includes_summary() -> None:
         options={},
     )
     record.results = [
-        FileResult(source_path="/x", relpath="x.txt", engine="txt",
-                   sha256="a" * 64, md_path="/m", okf_path="/o", status="ok"),
-        FileResult(source_path="/y", relpath="y.txt", engine=None, sha256=None,
-                   md_path=None, okf_path=None, status="skipped"),
+        FileResult(
+            source_path="/x",
+            relpath="x.txt",
+            engine="txt",
+            sha256="a" * 64,
+            md_path="/m",
+            okf_path="/o",
+            status="ok",
+        ),
+        FileResult(
+            source_path="/y",
+            relpath="y.txt",
+            engine=None,
+            sha256=None,
+            md_path=None,
+            okf_path=None,
+            status="skipped",
+        ),
     ]
     payload = build_payload(record)
     assert payload["tool"] == "headcleaner"
@@ -85,6 +102,7 @@ def test_post_webhook_calls_urlopen() -> None:
 
 # --- Obsidian compat ---------------------------------------------------------
 
+
 def test_to_okf_frontmatter_default_no_obsidian_fields() -> None:
     f = tmp_path_fixture().get("x.txt")
     # Default behavior: standard OKF only
@@ -117,6 +135,7 @@ def test_okf_emitter_respects_obsidian_compat_flag(tmp_path: Path) -> None:
     doc = normalize(sf, {"title": "X", "body_md": "body"}, engine="txt")
     out = tmp_path / "out"
     from headcleaner.emit import okf as okf_emit
+
     p = okf_emit.write(doc, out, obsidian_compat=True)
     text = p.read_text(encoding="utf-8")
     # Obsidian flat fields appear
@@ -132,9 +151,14 @@ def test_okf_emitter_respects_obsidian_compat_flag(tmp_path: Path) -> None:
 def test_run_pipeline_obsidian_compat_writes_obsidian_fields(tmp_path: Path) -> None:
     (tmp_path / "a.txt").write_text("a", encoding="utf-8")
     out = tmp_path / "out"
-    record = run_pipeline(RunOptions(
-        input_root=tmp_path, output_root=out, fmt="okf", obsidian_compat=True,
-    ))
+    record = run_pipeline(
+        RunOptions(
+            input_root=tmp_path,
+            output_root=out,
+            fmt="okf",
+            obsidian_compat=True,
+        )
+    )
     okf_files = list((out / "okf").rglob("*.md"))
     assert okf_files, "no OKF files produced"
     text = okf_files[0].read_text(encoding="utf-8")
@@ -144,17 +168,21 @@ def test_run_pipeline_obsidian_compat_writes_obsidian_fields(tmp_path: Path) -> 
 
 # --- Helpers -----------------------------------------------------------------
 
+
 def tmp_path_fixture():
     """A class wrapper to match pytest's tmp_path fixture shape."""
+
     class _T:
         def __init__(self):
             import tempfile
+
             self._path = Path(tempfile.mkdtemp())
 
         def get(self, name: str) -> Path:
             f = self._path / name
             f.write_text("x", encoding="utf-8")
             return f
+
     return _T()
 
 

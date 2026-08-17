@@ -1,4 +1,5 @@
 """Tests for the OKF viewer (v0.10.0)."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -6,7 +7,6 @@ from pathlib import Path
 import pytest
 
 from headcleaner.viewer import (
-    AUTO_COSE_MAX,
     build,
     json_for_script,
     render,

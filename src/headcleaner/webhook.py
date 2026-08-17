@@ -11,6 +11,7 @@ The payload is JSON: {tool, version, started_at, finished_at, format,
 input_root, output_root, results: [...]}. The full manifest is sent; if
 you want a slimmer payload, edit `post_webhook()`.
 """
+
 from __future__ import annotations
 
 import json

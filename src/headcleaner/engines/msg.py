@@ -4,15 +4,16 @@ Uses `extract-msg` (already a dep). Extracts subject + body + headers
 and renders them as a Markdown document. Attachments are listed by
 filename + size.
 """
+
 from __future__ import annotations
 
-import email.utils
 from pathlib import Path
 
 from .base import Adapter
 
 try:
     import extract_msg  # type: ignore[import]
+
     HAS_EXTRACT_MSG = True
 except ImportError:  # pragma: no cover
     HAS_EXTRACT_MSG = False
@@ -31,7 +32,7 @@ class MsgAdapter(Adapter):
     name = "msg"
     extensions = (".msg",)
 
-    def extract(self, source: Path) -> Extracted:
+    def extract(self, source: Path) -> "Extracted":  # noqa: F821
         if not HAS_EXTRACT_MSG:
             return {
                 "title": source.stem,
@@ -67,11 +68,15 @@ class MsgAdapter(Adapter):
 
         attachments = []
         try:
-            for att in (msg.attachments or []):
-                attachments.append({
-                    "filename": getattr(att, "longFilename", None) or getattr(att, "shortFilename", None) or "unknown",
-                    "size": len(att.data) if getattr(att, "data", None) else 0,
-                })
+            for att in msg.attachments or []:
+                attachments.append(
+                    {
+                        "filename": getattr(att, "longFilename", None)
+                        or getattr(att, "shortFilename", None)
+                        or "unknown",
+                        "size": len(att.data) if getattr(att, "data", None) else 0,
+                    }
+                )
         except Exception:
             pass
 
@@ -87,12 +92,14 @@ class MsgAdapter(Adapter):
             headers.append(f"- **Date:** {date}")
         header_block = "\n".join(headers) if headers else "(no headers)"
         att_block = (
-            "\n\n## Attachments\n\n" + "\n".join(
-                f"- `{a['filename']}` ({a['size']} bytes)" for a in attachments
-            )
-            if attachments else ""
+            "\n\n## Attachments\n\n"
+            + "\n".join(f"- `{a['filename']}` ({a['size']} bytes)" for a in attachments)
+            if attachments
+            else ""
         )
-        body_md = f"# {subject}\n\n{header_block}\n\n## Body\n\n{body or '(empty body)'}{att_block}\n"
+        body_md = (
+            f"# {subject}\n\n{header_block}\n\n## Body\n\n{body or '(empty body)'}{att_block}\n"
+        )
 
         return {
             "title": subject,

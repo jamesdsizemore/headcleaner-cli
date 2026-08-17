@@ -3,6 +3,7 @@
 Uses `striprtf` for robust RTF stripping. Falls back to a tiny inline
 parser if the dep is missing.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -19,13 +20,14 @@ class RtfAdapter(Adapter):
     name = "rtf"
     extensions = (".rtf",)
 
-    def extract(self, source: Path) -> Extracted:
+    def extract(self, source: Path) -> "Extracted":  # noqa: F821
         raw = source.read_bytes()
         # RTF is typically ASCII or Latin-1; chardet would be overkill.
         text = raw.decode("latin-1", errors="replace")
         if _strip_rtf is None:
             # Tiny inline fallback: drop everything in {...} groups
             import re
+
             body = re.sub(r"\{\\?[^{}]*\}", " ", text)
             body = re.sub(r"\\'[0-9a-fA-F]{2}", " ", body)
             body = re.sub(r"\\[a-z]+\d* ?", " ", body)

@@ -13,12 +13,11 @@ that:
 This is the single source of truth for "what's in this OKF bundle?"
 across multiple convert runs.
 """
+
 from __future__ import annotations
 
 import json
 from collections import Counter
-from dataclasses import asdict
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -55,15 +54,18 @@ def write_bundle_manifest(output_root: Path, record) -> Path:
         "concept_count": sum(counts.values()) + int(existing.get("concept_count", 0)),
         "engine_counts": dict(existing.get("engine_counts", {})),
         "format_breakdown": dict(existing.get("format_breakdown", {})),
-        "recent_runs": ([
-            {
-                "timestamp": record.finished_at,
-                "format": record.format,
-                "input_root": record.input_root,
-                "output_root": record.output_root,
-                "counts": counts,
-            }
-        ] + existing.get("recent_runs", []))[:20],
+        "recent_runs": (
+            [
+                {
+                    "timestamp": record.finished_at,
+                    "format": record.format,
+                    "input_root": record.input_root,
+                    "output_root": record.output_root,
+                    "counts": counts,
+                }
+            ]
+            + existing.get("recent_runs", [])
+        )[:20],
     }
 
     # Merge engine counts across runs (preserve existing engines)

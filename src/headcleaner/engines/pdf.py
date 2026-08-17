@@ -9,9 +9,9 @@ Strategy:
 For v0.1 we only handle the text-layer path. OCR is wired but gated by a flag
 that the CLI will pass through.
 """
+
 from __future__ import annotations
 
-import io
 from pathlib import Path
 
 import pdfplumber
@@ -78,7 +78,7 @@ class PdfAdapter(Adapter):
         if image_only_pages and not self.ocr:
             note = (
                 f"\n\n> **Note:** {len(image_only_pages)} page(s) "
-                f"({', '.join(str(p) for p in image_only_pages[:5])}{'…' if len(image_only_pages) > 5 else ''}) "
+                f"({', '.join(str(p) for p in image_only_pages[:5])}{'…' if len(image_only_pages) > 5 else ''}) "  # noqa: E501
                 f"have no extractable text layer. Re-run with `--ocr` to enable Tesseract OCR."
             )
             body = "\n\n".join(pages_md) + note if pages_md else note.lstrip("\n")

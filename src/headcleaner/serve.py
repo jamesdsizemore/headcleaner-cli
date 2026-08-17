@@ -17,6 +17,7 @@ Usage:
 
 The CLI command is implemented in cli.py and delegates to `run_serve`.
 """
+
 from __future__ import annotations
 
 import html
@@ -33,10 +34,10 @@ _FRONTMATTER_RE = re.compile(r"\A---\s*\n(.*?)\n---\s*\n", re.DOTALL)
 
 @dataclass
 class Concept:
-    path: Path           # absolute path to the .md file
-    relpath: str         # path relative to bundle root
+    path: Path  # absolute path to the .md file
+    relpath: str  # path relative to bundle root
     frontmatter: dict
-    body: str            # markdown body (after frontmatter)
+    body: str  # markdown body (after frontmatter)
 
 
 @dataclass
@@ -65,7 +66,7 @@ def _read_concept(path: Path, root: Path) -> Concept | None:
         path=path,
         relpath=str(path.relative_to(root)).replace("\\", "/"),
         frontmatter=fm,
-        body=text[m.end():],
+        body=text[m.end() :],
     )
 
 
@@ -86,6 +87,7 @@ def load_bundle(bundle_root: Path) -> Bundle:
 # ---------------------------------------------------------------------------
 # FastAPI app factory
 # ---------------------------------------------------------------------------
+
 
 def build_app(bundle: Bundle):
     """Build and return a FastAPI app for the given bundle.
@@ -111,17 +113,17 @@ def build_app(bundle: Bundle):
   .title { font-weight: bold; }
   .meta { color: #888; font-size: 0.85em; margin-left: 0.5em; }
   .pager { margin: 1em 0; }
-  .pager a { padding: 0.3em 0.8em; border: 1px solid #444; border-radius: 3px; margin-right: 0.5em; }
+  .pager a { padding: 0.3em 0.8em; border: 1px solid #444; border-radius: 3px; margin-right: 0.5em; }  # noqa: E501
 </style></head>
 <body>
   <h1>{{ root.name }}</h1>
   <p><a href="/search">search</a> · <a href="/api/concepts">JSON</a></p>
-  <p>{{ total }} concept{{ '' if total == 1 else 's' }}{% if total %} ({{ from }}-{{ to }} shown){% endif %}</p>
+  <p>{{ total }} concept{{ '' if total == 1 else 's' }}{% if total %} ({{ from }}-{{ to }} shown){% endif %}</p>  # noqa: E501
   <h2>Concepts</h2>
   {% for c in page_concepts %}
     <div class="concept">
       <a class="title" href="/c/{{ c.relpath }}">{{ c.frontmatter.title or c.relpath }}</a>
-      <span class="meta">— {{ c.frontmatter.type or '?' }}{% if c.frontmatter.status %} ({{ c.frontmatter.status }}){% endif %}</span>
+      <span class="meta">— {{ c.frontmatter.type or '?' }}{% if c.frontmatter.status %} ({{ c.frontmatter.status }}){% endif %}</span>  # noqa: E501
     </div>
   {% else %}
     <p><em>(no concepts)</em></p>
@@ -203,14 +205,15 @@ def build_app(bundle: Bundle):
     async def search(q: str = Query("", min_length=1)) -> HTMLResponse:
         needle = q.lower()
         matches = [
-            c for c in bundle.concepts
+            c
+            for c in bundle.concepts
             if needle in c.relpath.lower()
             or needle in str(c.frontmatter).lower()
             or needle in c.body.lower()
         ]
         body = (
-            "<!doctype html><html><body style=\"font:14px/1.5 sans-serif;background:#111;color:#eee;max-width:800px;margin:2em auto;padding:0 1em\">"
-            f"<h1 style=\"color:#22D3EE\">search: {html.escape(q)}</h1>"
+            '<!doctype html><html><body style="font:14px/1.5 sans-serif;background:#111;color:#eee;max-width:800px;margin:2em auto;padding:0 1em">'
+            f'<h1 style="color:#22D3EE">search: {html.escape(q)}</h1>'
             f"<p>{len(matches)} match(es)</p>"
             "<ul>"
             + "".join(

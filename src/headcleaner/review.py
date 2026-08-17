@@ -14,6 +14,7 @@ header, body preview, and a fixed footer with the four keys.
 Usage:
     headcleaner review <bundle-dir>
 """
+
 from __future__ import annotations
 
 import re
@@ -38,7 +39,7 @@ def _read_concept(path: Path) -> tuple[dict, str, str] | None:
         return None
     if "type" not in fm:
         return None
-    body = text[m.end():]
+    body = text[m.end() :]
     return fm, body, text
 
 
@@ -94,6 +95,7 @@ def reject(path: Path, reasons: list[str] | None = None) -> None:
 # ---------------------------------------------------------------------------
 # Textual TUI
 # ---------------------------------------------------------------------------
+
 
 def run_review_tui(bundle_root: Path) -> dict[str, int]:
     """Launch the review TUI. Returns a summary {approved, rejected, skipped, quit}.
@@ -226,7 +228,7 @@ def _review_repl(pending: list[Path]) -> dict[str, int]:
         print(f"  path:     {path}")
         print(f"  type:     {fm.get('type', '?')}")
         print(f"  verified: {fm.get('verified', '?')}")
-        print(f"  ---")
+        print("  ---")
         for line in body.splitlines()[:30]:
             print(f"  {line}")
         if len(body.splitlines()) > 30:

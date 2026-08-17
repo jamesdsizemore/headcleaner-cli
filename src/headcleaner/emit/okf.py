@@ -9,6 +9,7 @@ Concept frontmatter includes the full OKF v0.2 trust family:
 See docs/OKF_NOTES.md for the contract and the honesty policy
 (we never auto-set verified to anything stronger than 'human:pending').
 """
+
 from __future__ import annotations
 
 from pathlib import Path

@@ -17,9 +17,9 @@ Usage (programmatic):
     from headcleaner.obsidian import obsidian_compat
     obsidian_compat(canonical_doc)  # mutates doc in-place
 """
+
 from __future__ import annotations
 
-from typing import Any
 
 from .normalize import CanonicalDoc
 
@@ -83,6 +83,7 @@ def render_okf_with_obsidian_metadata(doc: CanonicalDoc) -> str:
         fm["stale_on"] = fm["stale_after"]
 
     import yaml  # local import to avoid hard dep at module import
+
     yaml_block = yaml.safe_dump(fm, sort_keys=False, allow_unicode=True).strip()
     body = doc.body_md.rstrip() + "\n"
     return f"---\n{yaml_block}\n---\n\n{body}"

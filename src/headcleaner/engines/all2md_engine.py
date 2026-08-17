@@ -8,6 +8,7 @@ formats our 14 native adapters don't cover.
 The adapter owns a single ``extensions`` set; users opt in via the router
 by calling ``register_all2md_fallback()`` at startup.
 """
+
 from __future__ import annotations
 
 import logging
@@ -32,36 +33,36 @@ def all2md_available() -> bool:
 # a native adapter for. (DOCX/XLSX/PPTX/EPUB/RTF/ODF/EML/MSG/PST are
 # already handled natively — we don't double-cover them here.)
 ALL2MD_EXTRA_EXTENSIONS: set[str] = {
-    ".ipynb",      # Jupyter notebook
-    ".latex",      # LaTeX
+    ".ipynb",  # Jupyter notebook
+    ".latex",  # LaTeX
     ".tex",
-    ".rst",        # reStructuredText
+    ".rst",  # reStructuredText
     ".asciidoc",
     ".adoc",
     ".textile",
     ".mediawiki",
     ".wiki",
-    ".org",        # Emacs org-mode
+    ".org",  # Emacs org-mode
     ".dokuwiki",
     ".bbcode",
-    ".fb2",        # FictionBook
-    ".chm",        # Compiled HTML Help
+    ".fb2",  # FictionBook
+    ".chm",  # Compiled HTML Help
     ".mhtml",
-    ".mht",        # MIME HTML
+    ".mht",  # MIME HTML
     ".webarchive",
     ".web",
     ".openapi",
     ".yaml",
-    ".yml",        # all2md has YAML-as-content support
+    ".yml",  # all2md has YAML-as-content support
     ".toml",
     ".ini",
-    ".enex",       # Evernote export
+    ".enex",  # Evernote export
     ".json",
     ".xml",
-    ".csv",        # all2md has CSV — our native csv.py is fine too; keep here for choice
+    ".csv",  # all2md has CSV — our native csv.py is fine too; keep here for choice
     ".tsv",
-    ".zip",        # all2md's archive mode (lists contents)
-    ".py",         # source code
+    ".zip",  # all2md's archive mode (lists contents)
+    ".py",  # source code
     ".js",
     ".ts",
     ".java",
@@ -80,18 +81,18 @@ class All2mdAdapter(Adapter):
     adapter for (Jupyter notebooks, LaTeX, reStructuredText, source code,
     Evernote exports, etc.).
     """
+
     name = "all2md"
     extensions = ALL2MD_EXTRA_EXTENSIONS
 
     def __init__(self) -> None:
         if not all2md_available():
-            raise AdapterError(
-                "all2md is not installed. Install with: pip install all2md"
-            )
+            raise AdapterError("all2md is not installed. Install with: pip install all2md")
 
     def extract(self, source: Path, *, progress=None) -> dict:
         try:
             import all2md
+
             body_md = all2md.to_markdown(str(source))
         except Exception as e:
             raise AdapterError(f"all2md failed on {source}: {e}") from e

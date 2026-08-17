@@ -5,6 +5,7 @@ Strategy:
   2. read with errors='replace'
   3. emit as a fenced code block so formatting (leading spaces, alignment) survives
 """
+
 from __future__ import annotations
 
 from pathlib import Path

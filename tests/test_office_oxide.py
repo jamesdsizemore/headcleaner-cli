@@ -1,8 +1,8 @@
 """Tests for the office_oxide / officecli adapter (v0.8.0)."""
+
 from __future__ import annotations
 
 import zipfile
-import os
 from pathlib import Path
 
 import pytest
@@ -15,27 +15,26 @@ from headcleaner.engines.base import AdapterError
 # Smoke test: real docx fixture (built inline)
 # ---------------------------------------------------------------------------
 
+
 def _make_docx(path: Path, body_paragraphs: list[str]) -> None:
     """Build a minimal but valid .docx file at ``path``."""
-    paragraphs_xml = "".join(
-        f'<w:p><w:r><w:t>{p}</w:t></w:r></w:p>' for p in body_paragraphs
-    )
+    paragraphs_xml = "".join(f"<w:p><w:r><w:t>{p}</w:t></w:r></w:p>" for p in body_paragraphs)
     document_xml = (
         '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
         '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
-        f'<w:body>{paragraphs_xml}</w:body></w:document>'
+        f"<w:body>{paragraphs_xml}</w:body></w:document>"
     )
     rels_xml = (
         '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
         '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
         '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="document.xml"/>'
-        '</Relationships>'
+        "</Relationships>"
     )
     pkg_rels_xml = (
         '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
         '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
         '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>'
-        '</Relationships>'
+        "</Relationships>"
     )
     content_types = (
         '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
@@ -43,7 +42,7 @@ def _make_docx(path: Path, body_paragraphs: list[str]) -> None:
         '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
         '<Default Extension="xml" ContentType="application/xml"/>'
         '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>'
-        '</Types>'
+        "</Types>"
     )
     with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as zf:
         zf.writestr("[Content_Types].xml", content_types)
@@ -57,26 +56,26 @@ def _make_pptx(path: Path, slide_text: str) -> None:
     slide_xml = (
         '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
         '<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">'
-        f'<p:cSld><p:spTree><p:sp><p:txBody><a:p><a:r><a:t>{slide_text}</a:t></a:r></a:p></p:txBody></p:sp></p:spTree></p:cSld>'
-        '</p:sld>'
+        f"<p:cSld><p:spTree><p:sp><p:txBody><a:p><a:r><a:t>{slide_text}</a:t></a:r></a:p></p:txBody></p:sp></p:spTree></p:cSld>"
+        "</p:sld>"
     )
     document_xml = (
         '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
         '<p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">'
         '<p:sldIdLst><p:sldId id="256" r:id="rId1"/></p:sldIdLst>'
-        '</p:presentation>'
+        "</p:presentation>"
     )
     rels_xml = (
         '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
         '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
         '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide1.xml"/>'
-        '</Relationships>'
+        "</Relationships>"
     )
     pkg_rels_xml = (
         '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
         '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
         '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/>'
-        '</Relationships>'
+        "</Relationships>"
     )
     content_types = (
         '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
@@ -85,7 +84,7 @@ def _make_pptx(path: Path, slide_text: str) -> None:
         '<Default Extension="xml" ContentType="application/xml"/>'
         '<Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>'
         '<Override PartName="/ppt/slides/slide1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>'
-        '</Types>'
+        "</Types>"
     )
     with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as zf:
         zf.writestr("[Content_Types].xml", content_types)
@@ -114,6 +113,7 @@ def pptx_file(tmp_path: Path) -> Path:
 # ---------------------------------------------------------------------------
 # Adapter behavior
 # ---------------------------------------------------------------------------
+
 
 def test_office_oxide_available_returns_bool() -> None:
     """office_oxide_available returns a bool."""

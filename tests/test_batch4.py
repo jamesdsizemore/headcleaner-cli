@@ -1,11 +1,11 @@
 """Tests for Batch 4 features: log.md (#37), enriched index (#38), bundle
 manifest (#39), crossref (#34), policy (#35), git_commit (#32), themes (#40),
 json output (#43), dry-run (#42)."""
+
 from __future__ import annotations
 
+import textwrap
 import json
-import subprocess
-import sys
 from pathlib import Path
 
 import pytest
@@ -23,26 +23,32 @@ from headcleaner.policy import Policy, evaluate
 # Eng #37: log.md
 # ---------------------------------------------------------------------------
 
+
 def test_log_md_appends_entry(tmp_path: Path) -> None:
     """Eng #37: append_log_entry creates log.md with the expected sections."""
     # Build a fake record (RunRecord-like)
     from dataclasses import dataclass, field
+
     @dataclass
     class FakeResult:
         relpath: str
         status: str
         engine: str = "txt"
         error: str | None = None
+
     @dataclass
     class FakeRecord:
         version: str = "0.5.0"
         finished_at: str = "2026-08-16T10:00:00Z"
         format: str = "both"
         results: list = field(default_factory=list)
-    rec = FakeRecord(results=[
-        FakeResult("a.txt", "ok"),
-        FakeResult("b.txt", "failed", engine="pdf", error="bad PDF"),
-    ])
+
+    rec = FakeRecord(
+        results=[
+            FakeResult("a.txt", "ok"),
+            FakeResult("b.txt", "failed", engine="pdf", error="bad PDF"),
+        ]
+    )
     okf_index.append_log_entry(tmp_path, rec)
     log_path = tmp_path / "log.md"
     assert log_path.exists()
@@ -57,17 +63,20 @@ def test_log_md_appends_entry(tmp_path: Path) -> None:
 def test_log_md_is_idempotent(tmp_path: Path) -> None:
     """Eng #37: running twice appends two entries, doesn't overwrite."""
     from dataclasses import dataclass, field
+
     @dataclass
     class FakeResult:
         relpath: str = "x.txt"
         status: str = "ok"
         engine: str = "txt"
+
     @dataclass
     class FakeRecord:
         version: str = "0.5.0"
         finished_at: str = "2026-08-16T10:00:00Z"
         format: str = "both"
         results: list = field(default_factory=list)
+
     rec1 = FakeRecord(results=[FakeResult()])
     rec2 = FakeRecord(finished_at="2026-08-16T11:00:00Z", results=[FakeResult()])
     okf_index.append_log_entry(tmp_path, rec1)
@@ -80,6 +89,7 @@ def test_log_md_is_idempotent(tmp_path: Path) -> None:
 # ---------------------------------------------------------------------------
 # Eng #38: enriched index.md
 # ---------------------------------------------------------------------------
+
 
 def test_enriched_index_includes_word_count(tmp_path: Path) -> None:
     """Eng #38: enriched index shows word count + description."""
@@ -103,14 +113,17 @@ def test_enriched_index_includes_word_count(tmp_path: Path) -> None:
 # Eng #39: bundle manifest
 # ---------------------------------------------------------------------------
 
+
 def test_bundle_manifest_aggregates(tmp_path: Path) -> None:
     """Eng #39: write_bundle_manifest merges engine counts across runs."""
     from dataclasses import dataclass, field
+
     @dataclass
     class FakeResult:
         relpath: str
         status: str
         engine: str
+
     @dataclass
     class FakeRecord:
         version: str = "0.5.0"
@@ -120,14 +133,20 @@ def test_bundle_manifest_aggregates(tmp_path: Path) -> None:
         output_root: str = str(tmp_path)
         results: list = field(default_factory=list)
 
-    rec1 = FakeRecord(finished_at="2026-08-16T10:00:00Z", results=[
-        FakeResult("a.txt", "ok", "txt"),
-        FakeResult("b.docx", "ok", "officecli"),
-    ])
-    rec2 = FakeRecord(finished_at="2026-08-16T11:00:00Z", results=[
-        FakeResult("c.pdf", "ok", "pdf"),
-        FakeResult("d.docx", "ok", "officecli"),
-    ])
+    rec1 = FakeRecord(
+        finished_at="2026-08-16T10:00:00Z",
+        results=[
+            FakeResult("a.txt", "ok", "txt"),
+            FakeResult("b.docx", "ok", "officecli"),
+        ],
+    )
+    rec2 = FakeRecord(
+        finished_at="2026-08-16T11:00:00Z",
+        results=[
+            FakeResult("c.pdf", "ok", "pdf"),
+            FakeResult("d.docx", "ok", "officecli"),
+        ],
+    )
     write_bundle_manifest(tmp_path, rec1)
     write_bundle_manifest(tmp_path, rec2)
 
@@ -143,6 +162,7 @@ def test_bundle_manifest_aggregates(tmp_path: Path) -> None:
 # Eng #34: cross-concept link inference
 # ---------------------------------------------------------------------------
 
+
 def test_crossref_links_titles(tmp_path: Path) -> None:
     """Eng #34: linkify_bundle rewrites a mention of concept title to a link."""
     bundle = tmp_path / "okf"
@@ -152,8 +172,7 @@ def test_crossref_links_titles(tmp_path: Path) -> None:
         encoding="utf-8",
     )
     (bundle / "beta.md").write_text(
-        "---\ntype: Document\ntitle: Beta\nstatus: unverified\n---\n"
-        "See Alpha for context.\n",
+        "---\ntype: Document\ntitle: Beta\nstatus: unverified\n---\nSee Alpha for context.\n",
         encoding="utf-8",
     )
     n = linkify_bundle(bundle)
@@ -185,23 +204,27 @@ def test_crossref_is_idempotent(tmp_path: Path) -> None:
 # Eng #35: trust policy
 # ---------------------------------------------------------------------------
 
+
 def test_policy_load_and_evaluate(tmp_path: Path) -> None:
     """Eng #35: Policy.load reads TOML, evaluate() emits findings."""
-    (tmp_path / "policy.toml").write_text(textwrap.dedent("""
+    (tmp_path / "policy.toml").write_text(
+        textwrap.dedent("""
         [policy]
         require_type = "Document"
         require_status = ["unverified"]
         require_verified = ["human:pending"]
         require_sources = true
         require_sha256 = true
-    """).strip(), encoding="utf-8")
+    """).strip(),
+        encoding="utf-8",
+    )
 
     bundle = tmp_path / "okf"
     bundle.mkdir()
     (bundle / "ok.md").write_text(
         "---\ntype: Document\ntitle: OK\nstatus: unverified\n"
         "verified: human:pending\nsources:\n"
-        "  - uri: file://a.txt\n    sha256: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\n"
+        "  - uri: file://a.txt\n    sha256: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\n"  # noqa: E501
         "---\nBody.\n",
         encoding="utf-8",
     )
@@ -221,6 +244,7 @@ def test_policy_load_and_evaluate(tmp_path: Path) -> None:
 # ---------------------------------------------------------------------------
 # Eng #32: git-backed bundle
 # ---------------------------------------------------------------------------
+
 
 def test_find_repo_root_walks_up(tmp_path: Path) -> None:
     """Eng #32: find_repo_root walks up until it finds .git."""
@@ -242,6 +266,7 @@ def test_find_repo_root_returns_none_outside(tmp_path: Path) -> None:
 # ---------------------------------------------------------------------------
 # Eng #40: theme switching
 # ---------------------------------------------------------------------------
+
 
 def test_theme_switch_round_trip() -> None:
     """Eng #40: set_theme mutates module-level constants and accepts all 4 names."""
@@ -274,6 +299,7 @@ def test_theme_unknown_raises() -> None:
 # Eng #43: json output (smoke test of the emit helper)
 # ---------------------------------------------------------------------------
 
+
 def test_emit_json_event_writes_one_line(capsys) -> None:
     """Eng #43: emit_json_event writes one JSON-serializable line + flushes."""
     emit_json_event({"event": "test", "n": 42})
@@ -287,19 +313,23 @@ def test_emit_json_event_writes_one_line(capsys) -> None:
 # Eng #42: dry-run (full pipeline level)
 # ---------------------------------------------------------------------------
 
+
 def test_dry_run_writes_no_files(tmp_path: Path) -> None:
     """Eng #42: dry_run=True means no _md/ or okf/ files are written."""
     from headcleaner.run import RunOptions, run_pipeline
+
     in_dir = tmp_path / "in"
     out_dir = tmp_path / "out"
     in_dir.mkdir()
     (in_dir / "hello.txt").write_text("Hello world, this is content.\n", encoding="utf-8")
-    rec = run_pipeline(RunOptions(
-        input_root=in_dir,
-        output_root=out_dir,
-        fmt="both",
-        dry_run=True,
-    ))
+    rec = run_pipeline(
+        RunOptions(
+            input_root=in_dir,
+            output_root=out_dir,
+            fmt="both",
+            dry_run=True,
+        )
+    )
     assert rec.results, "should have results"
     # No files written
     assert not (out_dir / "_md").exists() or not list((out_dir / "_md").iterdir())
@@ -311,4 +341,3 @@ def test_dry_run_writes_no_files(tmp_path: Path) -> None:
 
 
 # imports at the top for the policy test
-import textwrap

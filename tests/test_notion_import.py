@@ -1,4 +1,5 @@
 """Tests for the full Notion import impl (Eng #31)."""
+
 from __future__ import annotations
 
 import zipfile
@@ -34,10 +35,7 @@ def notion_zip(tmp_path: Path) -> Path:
         )
         zf.writestr("Meeting Notes abc123.md", page1)
         # Page 2: minimal
-        page2 = (
-            "# Random Idea\n\n"
-            "Just a thought.\n"
-        )
+        page2 = "# Random Idea\n\nJust a thought.\n"
         zf.writestr("Random Idea def456.md", page2)
         # Database CSV
         db = "Name,Owner,Status\nProject X,Bob,active\nProject Y,Carol,pending\n"
@@ -64,14 +62,7 @@ def test_parse_page_md_extracts_title() -> None:
 
 def test_parse_page_md_extracts_properties() -> None:
     """_parse_page_md parses the Properties block when present."""
-    text = (
-        "# Title\n\n"
-        "## Properties\n\n"
-        "**Owner:** Alice\n"
-        "**Status:** active\n\n"
-        "## Body\n\n"
-        "stuff\n"
-    )
+    text = "# Title\n\n## Properties\n\n**Owner:** Alice\n**Status:** active\n\n## Body\n\nstuff\n"
     page = _parse_page_md("id.md", text)
     assert page.properties == {"Owner": "Alice", "Status": "active"}
 

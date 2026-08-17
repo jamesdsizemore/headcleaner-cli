@@ -8,6 +8,7 @@ Subcommands:
 
 For v0.1 we ship `convert` only; the others are stubs that print a TODO.
 """
+
 from __future__ import annotations
 
 import json
@@ -70,9 +71,17 @@ def cli() -> None:
     default=False,
     help="Disable the SHA-256 skip-cache; re-convert every file.",
 )
-@click.option("--no-continue-on-error", is_flag=True, default=False, help="Stop on the first failure.")
-@click.option("--tui/--no-tui", default=None, help="Force / disable the animated TUI. Default: auto-detect TTY.")
-@click.option("--no-okf-index", is_flag=True, default=False, help="Skip writing OKF directory index.md files.")
+@click.option(
+    "--no-continue-on-error", is_flag=True, default=False, help="Stop on the first failure."
+)
+@click.option(
+    "--tui/--no-tui",
+    default=None,
+    help="Force / disable the animated TUI. Default: auto-detect TTY.",
+)
+@click.option(
+    "--no-okf-index", is_flag=True, default=False, help="Skip writing OKF directory index.md files."
+)
 @click.option(
     "--clean",
     "clean_md",
@@ -173,6 +182,7 @@ def convert(
     tui: bool | None,
     no_okf_index: bool,
     obsidian_compat: bool,
+    clean_md: bool,
     enriched_index: bool,
     write_log: bool,
     write_bundle_manifest: bool,
@@ -223,6 +233,7 @@ def convert(
     # Eng #34: cross-concept link inference (second pass)
     if crossref and not dry_run and opts.fmt in {"okf", "both"}:
         from .crossref import linkify_bundle
+
         n = linkify_bundle(opts.output_root / "okf")
         if n:
             print(f"  crossref: rewrote {n} file(s)", file=sys.stderr)
@@ -230,6 +241,7 @@ def convert(
     # Eng #35: policy gate
     if policy is not None and not dry_run and opts.fmt in {"okf", "both"}:
         from .policy import Policy, evaluate
+
         pol = Policy.load(policy)
         findings = evaluate(pol, opts.output_root / "okf")
         if findings:
@@ -247,6 +259,7 @@ def convert(
     # Eng #32: git-backed bundle
     if git_commit_flag and not dry_run:
         from .git_commit import git_commit as do_git_commit
+
         rc, msg = do_git_commit(
             opts.output_root,
             message=git_commit_message,
@@ -263,6 +276,7 @@ def convert(
 
     # Plain mode: print progress to stderr, line-buffered
     import sys as _sys
+
     err = _sys.stderr
     err.write(f"headcleaner {__version__}\n")
     err.write(f"  input:  {input_dir}\n")
@@ -340,6 +354,9 @@ def convert(
     help="Eng #40: color palette for the TUI and plain-mode progress lines.",
 )
 def watch(
+    input_dir: Path,
+    fmt: str,
+    output: Path,
     ocr: bool,
     officecli_timeout: int,
     include: tuple[str, ...],
@@ -397,11 +414,22 @@ def watch(
 
 @cli.command()
 @click.argument("directory", type=click.Path(exists=True, file_okay=False, path_type=Path))
-@click.option("--private-key", type=click.Path(exists=True, dir_okay=False, path_type=Path), default=None, help="PEM ed25519 key for signing the Merkle root.")
-@click.option("--output", type=click.Path(dir_okay=False, path_type=Path), default=None, help="Output path for attestation.json (default: <bundle>/attestation.json).")
+@click.option(
+    "--private-key",
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+    default=None,
+    help="PEM ed25519 key for signing the Merkle root.",
+)
+@click.option(
+    "--output",
+    type=click.Path(dir_okay=False, path_type=Path),
+    default=None,
+    help="Output path for attestation.json (default: <bundle>/attestation.json).",
+)
 def attest(directory: Path, private_key: Path | None, output: Path | None) -> None:
-    """Eng #36: compute an Attested Computations payload for a bundle (Merkle root + optional ed25519 signature)."""
+    """Eng #36: compute an Attested Computations payload for a bundle (Merkle root + optional ed25519 signature)."""  # noqa: E501
     from .attest import write_attestation
+
     out = write_attestation(directory, output=output, private_key_path=private_key)
     payload = json.loads(out.read_text(encoding="utf-8"))
     click.echo(f"Attestation written: {out}")
@@ -414,16 +442,29 @@ def attest(directory: Path, private_key: Path | None, output: Path | None) -> No
 
 @cli.command()
 @click.argument("directory", type=click.Path(exists=True, file_okay=False, path_type=Path))
-@click.option("--public-key", type=click.Path(exists=True, dir_okay=False, path_type=Path), default=None, help="PEM ed25519 public key for verifying the signature.")
-@click.option("--attestation", type=click.Path(exists=True, dir_okay=False, path_type=Path), default=None, help="Path to attestation.json (default: <bundle>/attestation.json).")
+@click.option(
+    "--public-key",
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+    default=None,
+    help="PEM ed25519 public key for verifying the signature.",
+)
+@click.option(
+    "--attestation",
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+    default=None,
+    help="Path to attestation.json (default: <bundle>/attestation.json).",
+)
 def verify(directory: Path, public_key: Path | None, attestation: Path | None) -> None:
     """Eng #36: verify an attestation against the bundle contents."""
     from .verify import verify_attestation
+
     attest_path = attestation or (directory / "attestation.json")
     result = verify_attestation(directory, attest_path, public_key_path=public_key)
     sig = result.get("signature_valid")
     if result.get("valid") and sig is not False:
-        click.echo(f"OK: bundle matches attestation (merkle_valid={result['merkle_valid']}, signature_valid={sig})")
+        click.echo(
+            f"OK: bundle matches attestation (merkle_valid={result['merkle_valid']}, signature_valid={sig})"
+        )
     else:
         click.echo(f"FAIL: {result.get('errors')}")
         raise SystemExit(1)
@@ -434,6 +475,7 @@ def verify(directory: Path, public_key: Path | None, attestation: Path | None) -
 def review(bundle: Path) -> None:
     """Eng #3: interactively review every `verified: human:pending` concept."""
     from .review import run_review_tui
+
     summary = run_review_tui(bundle)
     click.echo(
         f"reviewed: approved={summary['approved']} "
@@ -448,6 +490,7 @@ def review(bundle: Path) -> None:
 def glob(directory: Path) -> None:
     """Eng #44: launch the interactive glob REPL (stub: prints hint)."""
     from .glob_repl import launch_repl
+
     launch_repl(directory)
 
 
@@ -458,6 +501,7 @@ def glob(directory: Path) -> None:
 def serve(bundle: Path, host: str, port: int) -> None:
     """Eng #22: serve an OKF bundle over HTTP for browsing + search."""
     from .serve import run_serve
+
     run_serve(bundle, host=host, port=port)
 
 
@@ -491,9 +535,18 @@ def agents() -> None:
 @click.argument("directory", type=click.Path(exists=True, file_okay=False, path_type=Path))
 @click.option("--strict", is_flag=True, default=False, help="Treat warnings as errors.")
 @click.option("--no-color", is_flag=True, default=False, help="Disable ANSI color output.")
-@click.option("--fix", "do_fix", is_flag=True, default=False, help="Auto-repair safe issues to <DIR>.fixed/.")
-@click.option("--fix-out", type=click.Path(path_type=Path), default=None, help="Override --fix output directory.")
-def lint_cmd(directory: Path, strict: bool, no_color: bool, do_fix: bool, fix_out: Path | None) -> None:
+@click.option(
+    "--fix", "do_fix", is_flag=True, default=False, help="Auto-repair safe issues to <DIR>.fixed/."
+)
+@click.option(
+    "--fix-out",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Override --fix output directory.",
+)
+def lint_cmd(
+    directory: Path, strict: bool, no_color: bool, do_fix: bool, fix_out: Path | None
+) -> None:
     """Review converted Markdown / OKF for formatting issues.
 
     Run after `headcleaner convert` to catch structural problems before
@@ -545,30 +598,75 @@ if __name__ == "__main__":
 
 @cli.command(name="view")
 @click.argument("bundle", type=click.Path(exists=True, file_okay=False, path_type=Path))
-@click.option("-o", "--out", type=click.Path(path_type=Path), default=None,
-              help="Output HTML path (default: <bundle>/viz.html).")
-@click.option("-t", "--title", default=None,
-              help="Graph title shown in the header (default: parent/bundle dir name).")
-@click.option("-l", "--link", default=None,
-              help="Optional source URL shown in the header (e.g. GitHub repo link).")
-@click.option("--layout", default=None,
-              type=click.Choice(["cose", "concentric", "breadthfirst", "circle", "grid"]),
-              help="Initial graph layout. Default: cose for small bundles, concentric for large.")
-@click.option("--max-nodes", type=int, default=None,
-              help="Refuse to render bundles with more concepts than this (useful in CI).")
+@click.option(
+    "-o",
+    "--out",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Output HTML path (default: <bundle>/viz.html).",
+)
+@click.option(
+    "-t",
+    "--title",
+    default=None,
+    help="Graph title shown in the header (default: parent/bundle dir name).",
+)
+@click.option(
+    "-l",
+    "--link",
+    default=None,
+    help="Optional source URL shown in the header (e.g. GitHub repo link).",
+)
+@click.option(
+    "--layout",
+    default=None,
+    type=click.Choice(["cose", "concentric", "breadthfirst", "circle", "grid"]),
+    help="Initial graph layout. Default: cose for small bundles, concentric for large.",
+)
+@click.option(
+    "--max-nodes",
+    type=int,
+    default=None,
+    help="Refuse to render bundles with more concepts than this (useful in CI).",
+)
 @click.option("--og-image", default=None, help="Absolute URL for the og:image social preview.")
-@click.option("--open", "open_browser", is_flag=True, default=False,
-              help="Open the rendered viz.html in the default browser after writing.")
-@click.option("--serve", "serve_local", is_flag=True, default=False,
-              help="Serve the rendered file on a local HTTP server after writing.")
+@click.option(
+    "--open",
+    "open_browser",
+    is_flag=True,
+    default=False,
+    help="Open the rendered viz.html in the default browser after writing.",
+)
+@click.option(
+    "--serve",
+    "serve_local",
+    is_flag=True,
+    default=False,
+    help="Serve the rendered file on a local HTTP server after writing.",
+)
 @click.option("--host", default="127.0.0.1", help="--serve host (default: 127.0.0.1).")
 @click.option("--port", type=int, default=8765, help="--serve port (default: 8765).")
-@click.option("--tui", "tui_mode", is_flag=True, default=False,
-              help="Browse the bundle interactively in the terminal (whole-frame TUI).")
-def view_cmd(bundle: Path, out: Path | None, title: str | None, link: str | None,
-             layout: str | None, max_nodes: int | None, og_image: str | None,
-             open_browser: bool, serve_local: bool, host: str, port: int,
-             tui_mode: bool) -> None:
+@click.option(
+    "--tui",
+    "tui_mode",
+    is_flag=True,
+    default=False,
+    help="Browse the bundle interactively in the terminal (whole-frame TUI).",
+)
+def view_cmd(
+    bundle: Path,
+    out: Path | None,
+    title: str | None,
+    link: str | None,
+    layout: str | None,
+    max_nodes: int | None,
+    og_image: str | None,
+    open_browser: bool,
+    serve_local: bool,
+    host: str,
+    port: int,
+    tui_mode: bool,
+) -> None:
     """Render an OKF bundle as a self-contained interactive HTML graph.
 
     The output is one HTML file: concepts as graph nodes (colored by type,
@@ -583,6 +681,7 @@ def view_cmd(bundle: Path, out: Path | None, title: str | None, link: str | None
     """
     if tui_mode:
         from .okf_tui import run_tui
+
         raise SystemExit(run_tui(bundle))
 
     from .viewer import render
@@ -591,8 +690,15 @@ def view_cmd(bundle: Path, out: Path | None, title: str | None, link: str | None
     if out_path.is_dir():
         out_path = out_path / "viz.html"
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    n, e = render(bundle, out_path, title=title, link=link, layout=layout,
-                  og_image=og_image, max_nodes=max_nodes)
+    n, e = render(
+        bundle,
+        out_path,
+        title=title,
+        link=link,
+        layout=layout,
+        og_image=og_image,
+        max_nodes=max_nodes,
+    )
     click.echo(f"rendered {n} concepts, {e} links -> {out_path}")
 
     if serve_local:
@@ -601,8 +707,10 @@ def view_cmd(bundle: Path, out: Path | None, title: str | None, link: str | None
         import threading
         import webbrowser
 
-        handler = lambda *a, **kw: http.server.SimpleHTTPRequestHandler(
-            *a, directory=str(out_path.parent), **kw)
+        def handler(*a, **kw):
+            return http.server.SimpleHTTPRequestHandler(
+                    *a, directory=str(out_path.parent), **kw
+                )
         with socketserver.TCPServer((host, port), handler) as httpd:
             url = f"http://{host}:{port}/{out_path.name}"
             click.echo(f"serving {url}  (Ctrl+C to stop)")
@@ -614,13 +722,18 @@ def view_cmd(bundle: Path, out: Path | None, title: str | None, link: str | None
                 click.echo("stopped")
     elif open_browser:
         import webbrowser
+
         webbrowser.open(out_path.as_uri())
 
 
 @cli.command(name="mcp")
 @click.argument("bundles", nargs=-1, type=click.Path(exists=True, file_okay=False, path_type=Path))
-@click.option("--name", "named_bundles", multiple=True,
-              help="Assign names to bundles in positional order (e.g. --name wiki --name notes).")
+@click.option(
+    "--name",
+    "named_bundles",
+    multiple=True,
+    help="Assign names to bundles in positional order (e.g. --name wiki --name notes).",
+)
 def mcp_cmd(bundles: tuple[Path, ...], named_bundles: tuple[str, ...]) -> None:
     """Run headcleaner as an MCP server (stdio).
 
@@ -637,11 +750,12 @@ def mcp_cmd(bundles: tuple[Path, ...], named_bundles: tuple[str, ...]) -> None:
         claude mcp add headcleaner -- headcleaner mcp ./out/okf
     """
     from . import mcp as mcp_mod
+
     args: list[str] = []
     if named_bundles:
-        for name, bundle in zip(named_bundles, bundles):
+        for name, bundle in zip(named_bundles, bundles, strict=False):
             args.append(f"{name}={bundle}")
-        args.extend(str(b) for b in bundles[len(named_bundles):])
+        args.extend(str(b) for b in bundles[len(named_bundles) :])
     else:
         args.extend(str(b) for b in bundles)
     sys.exit(mcp_mod.main(args))
@@ -653,8 +767,10 @@ def mcp_cmd(bundles: tuple[Path, ...], named_bundles: tuple[str, ...]) -> None:
 def notion_import(export: Path, output: Path) -> None:
     """Eng #31: reverse a Notion workspace export into an OKF bundle."""
     from .notion import import_notion_export, detect_export
+
     counts = detect_export(export)
-    click.echo(f"Detected {counts['databases']} databases, {counts['pages']} pages, {counts['files']} files in {export}")
+    click.echo(
+        f"Detected {counts['databases']} databases, {counts['pages']} pages, {counts['files']} files in {export}"
+    )
     n = import_notion_export(export, output)
     click.echo(f"Imported {n} concepts to {output}")
-

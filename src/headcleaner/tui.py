@@ -10,6 +10,7 @@ Visual language:
 Modeled on omp's `packages/tui/src/` (can1357/oh-my-pi) but rewritten for
 Textual + Python; no Nerd Font required.
 """
+
 from __future__ import annotations
 
 import threading
@@ -28,8 +29,6 @@ from .theme import (
     FG_TEXT,
     ICON_DONE,
     ICON_FAIL,
-    ICON_PENDING,
-    ICON_RUN,
     ICON_SKIP,
     ICON_SUCCESS,
     LOGO_BOLT,
@@ -43,14 +42,10 @@ from .theme import (
     SPINNER_FRAMES,
     STATUS_ACTIVE,
     STATUS_FAILED,
-    STATUS_INFO,
     STATUS_OK,
     STATUS_SKIPPED,
     paint,
-    panel_row,
-    panel_top,
     segment,
-    visible_width,
 )
 
 
@@ -203,9 +198,11 @@ class HeadCleanerApp(App):
             return
         if total > 0:
             pct = int(100 * cur / total)
-            row.update(paint(f"⟫ {engine:<10} ", NEON_PURPLE) +
-                       paint(f"[{'█' * (pct // 5):<20}] ", NEON_CYAN) +
-                       paint(f"{cur}/{total}", FG_TEXT))
+            row.update(
+                paint(f"⟫ {engine:<10} ", NEON_PURPLE)
+                + paint(f"[{'█' * (pct // 5):<20}] ", NEON_CYAN)
+                + paint(f"{cur}/{total}", FG_TEXT)
+            )
         else:
             row.update("")
 
@@ -224,13 +221,11 @@ class HeadCleanerApp(App):
         ok = sum(1 for r in record.results if r.status == "ok")
         skipped = sum(1 for r in record.results if r.status == "skipped")
         failed = sum(1 for r in record.results if r.status == "failed")
-        self._final_summary = (
-            f"{ICON_DONE} ok={ok} skipped={skipped} failed={failed}"
-        )
+        self._final_summary = f"{ICON_DONE} ok={ok} skipped={skipped} failed={failed}"
         self._log("")
         self._log(
             segment("  ✓ done  ", NEON_CYAN, bold=True)
-            + segment(f"ok=", NEON_CYAN)
+            + segment("ok=", NEON_CYAN)
             + paint(str(ok), NEON_CYAN, bold=True)
             + segment(" skipped=", FG_MUTED)
             + paint(str(skipped), FG_MUTED)
@@ -247,9 +242,8 @@ class HeadCleanerApp(App):
             pass
 
     def _on_error(self, exc: Exception) -> None:
-        msg = (
-            segment("  � pipeline crashed: ", STATUS_FAILED, bold=True)
-            + paint(str(exc), NEON_PINK)
+        msg = segment("  � pipeline crashed: ", STATUS_FAILED, bold=True) + paint(
+            str(exc), NEON_PINK
         )
         self._log(msg)
         self._final_summary = f"{ICON_FAIL} crashed"
@@ -273,19 +267,9 @@ class HeadCleanerApp(App):
         engine = paint(f"{r.engine or '-':>10}", NEON_PURPLE)
         idx = paint(f"[{i:>3}/{total}]", FG_MUTED, dim=True)
         relpath = paint(r.relpath, FG_TEXT)
-        suffix = (
-            " " + paint(r.error, STATUS_FAILED, dim=True) if r.error else ""
-        )
+        suffix = " " + paint(r.error, STATUS_FAILED, dim=True) if r.error else ""
         return (
-            "  "
-            + paint(sym, color, bold=True)
-            + " "
-            + idx
-            + " "
-            + engine
-            + "  "
-            + relpath
-            + suffix
+            "  " + paint(sym, color, bold=True) + " " + idx + " " + engine + "  " + relpath + suffix
         )
 
     def _log(self, msg: str) -> None:
@@ -295,6 +279,7 @@ class HeadCleanerApp(App):
 
 class _OptsProxy:
     """Wraps RunOptions so we can install our progress hook without mutating the caller's copy."""
+
     def __init__(self, opts: RunOptions, hook) -> None:
         self._opts = opts
         self.on_progress = hook

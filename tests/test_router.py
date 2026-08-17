@@ -1,11 +1,11 @@
 """Tests for the router (router.py) and adapters."""
+
 from __future__ import annotations
 
 from pathlib import Path
 
 import pytest
 
-from headcleaner.engines.base import AdapterError
 from headcleaner.engines.html import HtmlAdapter
 from headcleaner.engines.officecli import OfficeCLIAdapter
 from headcleaner.engines.pdf import PdfAdapter

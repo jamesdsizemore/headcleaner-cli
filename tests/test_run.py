@@ -1,4 +1,5 @@
 """End-to-end test of the run_pipeline orchestrator."""
+
 from __future__ import annotations
 
 import json

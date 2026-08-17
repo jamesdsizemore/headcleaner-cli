@@ -1,4 +1,5 @@
 """Shared test fixtures: tiny valid DOCX, PDF, HTML, TXT."""
+
 from __future__ import annotations
 
 import zipfile
@@ -38,12 +39,12 @@ endstream
 endobj
 xref
 0 6
-0000000000 65535 f 
-0000000009 00000 n 
-0000000056 00000 n 
-0000000103 00000 n 
-0000000198 00000 n 
-0000000252 00000 n 
+0000000000 65535 f
+0000000009 00000 n
+0000000056 00000 n
+0000000103 00000 n
+0000000198 00000 n
+0000000252 00000 n
 trailer<</Size 6/Root 1 0 R>>
 startxref
 326

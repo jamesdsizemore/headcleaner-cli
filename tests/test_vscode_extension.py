@@ -1,9 +1,8 @@
 """Tests for the VS Code extension package + concept parser (Eng #33 full impl)."""
+
 import json
-import re
 from pathlib import Path
 
-import pytest
 
 
 ROOT = Path(__file__).parent.parent

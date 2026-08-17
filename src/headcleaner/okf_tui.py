@@ -21,13 +21,13 @@ Keys:
 
 Activated via `headcleaner view <bundle> --tui`.
 """
+
 from __future__ import annotations
 
 import shutil
 import sys
 from datetime import date
 from pathlib import Path
-from typing import Optional
 
 from .viewer import build_with_unresolved
 
@@ -137,16 +137,21 @@ def render_frame(
 
     # Filter
     q = filter_query.lower().strip()
-    visible = [n for n in nodes
-               if (not q
-                   or q in n.get("title", "").lower()
-                   or q in n.get("id", "").lower()
-                   or q in n.get("type", "").lower())]
+    visible = [
+        n
+        for n in nodes
+        if (
+            not q
+            or q in n.get("title", "").lower()
+            or q in n.get("id", "").lower()
+            or q in n.get("type", "").lower()
+        )
+    ]
     selected = max(0, min(selected, len(visible) - 1)) if visible else 0
 
     out: list[str] = []
     # --- HEADER
-    header = f"  headcleaner · {bundle_dir.resolve().name} · {len(nodes)} concepts · {len(edges)} links · {len(unresolved)} broken"
+    header = f"  headcleaner · {bundle_dir.resolve().name} · {len(nodes)} concepts · {len(edges)} links · {len(unresolved)} broken"  # noqa: E501
     if q:
         header += f"  · /{q}"
     out.append(_pad(header, cols))
@@ -174,7 +179,7 @@ def render_frame(
         if n.get("description"):
             detail_lines.append(f"desc: {_clip(n['description'], right_w - 5)}")
         if n.get("tags"):
-            detail_lines.append(f"tags: {', '.join(n['tags'])[:right_w-6]}")
+            detail_lines.append(f"tags: {', '.join(n['tags'])[: right_w - 6]}")
         badge = _trust_badge(n, today)
         detail_lines.append(f"trust: {badge}")
         if n.get("status"):
@@ -199,9 +204,9 @@ def render_frame(
         if outs or ins:
             detail_lines.append("")
             if outs:
-                detail_lines.append(f"→ links to: {', '.join(outs)[:right_w-15]}")
+                detail_lines.append(f"→ links to: {', '.join(outs)[: right_w - 15]}")
             if ins:
-                detail_lines.append(f"← cited by: {', '.join(ins)[:right_w-15]}")
+                detail_lines.append(f"← cited by: {', '.join(ins)[: right_w - 15]}")
     else:
         detail_lines.append("(no concept selected)")
 
@@ -235,9 +240,13 @@ def run_tui(bundle_dir: Path) -> int:
 
     def repaint() -> None:
         sys.stdout.write("\x1b[H\x1b[2J")
-        sys.stdout.write(render_frame(
-            bundle_dir, selected=selected, filter_query=filter_query,
-        ))
+        sys.stdout.write(
+            render_frame(
+                bundle_dir,
+                selected=selected,
+                filter_query=filter_query,
+            )
+        )
         sys.stdout.flush()
 
     repaint()

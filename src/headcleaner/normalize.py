@@ -3,6 +3,7 @@
 `CanonicalDoc` is the single intermediate representation the emitters consume.
 It is independent of which engine produced the source.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -24,11 +25,11 @@ class CanonicalDoc:
     body_md: str
     source_path: Path
     source_relpath: Path
-    source_uri: str          # file:// absolute URI (OKF §4.1 `resource`)
+    source_uri: str  # file:// absolute URI (OKF §4.1 `resource`)
     source_sha256: str
     source_size_bytes: int
-    source_format: str       # e.g. ".docx", ".pdf"
-    engine: str              # adapter name that produced this
+    source_format: str  # e.g. ".docx", ".pdf"
+    engine: str  # adapter name that produced this
     metadata: dict[str, Any] = field(default_factory=dict)
     attachments: list[dict] = field(default_factory=list)
 

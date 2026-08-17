@@ -1,4 +1,5 @@
 """Tests for the new format adapters (md, csv, json)."""
+
 from __future__ import annotations
 
 import json
@@ -86,6 +87,7 @@ def test_json_adapter_flat_object_renders_summary(tmp_path) -> None:
 
 def test_json_adapter_invalid_json_raises(tmp_path) -> None:
     from headcleaner.engines.base import AdapterError
+
     f = tmp_path / "bad.json"
     f.write_text("{not: valid, json}", encoding="utf-8")
     with pytest.raises(AdapterError):

@@ -14,12 +14,13 @@ Batch 6 enhancement (#7):
     message override `extract_messages()`. The runner detects this and
     emits one OKF concept per message instead of one per source file.
 """
+
 from __future__ import annotations
 
 import json
 import multiprocessing
 from concurrent.futures import ProcessPoolExecutor, as_completed
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
 
@@ -39,7 +40,7 @@ from .jsonlog import emit_json_event  # Batch 4 / Eng #43
 class RunOptions:
     input_root: Path
     output_root: Path
-    fmt: str = "both"            # "md" | "okf" | "both"
+    fmt: str = "both"  # "md" | "okf" | "both"
     ocr: bool = False
     include_glob: list[str] | None = None
     exclude_glob: list[str] | None = None
@@ -47,18 +48,18 @@ class RunOptions:
     write_okf_index: bool = True
 
     # Batch 2: parallelism + caching + resume
-    jobs: int = 1                # 1 = sequential; >1 = process pool
-    use_cache: bool = True       # skip files with unchanged sha256
+    jobs: int = 1  # 1 = sequential; >1 = process pool
+    use_cache: bool = True  # skip files with unchanged sha256
 
     # Batch 3: Obsidian vault sync + future flags
     obsidian_compat: bool = False  # add flat fields to OKF frontmatter
 
     # Batch 4: OKF ecosystem
     enriched_index: bool = False  # show description + word count in index.md (Eng #38)
-    write_log: bool = False      # append a dated entry to <bundle>/log.md (Eng #37)
+    write_log: bool = False  # append a dated entry to <bundle>/log.md (Eng #37)
     write_bundle_manifest: bool = False  # aggregate across runs into bundle.manifest.json (Eng #39)
-    dry_run: bool = False        # Eng #42 — emit what would convert without writing
-    json_output: bool = False    # Eng #43 — emit one JSON line per event on stdout
+    dry_run: bool = False  # Eng #42 — emit what would convert without writing
+    json_output: bool = False  # Eng #43 — emit one JSON line per event on stdout
 
     # v0.8.0: heuristic cleanup pipeline (12 stages borrowed from any2md)
     clean_md: bool = False
@@ -73,6 +74,7 @@ class RunOptions:
 
 
 # ---- Cache helpers -----------------------------------------------------------
+
 
 def _manifest_path(output_root: Path) -> Path:
     return output_root / "manifest.json"
@@ -108,6 +110,7 @@ def _save_cache_jsonl(output_root: Path, result: FileResult) -> None:
 
 # ---- Multi-concept adapter dispatch (Eng #7) ---------------------------------
 
+
 def _is_multi_concept(adapter) -> bool:
     """True if the adapter overrides Adapter.extract_messages (multi-concept per source)."""
     return type(adapter).extract_messages is not Adapter.extract_messages
@@ -115,7 +118,9 @@ def _is_multi_concept(adapter) -> bool:
 
 def _make_sf(path: Path, relpath: str | Path) -> object:
     """Build a small file-facts object that matches the ShapeFile ducktype."""
-    return type("SF", (), {"path": path, "relpath": Path(relpath), "size_bytes": path.stat().st_size})()
+    return type(
+        "SF", (), {"path": path, "relpath": Path(relpath), "size_bytes": path.stat().st_size}
+    )()
 
 
 def _per_message_relpath(source: Path, relpath: str, idx: int) -> str:
@@ -164,9 +169,9 @@ def _run_adapter(
     # v0.8.0: optional heuristic cleanup pass (12 stages, borrowed from any2md)
     if opts is not None and getattr(opts, "clean_md", False):
         from .heuristics import clean_text
+
         extracted_list = [
-            {**ext, "body_md": clean_text(ext.get("body_md", ""))}
-            for ext in extracted_list
+            {**ext, "body_md": clean_text(ext.get("body_md", ""))} for ext in extracted_list
         ]
 
     pairs: list[tuple[str, dict]] = []
@@ -224,6 +229,7 @@ def _emit_one(
 
 # ---- Per-file worker (used by ProcessPoolExecutor) ---------------------------
 
+
 def _process_one(args: tuple[str, str, str, str, bool, bool]) -> list[dict]:
     """Worker for parallel mode.
 
@@ -246,57 +252,69 @@ def _process_one(args: tuple[str, str, str, str, bool, bool]) -> list[dict]:
     source = Path(source_str)
     adapter = _get_adapter(source)
     if adapter is None:
-        return [{
-            "source_path": str(source),
-            "relpath": relpath,
-            "engine": engine_name,
-            "sha256": None,
-            "md_path": None,
-            "okf_path": None,
-            "status": "skipped",
-            "error": "no adapter",
-        }]
+        return [
+            {
+                "source_path": str(source),
+                "relpath": relpath,
+                "engine": engine_name,
+                "sha256": None,
+                "md_path": None,
+                "okf_path": None,
+                "status": "skipped",
+                "error": "no adapter",
+            }
+        ]
 
     try:
         pairs = _run_adapter(adapter, source, relpath, ocr, None, opts=_opts)
     except AdapterError as e:
-        return [{
-            "source_path": str(source),
-            "relpath": relpath,
-            "engine": engine_name,
-            "sha256": None,
-            "md_path": None,
-            "okf_path": None,
-            "status": "failed",
-            "error": str(e),
-        }]
+        return [
+            {
+                "source_path": str(source),
+                "relpath": relpath,
+                "engine": engine_name,
+                "sha256": None,
+                "md_path": None,
+                "okf_path": None,
+                "status": "failed",
+                "error": str(e),
+            }
+        ]
     except Exception as e:
-        return [{
+        return [
+            {
+                "source_path": str(source),
+                "relpath": relpath,
+                "engine": engine_name,
+                "sha256": None,
+                "md_path": None,
+                "okf_path": None,
+                "status": "failed",
+                "error": f"{type(e).__name__}: {e}",
+            }
+        ]
+
+    return [
+        {
             "source_path": str(source),
-            "relpath": relpath,
+            "relpath": msg_rp,
             "engine": engine_name,
             "sha256": None,
             "md_path": None,
             "okf_path": None,
-            "status": "failed",
-            "error": f"{type(e).__name__}: {e}",
-        }]
-
-    return [{
-        "source_path": str(source),
-        "relpath": msg_rp,
-        "engine": engine_name,
-        "sha256": None,
-        "md_path": None,
-        "okf_path": None,
-        "status": "ok",
-        "_extracted": extracted,
-    } for msg_rp, extracted in pairs]
+            "status": "ok",
+            "_extracted": extracted,
+        }
+        for msg_rp, extracted in pairs
+    ]
 
 
 # ---- Sequential pipeline (default) ----------------------------------------
 
-def _process_sequential(opts: RunOptions, record: RunRecord, cache: dict[str, dict], total: int, all_files) -> None:
+
+def _process_sequential(
+    opts: RunOptions, record: RunRecord, cache: dict[str, dict], total: int, all_files
+) -> None:
     """Process files one at a time; respects the cache."""
     md_root = opts.output_root / "_md"
     okf_root = opts.output_root / "okf"
@@ -326,6 +344,7 @@ def _process_sequential(opts: RunOptions, record: RunRecord, cache: dict[str, di
         cached = cache.get(rel) if opts.use_cache else None
         if cached:
             from .walk import sha256_of
+
             current_sha = sha256_of(sf.path)
             if current_sha == cached["sha256"]:
                 result = FileResult(
@@ -333,8 +352,12 @@ def _process_sequential(opts: RunOptions, record: RunRecord, cache: dict[str, di
                     relpath=rel,
                     engine=adapter.name,
                     sha256=current_sha,
-                    md_path=str(md_root / (Path(rel).name + ".md")) if opts.fmt in {"md", "both"} else None,
-                    okf_path=str(okf_root / Path(rel).with_suffix(".md")) if opts.fmt in {"okf", "both"} else None,
+                    md_path=str(md_root / (Path(rel).name + ".md"))
+                    if opts.fmt in {"md", "both"}
+                    else None,
+                    okf_path=str(okf_root / Path(rel).with_suffix(".md"))
+                    if opts.fmt in {"okf", "both"}
+                    else None,
                     status="ok",
                 )
                 record.results.append(result)
@@ -343,7 +366,9 @@ def _process_sequential(opts: RunOptions, record: RunRecord, cache: dict[str, di
                 continue
 
         try:
-            pairs = _run_adapter(adapter, sf.path, rel, opts.ocr, opts.on_engine_progress, opts=opts)
+            pairs = _run_adapter(
+                adapter, sf.path, rel, opts.ocr, opts.on_engine_progress, opts=opts
+            )
         except AdapterError as e:
             result = FileResult(
                 source_path=str(sf.path),
@@ -377,15 +402,24 @@ def _process_sequential(opts: RunOptions, record: RunRecord, cache: dict[str, di
 
         for msg_rp, extracted in pairs:
             result = _emit_one(
-                opts, record, sf.path, msg_rp, adapter.name,
-                extracted, md_root, okf_root,
+                opts,
+                record,
+                sf.path,
+                msg_rp,
+                adapter.name,
+                extracted,
+                md_root,
+                okf_root,
             )
             _finish_result(opts, record, result)
 
 
 # ---- Parallel pipeline (--jobs N) ------------------------------------------
 
-def _process_parallel(opts: RunOptions, record: RunRecord, cache: dict[str, dict], total: int, all_files) -> None:
+
+def _process_parallel(
+    opts: RunOptions, record: RunRecord, cache: dict[str, dict], total: int, all_files
+) -> None:
     """Process files via ProcessPoolExecutor. For multi-message adapters,
     the worker returns the full extracted list; the orchestrator re-emits
     on the main process (subprocess can't easily write to the parent's
@@ -406,14 +440,19 @@ def _process_parallel(opts: RunOptions, record: RunRecord, cache: dict[str, dict
 
         if opts.use_cache and engine_name and rel in cache:
             from .walk import sha256_of
+
             if sha256_of(sf.path) == cache[rel]["sha256"]:
                 result = FileResult(
                     source_path=str(sf.path),
                     relpath=rel,
                     engine=engine_name,
                     sha256=cache[rel]["sha256"],
-                    md_path=str(md_root / (Path(rel).name + ".md")) if opts.fmt in {"md", "both"} else None,
-                    okf_path=str(okf_root / Path(rel).with_suffix(".md")) if opts.fmt in {"okf", "both"} else None,
+                    md_path=str(md_root / (Path(rel).name + ".md"))
+                    if opts.fmt in {"md", "both"}
+                    else None,
+                    okf_path=str(okf_root / Path(rel).with_suffix(".md"))
+                    if opts.fmt in {"okf", "both"}
+                    else None,
                     status="ok",
                 )
                 _finish_result(opts, record, result)
@@ -447,8 +486,14 @@ def _process_parallel(opts: RunOptions, record: RunRecord, cache: dict[str, dict
                 source = Path(r_dict["source_path"])
                 if r_dict["status"] == "ok" and "_extracted" in r_dict:
                     result = _emit_one(
-                        opts, record, source, r_dict["relpath"], r_dict["engine"],
-                        r_dict["_extracted"], md_root, okf_root,
+                        opts,
+                        record,
+                        source,
+                        r_dict["relpath"],
+                        r_dict["engine"],
+                        r_dict["_extracted"],
+                        md_root,
+                        okf_root,
                     )
                 else:
                     # Failed or synthetic — convert dict back to FileResult
@@ -466,6 +511,7 @@ def _process_parallel(opts: RunOptions, record: RunRecord, cache: dict[str, dict
 
 
 # ---- Shared helpers ---------------------------------------------------------
+
 
 def _finish_result(opts: RunOptions, record: RunRecord, result: FileResult) -> None:
     """Append to record + JSONL; call progress hook."""
@@ -499,7 +545,8 @@ def run_pipeline(opts: RunOptions) -> RunRecord:
 
     cache = _load_cache(opts.output_root) if opts.use_cache else {}
     all_files = [
-        sf for sf in walk(
+        sf
+        for sf in walk(
             opts.input_root,
             include_glob=opts.include_glob,
             exclude_glob=opts.exclude_glob,
@@ -511,14 +558,17 @@ def run_pipeline(opts: RunOptions) -> RunRecord:
 
     if opts.json_output:
         from . import __version__ as _v
-        emit_json_event({
-            "event": "start",
-            "tool": "headcleaner",
-            "version": _v,
-            "format": opts.fmt,
-            "dry_run": opts.dry_run,
-            "files": total,
-        })
+
+        emit_json_event(
+            {
+                "event": "start",
+                "tool": "headcleaner",
+                "version": _v,
+                "format": opts.fmt,
+                "dry_run": opts.dry_run,
+                "files": total,
+            }
+        )
 
     if opts.jobs > 1:
         _process_parallel(opts, record, cache, total, all_files)
@@ -539,14 +589,17 @@ def run_pipeline(opts: RunOptions) -> RunRecord:
         manifest_emit.write(record, opts.output_root)
         if opts.write_bundle_manifest:
             from .bundle_manifest import write_bundle_manifest
+
             write_bundle_manifest(opts.output_root, record)
 
     if opts.json_output:
-        emit_json_event({
-            "event": "finish",
-            "ok": sum(1 for r in record.results if r.status == "ok"),
-            "skipped": sum(1 for r in record.results if r.status == "skipped"),
-            "failed": sum(1 for r in record.results if r.status == "failed"),
-        })
+        emit_json_event(
+            {
+                "event": "finish",
+                "ok": sum(1 for r in record.results if r.status == "ok"),
+                "skipped": sum(1 for r in record.results if r.status == "skipped"),
+                "failed": sum(1 for r in record.results if r.status == "failed"),
+            }
+        )
 
     return record

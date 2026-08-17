@@ -20,6 +20,7 @@ Shape:
       ]
     }
 """
+
 from __future__ import annotations
 
 import json
@@ -49,7 +50,7 @@ class RunRecord:
     finished_at: str = ""
     input_root: str = ""
     output_root: str = ""
-    format: str = "both"            # "md" | "okf" | "both"
+    format: str = "both"  # "md" | "okf" | "both"
     options: dict[str, Any] = field(default_factory=dict)
     results: list[FileResult] = field(default_factory=list)
 

@@ -33,12 +33,12 @@ CLI:
     headcleaner attest <bundle-dir> [--private-key <PEM>] [--output <path>]
     headcleaner verify <bundle-dir> [--public-key <PEM>] [--attestation <path>]
 """
+
 from __future__ import annotations
 
 import base64
 import hashlib
 import json
-import os
 from pathlib import Path
 from typing import Any
 
@@ -49,6 +49,7 @@ try:
         Ed25519PrivateKey,
         Ed25519PublicKey,
     )
+
     _HAS_CRYPTO = True
 except ImportError:
     _HAS_CRYPTO = False
@@ -57,6 +58,7 @@ except ImportError:
 # ---------------------------------------------------------------------------
 # Canonical hashing
 # ---------------------------------------------------------------------------
+
 
 def canonical_hash(concept_path: Path) -> str:
     """SHA-256 of the canonical UTF-8 form.
@@ -76,6 +78,7 @@ def canonical_hash(concept_path: Path) -> str:
 # ---------------------------------------------------------------------------
 # Merkle tree (RFC 9162 SHA-256 binary tree)
 # ---------------------------------------------------------------------------
+
 
 def _hash_pair(left: bytes, right: bytes) -> bytes:
     """RFC 9162 §2.1.1: H(0x01 || left || right) for inner nodes.
@@ -135,6 +138,7 @@ def merkle_proof(leaf_hashes_hex: list[str], target_hex: str) -> list[str]:
 # ---------------------------------------------------------------------------
 # Ed25519 signing
 # ---------------------------------------------------------------------------
+
 
 def _b64(data: bytes) -> str:
     """Standard base64 (no line breaks)."""
@@ -200,9 +204,7 @@ def sign_message(private_key: Ed25519PrivateKey, message: bytes) -> str:
     return _b64(private_key.sign(message))
 
 
-def verify_signature(
-    public_key: Ed25519PublicKey, signature_b64: str, message: bytes
-) -> bool:
+def verify_signature(public_key: Ed25519PublicKey, signature_b64: str, message: bytes) -> bool:
     """Verify a base64-encoded signature against a message."""
     try:
         public_key.verify(_b64d(signature_b64), message)
@@ -214,6 +216,7 @@ def verify_signature(
 # ---------------------------------------------------------------------------
 # Bundle attestation
 # ---------------------------------------------------------------------------
+
 
 def _concept_hashes(bundle_root: Path) -> dict[str, str]:
     """Walk a bundle and compute canonical hashes for each concept."""
@@ -288,9 +291,7 @@ def write_attestation(
     """Write `attestation.json` next to the bundle."""
     payload = build_attestation(bundle_root, private_key_path=private_key_path)
     out_path = output or (bundle_root / "attestation.json")
-    out_path.write_text(
-        json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8"
-    )
+    out_path.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
     return out_path
 
 
@@ -376,7 +377,7 @@ def verify_attestation(
                 sibling = bytes.fromhex(sibling_hex)
                 # We need to know left/right ordering: search list to find idx
                 # Simpler: re-derive both and pick the one that has sibling on the correct side.
-                # We'll use the simpler approach: at each level, the current idx determines the side.
+                # We'll use the simpler approach: at each level, the current idx determines the side.  # noqa: E501
                 # Since we don't know the original index, we try both orderings.
                 h_left = _hash_pair(current, sibling)
                 h_right = _hash_pair(sibling, current)

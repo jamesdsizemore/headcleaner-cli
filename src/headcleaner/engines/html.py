@@ -6,6 +6,7 @@ Strategy:
   3. Extract <title> as the document title
   4. markdownify the remaining tree with semantic ATX headings + GFM tables
 """
+
 from __future__ import annotations
 
 from pathlib import Path

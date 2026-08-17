@@ -12,12 +12,15 @@ Press Ctrl+C to stop. On a clean run exit, the watcher prints a summary.
 The `watchfiles` import is deferred to call time so this module loads
 cleanly even on minimal installs where the Rust extension is missing.
 """
+
 from __future__ import annotations
 
 import signal
 import threading
 from pathlib import Path
 from typing import Callable
+
+from .run import RunOptions
 
 
 class WatchfilesMissingError(RuntimeError):

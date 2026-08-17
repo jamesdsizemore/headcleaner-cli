@@ -1,11 +1,9 @@
 """Tests for PST per-message extraction (Eng #7 full impl)."""
+
 from __future__ import annotations
 
-import mailbox
-from email.message import EmailMessage
 from pathlib import Path
 
-import pytest
 
 from headcleaner.engines.base import Adapter
 from headcleaner.engines.pst import PstAdapter, _sanitize_slug
@@ -30,6 +28,7 @@ def test_pst_adapter_raises_when_no_backend(tmp_path: Path) -> None:
     # This test only proves the error path; we're not forcing a missing backend.
     # We just verify the error message is informative.
     from headcleaner.engines.base import AdapterError
+
     adapter = PstAdapter()
     # Try to extract from a fake file -- this will likely hit the "no backend" path
     # OR, if readpst is available, it will fail with a different error from readpst itself.
@@ -45,7 +44,12 @@ def test_pst_adapter_raises_when_no_backend(tmp_path: Path) -> None:
     except Exception as e:
         # Readpst may exist and fail with a subprocess error; that's fine.
         # The point is that the adapter doesn't crash with AttributeError.
-        assert "readpst" in str(e) or "mbox" in str(e) or "not a valid" in str(e).lower() or "exit" in str(e).lower()
+        assert (
+            "readpst" in str(e)
+            or "mbox" in str(e)
+            or "not a valid" in str(e).lower()
+            or "exit" in str(e).lower()
+        )
 
 
 def test_pst_adapter_extract_messages_returns_list_type(tmp_path: Path) -> None:

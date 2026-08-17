@@ -4,6 +4,7 @@ An EPUB is a zip of XHTML files. We use `ebooklib` to enumerate spine
 items and concatenate their text content with `---` separators per
 chapter.
 """
+
 from __future__ import annotations
 
 import zipfile
@@ -14,6 +15,7 @@ from .base import Adapter
 try:
     import ebooklib
     from ebooklib import epub
+
     HAS_EBOOKLIB = True
 except ImportError:  # pragma: no cover
     HAS_EBOOKLIB = False
@@ -22,6 +24,7 @@ except ImportError:  # pragma: no cover
 def _html_to_text(html: str) -> str:
     """Tiny HTML-to-text fallback using BeautifulSoup."""
     from bs4 import BeautifulSoup
+
     soup = BeautifulSoup(html, "html.parser")
     parts: list[str] = []
     for el in soup.find_all(["h1", "h2", "h3", "h4", "p", "li"]):
@@ -48,7 +51,7 @@ class EpubAdapter(Adapter):
     name = "epub"
     extensions = (".epub",)
 
-    def extract(self, source: Path) -> Extracted:
+    def extract(self, source: Path) -> "Extracted":  # noqa: F821
         if not HAS_EBOOKLIB:
             return self._extract_fallback(source)
 
@@ -92,7 +95,7 @@ class EpubAdapter(Adapter):
         }
 
     @staticmethod
-    def _extract_fallback(source: Path) -> Extracted:
+    def _extract_fallback(source: Path) -> "Extracted":  # noqa: F821
         # No ebooklib: read first text-bearing HTML inside the zip.
         chapters: list[str] = []
         try:

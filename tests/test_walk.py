@@ -1,4 +1,5 @@
 """Tests for the folder walker (walk.py)."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -38,6 +39,7 @@ def test_walk_respects_exclude_glob(mixed_dir: Path) -> None:
 
 def test_walk_raises_on_missing_root(tmp_path: Path) -> None:
     import pytest as _pt
+
     with _pt.raises(NotADirectoryError):
         list(walk(tmp_path / "does-not-exist"))
 
@@ -53,6 +55,7 @@ def test_sha256_of_is_deterministic(tmp_path: Path) -> None:
 
 def test_manifest_json_is_valid(mixed_dir: Path) -> None:
     import json
+
     m = json.loads(manifest_json(mixed_dir))
     assert m["count"] == 5  # 4 root + 1 nested
     assert all("sha256" in f and len(f["sha256"]) == 64 for f in m["files"])

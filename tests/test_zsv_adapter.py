@@ -3,10 +3,10 @@
 These tests rely on the zsv binary being on PATH. If zsv is not installed,
 most tests are skipped via the ``zsv_available`` guard.
 """
+
 from __future__ import annotations
 
 import os
-import shutil
 from pathlib import Path
 
 import pytest
@@ -111,8 +111,8 @@ def test_router_picks_zsv_for_csv(zsv_on_path: None, tmp_path: Path) -> None:
     # under pytest), force a reload so the registration block re-runs.
     import importlib
     import headcleaner.router
+
     importlib.reload(headcleaner.router)
-    from headcleaner.router import _ADAPTERS, get_adapter
 
     registered_names = [a.name for a in _ADAPTERS]
     assert "zsv" in registered_names, f"ZsvAdapter not registered; got {registered_names}"

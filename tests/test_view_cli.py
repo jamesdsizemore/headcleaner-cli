@@ -1,4 +1,5 @@
 """End-to-end tests for the `headcleaner view` CLI subcommand (v0.10.0)."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -15,11 +16,14 @@ def bundle(tmp_path: Path) -> Path:
     d = tmp_path / "okf"
     (d / "concepts").mkdir(parents=True)
     (d / "concepts" / "a.md").write_text(
-        "---\ntype: Document\ntitle: A\n---\n\n# A\n\nSee [B](b.md).", encoding="utf-8")
+        "---\ntype: Document\ntitle: A\n---\n\n# A\n\nSee [B](b.md).", encoding="utf-8"
+    )
     (d / "concepts" / "b.md").write_text(
-        "---\ntype: Document\ntitle: B\n---\n\n# B\n\nSee [C](c.md).", encoding="utf-8")
+        "---\ntype: Document\ntitle: B\n---\n\n# B\n\nSee [C](c.md).", encoding="utf-8"
+    )
     (d / "concepts" / "c.md").write_text(
-        "---\ntype: Document\ntitle: C\n---\n\n# C", encoding="utf-8")
+        "---\ntype: Document\ntitle: C\n---\n\n# C", encoding="utf-8"
+    )
     return d
 
 

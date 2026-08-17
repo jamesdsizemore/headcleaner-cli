@@ -8,6 +8,7 @@ content.xml + media. We:
 
 Falls back to raw <text:p> extraction if odfpy parsing fails.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -18,6 +19,7 @@ try:
     from odf.opendocument import load as _odf_load
     from odf.text import P as _P
     from odf.table import Table as _Table, TableRow as _Row, TableCell as _Cell
+
     HAS_ODFPY = True
 except ImportError:  # pragma: no cover
     HAS_ODFPY = False
@@ -27,9 +29,7 @@ def _cell_text(cell) -> str:
     """Return all paragraph text from a TableCell."""
     parts = []
     for p in cell.getElementsByType(_P):
-        s = "".join(
-            str(node) for node in p.childNodes if node.nodeType == 3
-        )
+        s = "".join(str(node) for node in p.childNodes if node.nodeType == 3)
         if s.strip():
             parts.append(s.strip())
     return " | ".join(parts)
@@ -39,7 +39,7 @@ class OdfAdapter(Adapter):
     name = "odf"
     extensions = (".odt", ".ods", ".odp")
 
-    def extract(self, source: Path) -> Extracted:
+    def extract(self, source: Path) -> "Extracted":  # noqa: F821
         if HAS_ODFPY:
             try:
                 return self._extract_odfpy(source)
@@ -52,10 +52,11 @@ class OdfAdapter(Adapter):
         # Fallback: read content.xml from the zip
         import zipfile
         import xml.etree.ElementTree as ET
+
         with zipfile.ZipFile(source) as zf:
             with zf.open("content.xml") as f:
                 # Wrap in a namespace declaration so local-name lookup works
-                wrapped = b'<root xmlns:text="urn:text">' + f.read() + b'</root>'
+                wrapped = b'<root xmlns:text="urn:text">' + f.read() + b"</root>"
         try:
             tree = ET.fromstring(wrapped)
         except ET.ParseError as e:
@@ -77,7 +78,7 @@ class OdfAdapter(Adapter):
             "metadata": {"format": "odf", "fallback": True, "fallback_reason": err},
         }
 
-    def _extract_odfpy(self, source: Path) -> Extracted:
+    def _extract_odfpy(self, source: Path) -> "Extracted":  # noqa: F821
         doc = _odf_load(str(source))
         kind = "odt"
         if source.suffix.lower() == ".ods":
@@ -90,7 +91,7 @@ class OdfAdapter(Adapter):
             body = self._extract_text(doc)
         return {
             "title": source.stem,
-            "body_md":body,
+            "body_md": body,
             "metadata": {"format": kind},
         }
 
@@ -98,9 +99,7 @@ class OdfAdapter(Adapter):
     def _extract_text(doc) -> str:
         parts: list[str] = []
         for p in doc.getElementsByType(_P):
-            s = "".join(
-                str(node) for node in p.childNodes if node.nodeType == 3
-            )
+            s = "".join(str(node) for node in p.childNodes if node.nodeType == 3)
             if s.strip():
                 parts.append(s.strip())
         return "\n\n".join(parts)
@@ -109,8 +108,20 @@ class OdfAdapter(Adapter):
     def _extract_spreadsheet(doc) -> str:
         out: list[str] = []
         for tbl in doc.getElementsByType(_Table):
-            out.append("| " + " | ".join(_cell_text(c) for c in tbl.getElementsByType(_Row)[0].getElementsByType(_Cell)) + " |")
-            out.append("|" + "|".join(["---"] * max(1, len(tbl.getElementsByType(_Row)[0].getElementsByType(_Cell)))) + "|")
+            out.append(
+                "| "
+                + " | ".join(
+                    _cell_text(c) for c in tbl.getElementsByType(_Row)[0].getElementsByType(_Cell)
+                )
+                + " |"
+            )
+            out.append(
+                "|"
+                + "|".join(
+                    ["---"] * max(1, len(tbl.getElementsByType(_Row)[0].getElementsByType(_Cell)))
+                )
+                + "|"
+            )
             for row in tbl.getElementsByType(_Row)[1:]:
                 cells = row.getElementsByType(_Cell)
                 out.append("| " + " | ".join(_cell_text(c) for c in cells) + " |")
@@ -121,13 +132,11 @@ class OdfAdapter(Adapter):
     def _extract_presentation(doc) -> str:
         # OD presentations: walk frame > text-box > p
         out: list[str] = []
-        for slide in doc.getElementsByType(_P.__class__.mro()[1].__base__):  # type: ignore[attr-defined]
+        for _slide in doc.getElementsByType(_P.__class__.mro()[1].__base__):  # type: ignore[attr-defined]
             pass  # placeholder; full impl below
         # Simpler: collect all <text:p> in order
         for p in doc.getElementsByType(_P):
-            s = "".join(
-                str(node) for node in p.childNodes if node.nodeType == 3
-            )
+            s = "".join(str(node) for node in p.childNodes if node.nodeType == 3)
             if s.strip():
                 out.append(s.strip())
         return "\n\n".join(out)

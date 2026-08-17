@@ -3,13 +3,12 @@
 We monkey-patch the readpst call to use a real mbox file we build on disk,
 so the test doesn't depend on readpst being installed on the host.
 """
+
 from __future__ import annotations
 
 import mailbox
-import tempfile
 from email.message import EmailMessage
 from pathlib import Path
-from typing import Any
 
 import pytest
 
@@ -31,7 +30,7 @@ def fake_mbox(tmp_path: Path) -> Path:
             msg = EmailMessage()
             msg["Subject"] = subject
             msg["From"] = f"sender{i}@example.com"
-            msg["To"] = f"recipient@example.com"
+            msg["To"] = "recipient@example.com"
             msg["Date"] = "Sun, 16 Aug 2026 12:00:00 +0000"
             msg.set_content(body)
             mbox.add(msg)

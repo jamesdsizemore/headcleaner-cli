@@ -4,6 +4,7 @@ Detects the dialect (delimiter, quoting) using stdlib `csv.Sniffer`,
 then renders the file as a GitHub-flavored Markdown table. The first
 non-empty row is the header.
 """
+
 from __future__ import annotations
 
 import csv
@@ -70,6 +71,7 @@ class CsvAdapter(Adapter):
     @staticmethod
     def _to_markdown(header: list[str], body: list[list[str]]) -> str:
         """Render rows as a GFM table; escape pipes inside cell values."""
+
         def cell(value: str) -> str:
             if value is None:
                 return ""
@@ -124,8 +126,14 @@ class JsonAdapter(Adapter):
 
         # If the JSON is a small flat object, surface top-level fields
         # in the body above the fenced block for quick scanning
-        if isinstance(data, dict) and data and all(isinstance(v, (str, int, float, bool, type(None))) for v in data.values()):
-            summary = "\n".join(f"- **{k}**: `{json.dumps(v, ensure_ascii=False)}`" for k, v in data.items())
+        if (
+            isinstance(data, dict)
+            and data
+            and all(isinstance(v, (str, int, float, bool, type(None))) for v in data.values())
+        ):
+            summary = "\n".join(
+                f"- **{k}**: `{json.dumps(v, ensure_ascii=False)}`" for k, v in data.items()
+            )
             body_md = f"{summary}\n\n```json\n{pretty}\n```\n"
         else:
             body_md = f"```json\n{pretty}\n```\n"

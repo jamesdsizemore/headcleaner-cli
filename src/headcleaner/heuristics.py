@@ -25,6 +25,7 @@ Stages (in canonical order):
 The runner (`clean_text`) applies all 12 by default. Pass a `stages` list
 to enable a subset.
 """
+
 from __future__ import annotations
 
 import html
@@ -35,6 +36,7 @@ from typing import Callable
 # ---------------------------------------------------------------------------
 # T1 — Unicode NFC + LF
 # ---------------------------------------------------------------------------
+
 
 def nfc_normalize(text: str) -> str:
     """Normalize to Unicode NFC and force LF line endings.
@@ -49,7 +51,8 @@ def nfc_normalize(text: str) -> str:
 # T2 — Soft hyphens
 # ---------------------------------------------------------------------------
 
-_SOFT_HYPHEN = "\u00AD"
+_SOFT_HYPHEN = "\u00ad"
+
 
 def strip_soft_hyphens(text: str) -> str:
     """Remove U+00AD (soft hyphen) characters that sneak through PDF→MD."""
@@ -67,10 +70,11 @@ _LIGATURES = {
     "\ufb04": "ffl",  # ffl
     "\ufb05": "st",  # long s + t
     "\ufb06": "st",  # st
-    "\u00A0": " ",  # nbsp -> space
+    "\u00a0": " ",  # nbsp -> space
     "\u2009": " ",  # thin space -> space
-    "\u200A": " ",  # hair space -> space
+    "\u200a": " ",  # hair space -> space
 }
+
 
 def normalize_ligatures(text: str) -> str:
     """Replace Unicode ligatures + non-breaking spaces with their ASCII form."""
@@ -86,12 +90,13 @@ def normalize_ligatures(text: str) -> str:
 _QUOTES_DASHES = {
     "\u2018": "'",  # left single quote
     "\u2019": "'",  # right single quote
-    "\u201C": '"',  # left double quote
-    "\u201D": '"',  # right double quote
+    "\u201c": '"',  # left double quote
+    "\u201d": '"',  # right double quote
     "\u2013": "-",  # en dash
     "\u2014": "--",  # em dash
     "\u2026": "...",  # ellipsis
 }
+
 
 def normalize_quotes_dashes(text: str) -> str:
     """Replace typographic quotes and dashes with ASCII."""
@@ -107,6 +112,7 @@ def normalize_quotes_dashes(text: str) -> str:
 _RUN_OF_WS = re.compile(r"[ \t]+")
 _RUN_OF_BLANKS = re.compile(r"\n{3,}")
 
+
 def collapse_whitespace(text: str) -> str:
     """Collapse runs of horizontal whitespace to a single space; cap blank lines at 2."""
     text = _RUN_OF_WS.sub(" ", text)
@@ -119,6 +125,7 @@ def collapse_whitespace(text: str) -> str:
 # ---------------------------------------------------------------------------
 
 _HTML_ENTITY = re.compile(r"&(?:#x[0-9a-fA-F]+|#\d+|[a-zA-Z]+);")
+
 
 def decode_html_entities(text: str, *, max_iters: int = 5) -> str:
     """Decode HTML entities iteratively until output stabilizes.
@@ -137,6 +144,7 @@ def decode_html_entities(text: str, *, max_iters: int = 5) -> str:
 # ---------------------------------------------------------------------------
 # T7 — Repair line wraps (hard-wrapped text -> joined paragraphs)
 # ---------------------------------------------------------------------------
+
 
 def repair_line_wraps(text: str) -> str:
     """Re-join lines that are wrapped mid-sentence within a paragraph.
@@ -173,6 +181,7 @@ def repair_line_wraps(text: str) -> str:
 
 _DEHYPHENATE = re.compile(r"(\w)-\n(\w)")
 
+
 def dehyphenate(text: str) -> str:
     """Re-join words split across a line break with a hyphen."""
     return _DEHYPHENATE.sub(r"\1\2", text)
@@ -181,6 +190,7 @@ def dehyphenate(text: str) -> str:
 # ---------------------------------------------------------------------------
 # T9 — Dedupe a TOC block that appears again later
 # ---------------------------------------------------------------------------
+
 
 def dedupe_toc_block(text: str, *, min_lines: int = 4) -> str:
     """Drop an early "table of contents" block that reappears verbatim later.
@@ -225,7 +235,6 @@ def dedupe_toc_block(text: str, *, min_lines: int = 4) -> str:
         return _RUN_OF_BLANKS.sub("\n\n", "\n".join(out))
     return text
 
-
     return text
 
 
@@ -234,6 +243,7 @@ def dedupe_toc_block(text: str, *, min_lines: int = 4) -> str:
 # ---------------------------------------------------------------------------
 
 _REPEAT_LINE = re.compile(r"^(.{8,120})$", re.MULTILINE)
+
 
 def strip_repeated_byline(text: str, *, min_repeats: int = 2) -> str:
     """Drop lines that appear 2+ times in the document (byline-like)."""
@@ -260,6 +270,7 @@ def strip_repeated_byline(text: str, *, min_repeats: int = 2) -> str:
 
 _ORPHAN_PUNCT = re.compile(r"^\s*[|>+\-=*#~]{1,3}\s*$", re.MULTILINE)
 
+
 def strip_orphan_punctuation(text: str) -> str:
     """Drop lines that are just ``|``, ``>``, ``+``, etc. (from malformed Docling tables)."""
     return _ORPHAN_PUNCT.sub("", text)
@@ -270,6 +281,7 @@ def strip_orphan_punctuation(text: str) -> str:
 # ---------------------------------------------------------------------------
 
 _HEADING = re.compile(r"^(#{1,6})\s")
+
 
 def enforce_heading_hierarchy(text: str) -> str:
     """Ensure heading levels don't skip — H1, H2, H3, ..., no jumping from H2 to H5.
@@ -293,7 +305,7 @@ def enforce_heading_hierarchy(text: str) -> str:
         else:
             new_level = level
         new_level = min(new_level, 6)
-        out.append("#" * new_level + line[len(m.group(1)):])
+        out.append("#" * new_level + line[len(m.group(1)) :])
         last_level = new_level
     return "\n".join(out)
 

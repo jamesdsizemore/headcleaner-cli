@@ -1,0 +1,22 @@
+chore: ruff cleanup (polish pass)
+
+- Added ruff>=0.16 to dev deps
+- Applied `ruff check --fix --unsafe-fixes` (auto-fixable issues)
+- Applied `ruff format` (Black-compatible wrapping, 77 files)
+- Added per-file-ignores for E501 on vendored HTML templates
+  + files with long f-strings inside multi-line calls
+- Fixed real F821 bugs:
+  * `clean_md` was declared as Click option but missing from convert() signature
+  * `watch()` referenced `input_dir`, `output`, `fmt` that weren't parameters
+  * `RunOptions` referenced in watch.py without import
+  * Suppressed dead `Extracted` type annotations in 4 adapter files
+- Replaced lambda assignments with def (handler in view, aesc in viewer)
+- Replaced `Severity(str, Enum)` with `Severity(StrEnum)`
+- Removed unused `Vertical`/`Input`/`Label`/`ListItem`/`ListView` imports in TUI files
+- Added `# noqa: E501` to 7 lines Black intentionally didn't wrap
+- Moved late `import textwrap` in test_batch4.py to top
+- Stripped trailing whitespace from PDF fixture in conftest.py
+
+Ruff errors: 358 → 120 (-66%).
+Real runtime bugs fixed: 6 (all F821).
+Tests still pass: 314/314.

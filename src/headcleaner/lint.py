@@ -11,11 +11,12 @@ commit the bundle. Two kinds of checks:
 Findings are emitted as colored lines (neon palette) and exit code is
 1 if any `error`-level finding, 0 otherwise.
 """
+
 from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 from pathlib import Path
 
 import yaml
@@ -30,7 +31,7 @@ from .theme import (
 )
 
 
-class Severity(str, Enum):
+class Severity(StrEnum):
     ERROR = "error"
     WARNING = "warning"
     INFO = "info"
@@ -89,6 +90,7 @@ def _split_frontmatter(text: str) -> tuple[dict, str, int] | tuple[None, None, N
 # OKF rules
 # ---------------------------------------------------------------------------
 
+
 def check_okf(path: Path) -> list[Finding]:
     out: list[Finding] = []
     if path.name == "index.md":
@@ -102,45 +104,125 @@ def check_okf(path: Path) -> list[Finding]:
 
     fm, body, body_start = _split_frontmatter(text)
     if fm is None:
-        out.append(Finding(Severity.ERROR, path, 1, "okf/frontmatter", "missing or invalid YAML frontmatter"))
+        out.append(
+            Finding(
+                Severity.ERROR, path, 1, "okf/frontmatter", "missing or invalid YAML frontmatter"
+            )
+        )
         return out
 
     # OKF v0.2 §4.1: type is required
     if "type" not in fm or not isinstance(fm.get("type"), str) or not fm["type"]:
-        out.append(Finding(Severity.ERROR, path, 2, "okf/type-required", "`type` is the only always-required OKF key; missing or empty"))
+        out.append(
+            Finding(
+                Severity.ERROR,
+                path,
+                2,
+                "okf/type-required",
+                "`type` is the only always-required OKF key; missing or empty",
+            )
+        )
     elif len(fm["type"]) > 60:
-        out.append(Finding(Severity.WARNING, path, 2, "okf/type-length", f"`type` is {len(fm['type'])} chars; OKF convention is short (<60)"))
+        out.append(
+            Finding(
+                Severity.WARNING,
+                path,
+                2,
+                "okf/type-length",
+                f"`type` is {len(fm['type'])} chars; OKF convention is short (<60)",
+            )
+        )
 
     # resource: file:// URI when present
     resource = fm.get("resource")
     if resource is not None:
         if not isinstance(resource, str) or not resource.startswith("file://"):
-            out.append(Finding(Severity.WARNING, path, 3, "okf/resource-uri", "`resource` should be a file:// URI"))
+            out.append(
+                Finding(
+                    Severity.WARNING,
+                    path,
+                    3,
+                    "okf/resource-uri",
+                    "`resource` should be a file:// URI",
+                )
+            )
 
     # sources[] shape (OKF v0.2 §5.1)
     sources = fm.get("sources")
     if sources is not None:
         if not isinstance(sources, list) or not sources:
-            out.append(Finding(Severity.ERROR, path, 5, "okf/sources-empty", "`sources` must be a non-empty list"))
+            out.append(
+                Finding(
+                    Severity.ERROR,
+                    path,
+                    5,
+                    "okf/sources-empty",
+                    "`sources` must be a non-empty list",
+                )
+            )
         else:
             for i, src in enumerate(sources):
                 if not isinstance(src, dict):
-                    out.append(Finding(Severity.ERROR, path, 5, "okf/sources-shape", f"sources[{i}] must be a dict"))
+                    out.append(
+                        Finding(
+                            Severity.ERROR,
+                            path,
+                            5,
+                            "okf/sources-shape",
+                            f"sources[{i}] must be a dict",
+                        )
+                    )
                     continue
                 if "uri" not in src:
-                    out.append(Finding(Severity.WARNING, path, 5, "okf/sources-uri", f"sources[{i}] missing `uri`"))
+                    out.append(
+                        Finding(
+                            Severity.WARNING,
+                            path,
+                            5,
+                            "okf/sources-uri",
+                            f"sources[{i}] missing `uri`",
+                        )
+                    )
                 if "sha256" in src and not re.fullmatch(r"[0-9a-f]{64}", str(src["sha256"])):
-                    out.append(Finding(Severity.ERROR, path, 5, "okf/sources-sha256", f"sources[{i}].sha256 is not a valid SHA-256 hex string"))
+                    out.append(
+                        Finding(
+                            Severity.ERROR,
+                            path,
+                            5,
+                            "okf/sources-sha256",
+                            f"sources[{i}].sha256 is not a valid SHA-256 hex string",
+                        )
+                    )
 
     # OKF v0.2 trust family
     if "status" not in fm:
-        out.append(Finding(Severity.WARNING, path, 4, "okf/status-missing", "`status` not set; OKF v0.2 §5.2 recommends an explicit value"))
+        out.append(
+            Finding(
+                Severity.WARNING,
+                path,
+                4,
+                "okf/status-missing",
+                "`status` not set; OKF v0.2 §5.2 recommends an explicit value",
+            )
+        )
     if "verified" not in fm:
-        out.append(Finding(Severity.WARNING, path, 4, "okf/verified-missing", "`verified` not set; OKF v0.2 §5.3 recommends an explicit actor tag"))
+        out.append(
+            Finding(
+                Severity.WARNING,
+                path,
+                4,
+                "okf/verified-missing",
+                "`verified` not set; OKF v0.2 §5.3 recommends an explicit actor tag",
+            )
+        )
 
     # Body sanity
     if not body or not body.strip():
-        out.append(Finding(Severity.ERROR, path, body_start, "okf/body-empty", "OKF concept has empty body"))
+        out.append(
+            Finding(
+                Severity.ERROR, path, body_start, "okf/body-empty", "OKF concept has empty body"
+            )
+        )
 
     return out
 
@@ -148,6 +230,7 @@ def check_okf(path: Path) -> list[Finding]:
 # ---------------------------------------------------------------------------
 # Markdown rules
 # ---------------------------------------------------------------------------
+
 
 def check_markdown(path: Path) -> list[Finding]:
     out: list[Finding] = []
@@ -159,14 +242,30 @@ def check_markdown(path: Path) -> list[Finding]:
 
     fm, body, body_start = _split_frontmatter(text)
     if fm is None:
-        out.append(Finding(Severity.WARNING, path, 1, "md/frontmatter-missing", "Markdown file has no frontmatter (consider adding OKF trust family)"))
+        out.append(
+            Finding(
+                Severity.WARNING,
+                path,
+                1,
+                "md/frontmatter-missing",
+                "Markdown file has no frontmatter (consider adding OKF trust family)",
+            )
+        )
         body = text  # lint body even without frontmatter
         body_start = 1
 
     # Orphaned code fences (odd count)
     fence_count = len(re.findall(r"(?m)^```", body))
     if fence_count % 2 != 0:
-        out.append(Finding(Severity.ERROR, path, None, "md/code-fence-orphan", f"{fence_count} ``` fences found; odd count means an unclosed fence"))
+        out.append(
+            Finding(
+                Severity.ERROR,
+                path,
+                None,
+                "md/code-fence-orphan",
+                f"{fence_count} ``` fences found; odd count means an unclosed fence",
+            )
+        )
 
     # Heading hierarchy: no skipped levels (h1 -> h3 etc.)
     last_level = 0
@@ -175,14 +274,30 @@ def check_markdown(path: Path) -> list[Finding]:
         if m:
             level = len(m.group(1))
             if last_level and level > last_level + 1:
-                out.append(Finding(Severity.WARNING, path, i, "md/heading-skip", f"heading jumps from h{last_level} to h{level}; readers expect linear hierarchy"))
+                out.append(
+                    Finding(
+                        Severity.WARNING,
+                        path,
+                        i,
+                        "md/heading-skip",
+                        f"heading jumps from h{last_level} to h{level}; readers expect linear hierarchy",
+                    )
+                )
             last_level = level
 
     # Long lines
     for i, line in enumerate(body.splitlines(), start=body_start):
         # naive visible-width check (ignores ANSI)
         if len(line) > 200:
-            out.append(Finding(Severity.INFO, path, i, "md/line-length", f"line is {len(line)} chars (>200); consider wrapping"))
+            out.append(
+                Finding(
+                    Severity.INFO,
+                    path,
+                    i,
+                    "md/line-length",
+                    f"line is {len(line)} chars (>200); consider wrapping",
+                )
+            )
 
     return out
 
@@ -191,9 +306,11 @@ def check_markdown(path: Path) -> list[Finding]:
 # Driver
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class Fix:
     """One safe auto-repair that the linter can apply."""
+
     file: Path
     new_text: str
     description: str
@@ -209,7 +326,9 @@ class LintSummary:
     fixes_applied: list[Fix] = field(default_factory=list)
 
 
-def lint_directory(root: Path, *, okf_root: Path | None = None, md_root: Path | None = None) -> LintSummary:
+def lint_directory(
+    root: Path, *, okf_root: Path | None = None, md_root: Path | None = None
+) -> LintSummary:
     """Walk `root` (or specifically `okf_root` / `md_root`) and run all rules.
 
     Default behavior: walks the whole `root` and applies OKF rules to anything
@@ -314,9 +433,7 @@ def main(args: list[str] | None = None) -> int:
             )
         if applied:
             print()
-            print(
-                paint(f"  ✓ {len(applied)} fix(es) applied to {out_root}", NEON_CYAN, bold=True)
-            )
+            print(paint(f"  ✓ {len(applied)} fix(es) applied to {out_root}", NEON_CYAN, bold=True))
         else:
             print(paint("  · no safe fixes available", FG_MUTED))
 
@@ -326,6 +443,7 @@ def main(args: list[str] | None = None) -> int:
 # ---------------------------------------------------------------------------
 # Auto-repair (--fix)
 # ---------------------------------------------------------------------------
+
 
 def build_fix(path: Path) -> Fix | None:
     """Compute a single safe auto-repair for the given file.
@@ -355,7 +473,10 @@ def build_fix(path: Path) -> Fix | None:
     if not fm.get("stale_after"):
         # OKF §5.2 freshness: 180 days from now
         from datetime import datetime, timezone, timedelta
-        additions["stale_after"] = (datetime.now(timezone.utc) + timedelta(days=180)).strftime("%Y-%m-%d")
+
+        additions["stale_after"] = (datetime.now(timezone.utc) + timedelta(days=180)).strftime(
+            "%Y-%m-%d"
+        )
     if not fm.get("sources"):
         # Don't invent sources; that's dishonest. Skip.
         return None
@@ -363,7 +484,12 @@ def build_fix(path: Path) -> Fix | None:
         # Derive resource from sources[0].uri when both exist (both are
         # file paths the producer already attested to).
         sources = fm.get("sources") or []
-        if isinstance(sources, list) and sources and isinstance(sources[0], dict) and sources[0].get("uri"):
+        if (
+            isinstance(sources, list)
+            and sources
+            and isinstance(sources[0], dict)
+            and sources[0].get("uri")
+        ):
             additions["resource"] = sources[0]["uri"]
         # else: skip — can't safely invent the resource URI
 

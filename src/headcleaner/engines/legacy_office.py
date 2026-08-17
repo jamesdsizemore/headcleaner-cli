@@ -10,6 +10,7 @@ Two recovery paths:
   2. Use dedicated parsers (antiword for .doc, xlrd for .xls) — not
      bundled by headcleaner to avoid pulling heavy C deps
 """
+
 from __future__ import annotations
 
 from pathlib import Path

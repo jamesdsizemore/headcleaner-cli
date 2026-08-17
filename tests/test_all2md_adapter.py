@@ -1,4 +1,5 @@
 """Tests for the all2md fallback adapter (v0.8.0)."""
+
 from __future__ import annotations
 
 import json
@@ -82,7 +83,10 @@ def test_router_picks_all2md_for_ipynb(tmp_path: Path) -> None:
     from headcleaner.router import get_adapter
 
     p = tmp_path / "notebook.ipynb"
-    p.write_text(json.dumps({"cells": [], "metadata": {}, "nbformat": 4, "nbformat_minor": 5}), encoding="utf-8")
+    p.write_text(
+        json.dumps({"cells": [], "metadata": {}, "nbformat": 4, "nbformat_minor": 5}),
+        encoding="utf-8",
+    )
     adapter = get_adapter(p)
     assert adapter is not None
     assert adapter.name == "all2md"

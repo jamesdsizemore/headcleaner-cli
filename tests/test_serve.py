@@ -1,4 +1,5 @@
 """Tests for the FastAPI serve implementation (Eng #22 full impl)."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -31,6 +32,7 @@ def bundle_dir(tmp_path: Path) -> Path:
 def test_load_bundle_finds_concepts(bundle_dir: Path) -> None:
     """load_bundle enumerates concepts but skips index.md / log.md."""
     from headcleaner.serve import load_bundle
+
     bundle = load_bundle(bundle_dir)
     assert bundle.total == 2  # alpha + beta, not index or log
     relpaths = sorted(c.relpath for c in bundle.concepts)
@@ -40,6 +42,7 @@ def test_load_bundle_finds_concepts(bundle_dir: Path) -> None:
 def test_load_bundle_handles_missing_dir(tmp_path: Path) -> None:
     """load_bundle returns an empty Bundle for a non-existent path."""
     from headcleaner.serve import load_bundle
+
     bundle = load_bundle(tmp_path / "no-such-dir")
     assert bundle.total == 0
 
@@ -47,6 +50,7 @@ def test_load_bundle_handles_missing_dir(tmp_path: Path) -> None:
 def test_build_app_routes(bundle_dir: Path) -> None:
     """build_app returns a FastAPI app with all the planned routes."""
     from headcleaner.serve import build_app, load_bundle
+
     app = build_app(load_bundle(bundle_dir))
     paths = {r.path for r in app.routes if hasattr(r, "path")}
     # The /concepts?page=N handler reuses index, so check for it via "/" and "/c/{relpath}"

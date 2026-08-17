@@ -1,9 +1,9 @@
 """Tests for Eng #3: `headcleaner review` TUI / REPL sign-off."""
+
 from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
 
 from headcleaner.review import (
     approve,
@@ -24,24 +24,33 @@ def test_iter_pending_finds_only_pending(tmp_path: Path) -> None:
     """iter_pending yields only concepts with verified: human:pending."""
     bundle = tmp_path / "okf"
     bundle.mkdir()
-    _write_concept(bundle / "a.md", {
-        "type": "Document",
-        "title": "A",
-        "verified": "human:pending",
-        "status": "unverified",
-    })
-    _write_concept(bundle / "b.md", {
-        "type": "Document",
-        "title": "B",
-        "verified": "human:reviewed",
-        "status": "verified",
-    })
-    _write_concept(bundle / "c.md", {
-        "type": "Document",
-        "title": "C",
-        "verified": "human:pending",
-        "status": "unverified",
-    })
+    _write_concept(
+        bundle / "a.md",
+        {
+            "type": "Document",
+            "title": "A",
+            "verified": "human:pending",
+            "status": "unverified",
+        },
+    )
+    _write_concept(
+        bundle / "b.md",
+        {
+            "type": "Document",
+            "title": "B",
+            "verified": "human:reviewed",
+            "status": "verified",
+        },
+    )
+    _write_concept(
+        bundle / "c.md",
+        {
+            "type": "Document",
+            "title": "C",
+            "verified": "human:pending",
+            "status": "unverified",
+        },
+    )
     paths = list(iter_pending(bundle))
     names = sorted(p.name for p in paths)
     assert names == ["a.md", "c.md"]
@@ -50,12 +59,15 @@ def test_iter_pending_finds_only_pending(tmp_path: Path) -> None:
 def test_approve_flips_verified_and_status(tmp_path: Path) -> None:
     """approve() sets verified: human:reviewed and status: verified."""
     p = tmp_path / "x.md"
-    _write_concept(p, {
-        "type": "Document",
-        "title": "X",
-        "verified": "human:pending",
-        "status": "unverified",
-    })
+    _write_concept(
+        p,
+        {
+            "type": "Document",
+            "title": "X",
+            "verified": "human:pending",
+            "status": "unverified",
+        },
+    )
     approve(p)
     fm = yaml.safe_load(p.read_text(encoding="utf-8").split("---")[1])
     assert fm["verified"] == "human:reviewed"
@@ -68,12 +80,15 @@ def test_approve_flips_verified_and_status(tmp_path: Path) -> None:
 def test_reject_flips_verified_and_status(tmp_path: Path) -> None:
     """reject() sets verified: human:rejected and status: rejected."""
     p = tmp_path / "x.md"
-    _write_concept(p, {
-        "type": "Document",
-        "title": "X",
-        "verified": "human:pending",
-        "status": "unverified",
-    })
+    _write_concept(
+        p,
+        {
+            "type": "Document",
+            "title": "X",
+            "verified": "human:pending",
+            "status": "unverified",
+        },
+    )
     reject(p, reasons=["bad data", "needs source"])
     fm = yaml.safe_load(p.read_text(encoding="utf-8").split("---")[1])
     assert fm["verified"] == "human:rejected"

@@ -17,6 +17,7 @@ The adapter registers for `.csv`/`.tsv` only when `zsv` is on PATH; if
 zsv isn't installed, ``CsvAdapter`` claims those extensions first (it's
 registered earlier in the router) and our adapter is never consulted.
 """
+
 from __future__ import annotations
 
 import csv
@@ -39,6 +40,7 @@ class ZsvAdapter(Adapter):
     PATH at construction time, in which case ``extensions`` is empty so
     the router skips us entirely.
     """
+
     name = "zsv"
 
     def __init__(self) -> None:

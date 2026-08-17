@@ -19,6 +19,7 @@ If neither backend is available, raises AdapterError with a clear hint.
 The router treats AdapterError as a graceful failure (the file is
 recorded as 'failed' in the manifest, not a crash).
 """
+
 from __future__ import annotations
 
 import email
@@ -28,7 +29,7 @@ import shutil
 import subprocess
 import tempfile
 from pathlib import Path
-from typing import Any, Callable
+from typing import Callable
 
 from .base import Adapter, AdapterError
 
@@ -43,7 +44,7 @@ _REC_DATE = re.compile(r"^\s*Date:\s*(.*?)\s*$", re.MULTILINE | re.IGNORECASE)
 def _sanitize_slug(s: str, max_len: int = 80) -> str:
     """Turn an email subject into a filename-safe slug."""
     s = re.sub(r"[^A-Za-z0-9._-]+", "_", s).strip("._-")
-    return (s[:max_len] or "untitled")
+    return s[:max_len] or "untitled"
 
 
 def _readpst_available() -> str | None:
@@ -66,9 +67,7 @@ def _run_readpst(pst_path: Path, tmp_dir: Path) -> Path:
     # -e = extract to mbox, -D = include deleted items, -q = quiet
     cmd = [binary, "-e", "-D", "-q", "-o", str(tmp_dir), str(pst_path)]
     try:
-        result = subprocess.run(
-            cmd, capture_output=True, text=True, timeout=120, check=False
-        )
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=120, check=False)
     except FileNotFoundError as e:
         raise AdapterError(f"readpst binary not found: {binary}") from e
     except subprocess.TimeoutExpired as e:
@@ -193,6 +192,7 @@ class PstAdapter(Adapter):
     def __init__(self) -> None:
         try:
             import libpff  # noqa: F401
+
             self._libpff = libpff
         except ImportError:
             self._libpff = None
@@ -280,32 +280,32 @@ class PstAdapter(Adapter):
             for k, v in rows:
                 if v:
                     body_md += f"| **{k}** | {v} |\n"
-            out.append({
-                "title": f"{source.stem} — {summary['subject'] or '(no message ' + str(i) + ')'}",
-                "body_md": body_md,
-                "metadata": {
-                    "engine": "pst",
-                    "source_format": ".pst",
-                    "source_file": str(source),
-                    "subject": summary["subject"],
-                    "from": summary["from"],
-                    "to": summary["to"],
-                    "date": summary["date"],
-                    "folder": summary["folder"],
-                    "fallback": "libpff-no-body",
-                    "message_index": i,
-                },
-                "attachments": [],
-            })
+            out.append(
+                {
+                    "title": f"{source.stem} — {summary['subject'] or '(no message ' + str(i) + ')'}",  # noqa: E501
+                    "body_md": body_md,
+                    "metadata": {
+                        "engine": "pst",
+                        "source_format": ".pst",
+                        "source_file": str(source),
+                        "subject": summary["subject"],
+                        "from": summary["from"],
+                        "to": summary["to"],
+                        "date": summary["date"],
+                        "folder": summary["folder"],
+                        "fallback": "libpff-no-body",
+                        "message_index": i,
+                    },
+                    "attachments": [],
+                }
+            )
         return out
 
     def _walk_folders(self, folder, source: Path, path: str = "") -> list[dict]:
         """Recursively walk a libpff folder tree and emit per-message summaries."""
         out: list[dict] = []
         try:
-            n_items = (
-                folder.get_number_of_items() if hasattr(folder, "get_number_of_items") else 0
-            )
+            n_items = folder.get_number_of_items() if hasattr(folder, "get_number_of_items") else 0
         except Exception:
             n_items = 0
         for i in range(n_items):
@@ -328,7 +328,7 @@ class PstAdapter(Adapter):
                             summary = self._summarize_msg(msg, folder_path)
                         except Exception:
                             summary = {
-                                "subject": f"(message {j+1})",
+                                "subject": f"(message {j + 1})",
                                 "from": "",
                                 "to": "",
                                 "date": "",
@@ -337,7 +337,9 @@ class PstAdapter(Adapter):
                         out.append(summary)
                 elif hasattr(sub, "get_number_of_items"):
                     # It's a subfolder
-                    out.extend(self._walk_folders(sub, source, f"{path}/{sub_name}" if path else sub_name))
+                    out.extend(
+                        self._walk_folders(sub, source, f"{path}/{sub_name}" if path else sub_name)
+                    )
             except Exception:
                 continue
         return out
@@ -356,6 +358,7 @@ class PstAdapter(Adapter):
                     entry_type = getattr(rec, "get_entry_type", lambda: None)()
                     if entry_type is None:
                         continue
+
                     # Best-effort decode strings
                     def _try_str(value):
                         if isinstance(value, bytes):
@@ -364,6 +367,7 @@ class PstAdapter(Adapter):
                             except UnicodeDecodeError:
                                 return value.decode("latin-1", errors="replace")
                         return str(value) if value is not None else ""
+
                     try:
                         if hasattr(rec, "get_subject"):
                             result["subject"] = _try_str(rec.get_subject())
@@ -393,10 +397,7 @@ class PstAdapter(Adapter):
         if not msgs:
             return {
                 "title": source.stem,
-                "body_md": (
-                    f"# {source.stem}\n\n"
-                    f"> PST archive contains no messages.\n"
-                ),
+                "body_md": (f"# {source.stem}\n\n> PST archive contains no messages.\n"),
                 "metadata": {
                     "engine": self.name,
                     "source_format": ".pst",

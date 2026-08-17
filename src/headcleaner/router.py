@@ -3,6 +3,7 @@
 The router owns the canonical extension table. Adapters declare what they
 support; the router maps an extension to an adapter instance.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -56,6 +57,7 @@ _ADAPTERS: list[Adapter] = [
 # extensions are empty (it claims nothing) and the entry is silently dropped.
 try:
     from .engines.zsv import ZsvAdapter as _ZsvAdapter
+
     _zsv_instance = _ZsvAdapter()
     if _zsv_instance.extensions:
         # Find the CsvAdapter in _ADAPTERS and replace it in place.
@@ -74,6 +76,7 @@ except Exception:
 # Tolerated if all2md is not installed (registers nothing).
 try:
     from .engines.all2md_engine import All2mdAdapter as _All2mdAdapter
+
     _ADAPTERS.append(_All2mdAdapter())
 except Exception:
     pass  # all2md not installed or failed to construct; skip silently

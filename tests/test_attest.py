@@ -1,4 +1,5 @@
 """Tests for the full Attested Computations implementation (Eng #36)."""
+
 from __future__ import annotations
 
 import pytest
@@ -58,6 +59,7 @@ def test_merkle_root_single_hash() -> None:
 def test_merkle_root_empty() -> None:
     """Empty tree returns the SHA-256 of empty string."""
     import hashlib
+
     assert merkle_root([]) == hashlib.sha256(b"").hexdigest()
 
 
@@ -107,7 +109,7 @@ def test_build_attestation_no_signing(bundle_dir: Path) -> None:
     assert "beta.md" in payload["concepts"]
     assert "gamma.md" in payload["concepts"]
     assert "index.md" not in payload["concepts"]  # excluded
-    assert "log.md" not in payload["concepts"]    # excluded
+    assert "log.md" not in payload["concepts"]  # excluded
     assert payload["merkle_root"]
     assert payload["signature"] is None
     assert payload["public_key"] is None
@@ -118,6 +120,7 @@ def test_build_attestation_with_signing(bundle_dir: Path, tmp_path: Path) -> Non
     """With a private key, signature and public_key are populated."""
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
     from cryptography.hazmat.primitives import serialization
+
     priv = Ed25519PrivateKey.generate()
     key_path = tmp_path / "priv.pem"
     key_path.write_bytes(
@@ -138,6 +141,7 @@ def test_verify_attestation_clean(bundle_dir: Path) -> None:
     payload = build_attestation(bundle_dir)
     attest_path = bundle_dir / "attestation.json"
     import json
+
     attest_path.write_text(json.dumps(payload), encoding="utf-8")
     result = verify_attestation(bundle_dir, attest_path)
     assert result["valid"] is True
@@ -148,6 +152,7 @@ def test_verify_attestation_clean(bundle_dir: Path) -> None:
 def test_verify_attestation_detects_tampering(bundle_dir: Path) -> None:
     """Editing a concept after attestation makes the bundle invalid."""
     import json
+
     payload = build_attestation(bundle_dir)
     attest_path = bundle_dir / "attestation.json"
     attest_path.write_text(json.dumps(payload), encoding="utf-8")
@@ -162,6 +167,7 @@ def test_verify_attestation_signed_roundtrip(bundle_dir: Path, tmp_path: Path) -
     """Sign + verify: a signed attestation verifies when the bundle is intact."""
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
     from cryptography.hazmat.primitives import serialization
+
     priv = Ed25519PrivateKey.generate()
     key_path = tmp_path / "priv.pem"
     pub_path = tmp_path / "pub.pem"
@@ -180,6 +186,7 @@ def test_verify_attestation_signed_roundtrip(bundle_dir: Path, tmp_path: Path) -
     )
     payload = build_attestation(bundle_dir, private_key_path=key_path)
     import json
+
     attest_path = bundle_dir / "attestation.json"
     attest_path.write_text(json.dumps(payload), encoding="utf-8")
     result = verify_attestation(bundle_dir, attest_path, public_key_path=pub_path)
@@ -192,6 +199,7 @@ def test_verify_attestation_signature_fails_on_tampered(bundle_dir: Path, tmp_pa
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
     from cryptography.hazmat.primitives import serialization
     import json
+
     priv = Ed25519PrivateKey.generate()
     key_path = tmp_path / "priv.pem"
     pub_path = tmp_path / "pub.pem"
@@ -222,6 +230,7 @@ def test_bundle_without_md_is_empty() -> None:
     """An empty bundle gets merkle_root = SHA-256(empty)."""
     payload = build_attestation_from_string = None  # placeholder
     import tempfile
+
     with tempfile.TemporaryDirectory() as td:
         result = build_attestation(Path(td))
         assert result["concept_count"] == 0

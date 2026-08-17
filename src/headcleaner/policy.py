@@ -22,13 +22,13 @@ Usage:
     policy = Policy.load(Path("./policy.toml"))
     findings = evaluate(policy, manifest_path)
 """
+
 from __future__ import annotations
 
 import re
 import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
 
 import yaml
 
@@ -101,36 +101,72 @@ def evaluate(policy: Policy, bundle_root: Path) -> list[PolicyFinding]:
         # type
         ctype = str(fm.get("type", ""))
         if not _matches(ctype, policy.require_type):
-            out.append(PolicyFinding(md_path, "error", "policy/type",
-                                     f"`type` is {ctype!r}, policy requires {policy.require_type!r}"))
+            out.append(
+                PolicyFinding(
+                    md_path,
+                    "error",
+                    "policy/type",
+                    f"`type` is {ctype!r}, policy requires {policy.require_type!r}",
+                )
+            )
 
         # status
         cstatus = str(fm.get("status", ""))
         if not _matches(cstatus, policy.require_status):
-            out.append(PolicyFinding(md_path, "error", "policy/status",
-                                     f"`status` is {cstatus!r}, policy requires {policy.require_status!r}"))
+            out.append(
+                PolicyFinding(
+                    md_path,
+                    "error",
+                    "policy/status",
+                    f"`status` is {cstatus!r}, policy requires {policy.require_status!r}",
+                )
+            )
 
         # verified
         cverified = str(fm.get("verified", ""))
         if not _matches(cverified, policy.require_verified):
-            out.append(PolicyFinding(md_path, "error", "policy/verified",
-                                     f"`verified` is {cverified!r}, policy requires {policy.require_verified!r}"))
+            out.append(
+                PolicyFinding(
+                    md_path,
+                    "error",
+                    "policy/verified",
+                    f"`verified` is {cverified!r}, policy requires {policy.require_verified!r}",
+                )
+            )
 
         # sources
         sources = fm.get("sources")
         if policy.require_sources:
             if not isinstance(sources, list) or not sources:
-                out.append(PolicyFinding(md_path, "error", "policy/sources",
-                                         "`sources[]` must be present and non-empty"))
+                out.append(
+                    PolicyFinding(
+                        md_path,
+                        "error",
+                        "policy/sources",
+                        "`sources[]` must be present and non-empty",
+                    )
+                )
                 continue
             if policy.require_sha256:
                 for i, src in enumerate(sources):
                     if not isinstance(src, dict):
-                        out.append(PolicyFinding(md_path, "error", "policy/sources-shape",
-                                                 f"sources[{i}] must be a dict"))
+                        out.append(
+                            PolicyFinding(
+                                md_path,
+                                "error",
+                                "policy/sources-shape",
+                                f"sources[{i}] must be a dict",
+                            )
+                        )
                         continue
                     sha = str(src.get("sha256", ""))
                     if not sha_re.fullmatch(sha):
-                        out.append(PolicyFinding(md_path, "error", "policy/sources-sha256",
-                                                 f"sources[{i}].sha256 is not a valid 64-char hex"))
+                        out.append(
+                            PolicyFinding(
+                                md_path,
+                                "error",
+                                "policy/sources-sha256",
+                                f"sources[{i}].sha256 is not a valid 64-char hex",
+                            )
+                        )
     return out
