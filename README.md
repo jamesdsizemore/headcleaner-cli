@@ -16,6 +16,7 @@ headcleaner convert ~/Documents/inbox --format both --output ~/Documents/inbox.c
 - **office_oxide backend:** Pure-Rust Python bindings for Office formats (~100x faster than OfficeCLI)
 - **Heuristic cleanup:** `headcleaner convert --clean` runs a 12-stage any2md-inspired cleanup pipeline
 - **all2md fallback:** Auto-handles 38 extra formats (Jupyter, LaTeX, reST, sourcecode, etc.) when all2md is installed
+- **`headcleaner mcp`:** Run headcleaner as an MCP server exposing 10 `okf_*` tools to any MCP agent host (Claude Code, Cursor, etc.) — install with `uv pip install "headcleaner[mcp]"`
 - **zsv CSV:** World's-fastest SIMD CSV parser (~10-100x stdlib) when `zsv` is on PATH
 - **Trust attestation:** `headcleaner attest` builds a Merkle root + ed25519 signature; `verify` checks it
 - **Local browse:** `headcleaner serve <bundle>` exposes a FastAPI UI for browsing + search
@@ -246,7 +247,7 @@ headcleaner templates                        # list supported formats
 git clone <this repo>
 cd headcleaner-cli
 uv sync
-uv run pytest                # 278 tests, ~3.7s
+uv run pytest                # 291 tests, ~14s (MCP extra installed)
 uv run headcleaner convert ./tests/fixtures --format both --output ./out
 ```
 

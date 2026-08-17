@@ -610,6 +610,36 @@ def view_cmd(bundle: Path, out: Path | None, title: str | None, link: str | None
         webbrowser.open(out_path.as_uri())
 
 
+@cli.command(name="mcp")
+@click.argument("bundles", nargs=-1, type=click.Path(exists=True, file_okay=False, path_type=Path))
+@click.option("--name", "named_bundles", multiple=True,
+              help="Assign names to bundles in positional order (e.g. --name wiki --name notes).")
+def mcp_cmd(bundles: tuple[Path, ...], named_bundles: tuple[str, ...]) -> None:
+    """Run headcleaner as an MCP server (stdio).
+
+    Each BUNDLE argument is an OKF bundle directory. The first one becomes
+    the default target for tool calls. Use the ``name=path`` form (or
+    positional --name) to give bundles explicit names.
+
+    Install with the ``mcp`` extra first::
+
+        uv pip install "headcleaner[mcp]"
+
+    Then register with an MCP client (e.g. Claude Code)::
+
+        claude mcp add headcleaner -- headcleaner mcp ./out/okf
+    """
+    from . import mcp as mcp_mod
+    args: list[str] = []
+    if named_bundles:
+        for name, bundle in zip(named_bundles, bundles):
+            args.append(f"{name}={bundle}")
+        args.extend(str(b) for b in bundles[len(named_bundles):])
+    else:
+        args.extend(str(b) for b in bundles)
+    sys.exit(mcp_mod.main(args))
+
+
 @cli.command(name="notion-import")
 @click.argument("export", type=click.Path(exists=True, dir_okay=False, path_type=Path))
 @click.argument("output", type=click.Path(file_okay=False, path_type=Path))

@@ -194,6 +194,41 @@ def build(bundle: Path):
     return nodes, edges
 
 
+def build_with_unresolved(bundle: Path):
+    """Like ``build()`` but also returns ``unresolved``: a list of broken
+    markdown-link / sources[].resource references that did not resolve to a
+    concept in the bundle. Each entry is ``{"source": cid, "target": raw}``.
+    Used by ``okf_doctor`` (MCP) and the future ``headcleaner lint broken``
+    rule to surface bad links that ``build()`` silently drops."""
+    nodes, edges = build(bundle)
+    files = sorted(p for p in bundle.rglob("*.md") if p.is_file() and p.name not in RESERVED)
+    ids = {p.relative_to(bundle).with_suffix("").as_posix() for p in files}
+    unresolved: list[dict] = []
+    for f in files:
+        cid = f.relative_to(bundle).with_suffix("").as_posix()
+        try:
+            raw = f.read_text(encoding="utf-8").lstrip("\ufeff")
+        except (UnicodeDecodeError, OSError):
+            continue
+        _, body = split_frontmatter(raw)
+        body = body.strip()
+        # Markdown link targets that didn't resolve
+        for link in link_targets(body):
+            tgt = resolve(link, f, bundle)
+            if not tgt or tgt not in ids:
+                unresolved.append({"source": cid, "target": link, "kind": "markdown-link"})
+        # sources[].resource that didn't resolve
+        meta, _ = split_frontmatter(raw)
+        for src in read_sources(meta, f, bundle):
+            if src.get("resource") and not src.get("cid"):
+                unresolved.append({
+                    "source": cid,
+                    "target": src["resource"],
+                    "kind": "sources-resource",
+                })
+    return nodes, edges, unresolved
+
+
 HTML = r"""<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>OKF — __NAME__</title>

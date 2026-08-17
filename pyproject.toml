@@ -1,6 +1,6 @@
 [project]
 name = "headcleaner"
-version = "0.10.0"
+version = "0.11.0"
 description = "HeadCleaner CLI - walk a folder, convert every document to Markdown and/or OKF v0.2 with frontmatter."
 readme = "README.md"
 license = { text = "Apache-2.0" }
@@ -47,7 +47,8 @@ ocr = ["pytesseract>=0.3.10", "Pillow>=10.0"]
 pst = ["libpff-python>=20231205"]  # binary wheels: Windows + macOS arm64; see FORMAT_MATRIX.md
 odf = ["odfpy>=1.4"]
 epub = ["ebooklib>=0.18"]
-all = ["headcleaner[ocr,pst,odf,epub]"]
+mcp = ["mcp>=1.0"]
+all = ["headcleaner[ocr,pst,odf,epub,mcp]"]
 
 [project.scripts]
 headcleaner = "headcleaner.cli:main"

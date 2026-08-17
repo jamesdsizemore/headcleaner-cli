@@ -4,6 +4,40 @@ All notable changes to headcleaner are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.11.0] - 2026-08-16
+
+### Added
+
+- **`headcleaner mcp <bundle>` subcommand**: runs headcleaner as an
+  [MCP](https://modelcontextprotocol.io) server over stdio, so any
+  MCP-capable agent host (Claude Code, Cursor, custom agents) can
+  search, read, and analyze OKF bundles produced by headcleaner.
+- **10 MCP tools** exposed, named after `travisjakel/okf-mcp`
+  (Apache-2.0) so the two servers are interchangeable from an agent's
+  perspective:
+  - `okf_list_bundles` — list loaded bundles
+  - `okf_search` — substring search across title/description/body
+  - `okf_get_concept` — read one concept (frontmatter + body), resolves by id, title, or filename stem
+  - `okf_context` — concept + BFS neighborhood as one markdown blob
+  - `okf_related` — top-k concepts by link degree
+  - `okf_impact` — outbound / inbound / transitive links
+  - `okf_doctor` — health score + per-rule findings (broken-link, orphan, missing-type, stale)
+  - `okf_diff` — file changes since the bundle was loaded
+  - `okf_refresh` — re-ingest after changes
+  - `okf_sql` — read-only SELECT over the in-memory catalog (concepts, links)
+- **New optional extra `[mcp]`** in `pyproject.toml` — `uv pip install "headcleaner[mcp]"`
+- **New `viewer.build_with_unresolved()`** helper — also returns broken-link records that `build()` silently filters out. Used by `okf_doctor` to surface bad links.
+- **First bundle is the default target** when no `--name` is passed — matches okf-mcp behavior.
+
+### Reference
+
+- Tool verbs and semantics follow [travisjakel/okf-mcp](https://github.com/travisjakel/okf-mcp) (Apache-2.0).
+- Where okf-mcp uses an okf-ingest DuckDB catalog, headcleaner uses `viewer.build_with_unresolved()` — same in-process, no extra runtime.
+
+### Tests
+
+- 278 -> 291 (+13 MCP tests)
+
 ## [0.10.0] - 2026-08-16
 
 ### Added
