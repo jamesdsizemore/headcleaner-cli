@@ -4,6 +4,31 @@ All notable changes to headcleaner are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.10.0] - 2026-08-16
+
+### Added
+
+- **`headcleaner view <bundle>` subcommand**: renders any OKF bundle as a single self-contained interactive HTML graph (`viz.html`). Adopted from `scaccogatto/okf-skills` (MIT, 312 stars). Features:
+  - Concepts as graph nodes, colored by `type`, sized by body length
+  - Markdown links and `sources[].resource` as graph edges
+  - Wiki-style detail panel with rendered markdown, OKF v0.2 trust signals (unverified / machine-confirmed / human-reviewed badges), "Links to" / "Cited by" backlinks
+  - Layout switcher: cose (force), concentric, breadth-first, circle, grid
+  - Per-type filter, free-text search, neighbour highlight
+  - Backlinks computed from markdown links AND `sources`
+  - OKF v0.1 + v0.2 support (legacy `timestamp` mapped to `generated.at`)
+- **No backend required** — open `viz.html` in any browser
+- New file `src/headcleaner/viewer.py` (vendored; see docstring for upstream credit)
+- New Python API: `viewer.render(bundle, out)`, `viewer.render_to_string()`, `viewer.build()`
+- CLI options: `-o / --out`, `-t / --title`, `-l / --link`, `--layout`, `--max-nodes`, `--og-image`, `--open` (auto-open in browser), `--serve` (local HTTP server), `--host`, `--port`
+
+### Attribution
+
+- Upstream: <https://github.com/scaccogatto/okf-skills> (MIT). Vendored as `src/headcleaner/viewer.py`. The HTML/CSS/JS template is byte-identical to the upstream `okf_visualize.py` so the rendered output matches the upstream skill.
+
+### Tests
+
+- 257 -> 278 (+15 viewer unit tests + 6 CLI tests)
+
 ## [0.9.0] - 2026-08-16
 
 ### Added

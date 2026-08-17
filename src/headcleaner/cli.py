@@ -543,6 +543,73 @@ if __name__ == "__main__":
     raise SystemExit(main())
 
 
+@cli.command(name="view")
+@click.argument("bundle", type=click.Path(exists=True, file_okay=False, path_type=Path))
+@click.option("-o", "--out", type=click.Path(path_type=Path), default=None,
+              help="Output HTML path (default: <bundle>/viz.html).")
+@click.option("-t", "--title", default=None,
+              help="Graph title shown in the header (default: parent/bundle dir name).")
+@click.option("-l", "--link", default=None,
+              help="Optional source URL shown in the header (e.g. GitHub repo link).")
+@click.option("--layout", default=None,
+              type=click.Choice(["cose", "concentric", "breadthfirst", "circle", "grid"]),
+              help="Initial graph layout. Default: cose for small bundles, concentric for large.")
+@click.option("--max-nodes", type=int, default=None,
+              help="Refuse to render bundles with more concepts than this (useful in CI).")
+@click.option("--og-image", default=None, help="Absolute URL for the og:image social preview.")
+@click.option("--open", "open_browser", is_flag=True, default=False,
+              help="Open the rendered viz.html in the default browser after writing.")
+@click.option("--serve", "serve_local", is_flag=True, default=False,
+              help="Serve the rendered file on a local HTTP server after writing.")
+@click.option("--host", default="127.0.0.1", help="--serve host (default: 127.0.0.1).")
+@click.option("--port", type=int, default=8765, help="--serve port (default: 8765).")
+def view_cmd(bundle: Path, out: Path | None, title: str | None, link: str | None,
+             layout: str | None, max_nodes: int | None, og_image: str | None,
+             open_browser: bool, serve_local: bool, host: str, port: int) -> None:
+    """Render an OKF bundle as a self-contained interactive HTML graph.
+
+    The output is one HTML file: concepts as graph nodes (colored by type,
+    sized by body length), markdown links and `sources` as edges, and a
+    wiki-style detail panel with rendered markdown, OKF v0.2 trust
+    signals, "Links to" / "Cited by" backlinks, layout switcher, and
+    per-type filter.
+
+    No backend is required to view it — open the file in any browser.
+
+    Adopts scaccogatto/okf-skills (MIT) as the rendering engine.
+    """
+    from .viewer import render
+
+    out_path = out or (bundle / "viz.html")
+    if out_path.is_dir():
+        out_path = out_path / "viz.html"
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    n, e = render(bundle, out_path, title=title, link=link, layout=layout,
+                  og_image=og_image, max_nodes=max_nodes)
+    click.echo(f"rendered {n} concepts, {e} links -> {out_path}")
+
+    if serve_local:
+        import http.server
+        import socketserver
+        import threading
+        import webbrowser
+
+        handler = lambda *a, **kw: http.server.SimpleHTTPRequestHandler(
+            *a, directory=str(out_path.parent), **kw)
+        with socketserver.TCPServer((host, port), handler) as httpd:
+            url = f"http://{host}:{port}/{out_path.name}"
+            click.echo(f"serving {url}  (Ctrl+C to stop)")
+            if open_browser:
+                threading.Timer(0.5, lambda: webbrowser.open(url)).start()
+            try:
+                httpd.serve_forever()
+            except KeyboardInterrupt:
+                click.echo("stopped")
+    elif open_browser:
+        import webbrowser
+        webbrowser.open(out_path.as_uri())
+
+
 @cli.command(name="notion-import")
 @click.argument("export", type=click.Path(exists=True, dir_okay=False, path_type=Path))
 @click.argument("output", type=click.Path(file_okay=False, path_type=Path))
