@@ -5,13 +5,10 @@ from __future__ import annotations
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-
-from headcleaner.normalize import normalize
-from headcleaner.normalize import CanonicalDoc
+from headcleaner.normalize import CanonicalDoc, normalize
 from headcleaner.run import RunOptions, run_pipeline
 from headcleaner.walk import SourceFile
 from headcleaner.webhook import build_payload, post_webhook
-
 
 # --- Watch -------------------------------------------------------------------
 
@@ -27,6 +24,7 @@ def test_watch_module_handles_missing_rust_extension() -> None:
     """If watchfiles._rust_notify is missing (e.g., minimal install), the
     module still loads — `watch_directory` raises a clear error at call time."""
     import importlib
+
     from headcleaner import watch as watch_mod
 
     # Force re-import to simulate the failing path
@@ -39,7 +37,7 @@ def test_watch_module_handles_missing_rust_extension() -> None:
 
 def test_build_payload_includes_summary() -> None:
     """Payload has tool, version, format, summary counts."""
-    from headcleaner.emit.manifest import RunRecord, FileResult
+    from headcleaner.emit.manifest import FileResult, RunRecord
 
     record = RunRecord(
         started_at="2026-08-16T00:00:00Z",
@@ -151,7 +149,7 @@ def test_okf_emitter_respects_obsidian_compat_flag(tmp_path: Path) -> None:
 def test_run_pipeline_obsidian_compat_writes_obsidian_fields(tmp_path: Path) -> None:
     (tmp_path / "a.txt").write_text("a", encoding="utf-8")
     out = tmp_path / "out"
-    record = run_pipeline(
+    run_pipeline(
         RunOptions(
             input_root=tmp_path,
             output_root=out,
@@ -159,9 +157,9 @@ def test_run_pipeline_obsidian_compat_writes_obsidian_fields(tmp_path: Path) -> 
             obsidian_compat=True,
         )
     )
-    okf_files = list((out / "okf").rglob("*.md"))
-    assert okf_files, "no OKF files produced"
-    text = okf_files[0].read_text(encoding="utf-8")
+    concept = out / "okf" / "a.md"
+    assert concept.is_file(), "no OKF concept file produced"
+    text = concept.read_text(encoding="utf-8")
     assert "source:" in text
     assert "verified_by:" in text
 

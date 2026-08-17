@@ -25,10 +25,10 @@ jobs:
         run: npm install -g @officecli/officecli
 
       - name: Sync deps
-        run: uv sync --all-extras
+        run: uv sync --all-extras --python 3.12
 
       - name: Run tests
-        run: uv run pytest -v
+        run: uv run --no-sync --python 3.12 pytest -v
 
       - name: Build
         run: uv build

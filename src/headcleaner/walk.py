@@ -10,6 +10,7 @@ import json
 import os
 from collections.abc import Iterator
 from dataclasses import dataclass
+from datetime import UTC
 from pathlib import Path
 
 
@@ -88,9 +89,12 @@ def walk(
                 except OSError:
                     pass
             new_dirnames.append(d)
-        dirnames[:] = new_dirnames
+        # os.walk() preserves the filesystem's native enumeration order, which
+        # differs across platforms. Sort traversal so manifests and sequential
+        # conversions are reproducible everywhere.
+        dirnames[:] = sorted(new_dirnames)
 
-        for name in filenames:
+        for name in sorted(filenames):
             if name.startswith(_SKIP_FILE_PREFIXES):
                 continue
             full = Path(dirpath) / name
@@ -167,6 +171,6 @@ def manifest_json(
 
 
 def _utc_now_iso() -> str:
-    from datetime import datetime, timezone
+    from datetime import datetime
 
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
