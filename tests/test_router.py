@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
+import shutil
 from pathlib import Path
-
-import pytest
 
 from headcleaner.engines.html import HtmlAdapter
 from headcleaner.engines.officecli import OfficeCLIAdapter
@@ -65,10 +64,13 @@ def test_pdf_adapter_ocr_flag_requires_pytesseract(pdf_path: Path) -> None:
     assert "Fixture PDF text" in out["body_md"]
 
 
+def _require_officecli() -> None:
+    """Fail clearly when the required OfficeCLI integration is absent."""
+    assert shutil.which("officecli"), "officecli must be installed for integration tests"
+
+
 def test_officecli_adapter_extracts_docx(docx_path: Path) -> None:
-    # This test runs the real officecli binary — skip if unavailable
-    if not Path(r"C:\Users\james\AppData\Roaming\npm\officecli.cmd").exists():
-        pytest.skip("officecli binary not installed")
+    _require_officecli()
     out = OfficeCLIAdapter().extract(docx_path)
     assert "Test Heading" in out["body_md"]
     # The title should NOT be the raw filename; it should be the <h1>
@@ -79,8 +81,7 @@ def test_officecli_adapter_extracts_docx(docx_path: Path) -> None:
 
 def test_officecli_adapter_extracts_xlsx(xlsx_path: Path) -> None:
     """End-to-end: hand-rolled XLSX -> OfficeCLI -> markdownify -> Markdown."""
-    if not Path(r"C:\Users\james\AppData\Roaming\npm\officecli.cmd").exists():
-        pytest.skip("officecli binary not installed")
+    _require_officecli()
     out = OfficeCLIAdapter().extract(xlsx_path)
     # Spreadsheet content rendered as an HTML table by OfficeCLI, then markdownified
     body = out["body_md"]
