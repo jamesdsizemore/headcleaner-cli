@@ -86,6 +86,28 @@ def build_report(
         )
     lines.append("")
 
+    confidences = [
+        float(row["confidence"])
+        for row in rows
+        if isinstance(row.get("confidence"), (int, float))
+    ]
+    diagnostic_codes = Counter(
+        diagnostic.get("code", "UNKNOWN")
+        for row in rows
+        for diagnostic in row.get("diagnostics", [])
+        if isinstance(diagnostic, dict)
+    )
+    if confidences or diagnostic_codes:
+        lines.append("## Extraction diagnostics")
+        lines.append("")
+        if confidences:
+            lines.append(f"- **Average confidence:** {sum(confidences) / len(confidences):.2f}")
+        if diagnostic_codes:
+            lines.append("- **Diagnostic codes:**")
+            for code, count in sorted(diagnostic_codes.items()):
+                lines.append(f"  - `{code}`: {count}")
+        lines.append("")
+
     # Errors (top 10)
     err_rows = [r for r in rows if r.get("status") == "failed" and r.get("error")]
     if err_rows:

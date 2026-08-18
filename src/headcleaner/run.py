@@ -548,6 +548,15 @@ def _process_parallel(
 def _finish_result(opts: RunOptions, record: RunRecord, result: FileResult) -> None:
     """Append to record + JSONL; call progress hook."""
     record.results.append(result)
+    if opts.json_output:
+        emit_json_event(
+            {
+                "event": "file",
+                "index": len(record.results),
+                "total": record.options.get("_total", 0),
+                **asdict(result),
+            }
+        )
     # Stream to JSONL (one line per file) — enables resumability + audit
     _save_cache_jsonl(opts.output_root, result)
     if opts.on_progress:
