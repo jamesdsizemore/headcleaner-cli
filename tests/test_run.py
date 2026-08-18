@@ -134,6 +134,15 @@ def test_run_pipeline_retries_only_typed_adapter_failures_when_fallback_is_allow
     assert record.results[0].engine == "fallback"
     assert record.results[0].metrics is not None
     assert record.results[0].metrics.engine_attempts == ["primary", "fallback"]
+    assert [diagnostic.code for diagnostic in record.results[0].diagnostics] == [
+        "ENGINE_ATTEMPT_FAILED",
+        "ENGINE_ATTEMPT_SUCCEEDED",
+    ]
+    manifest = json.loads((tmp_path / "out" / "manifest.json").read_text(encoding="utf-8"))
+    assert [diagnostic["code"] for diagnostic in manifest["results"][0]["diagnostics"]] == [
+        "ENGINE_ATTEMPT_FAILED",
+        "ENGINE_ATTEMPT_SUCCEEDED",
+    ]
 
 
 def test_run_pipeline_does_not_retry_untyped_adapter_errors(

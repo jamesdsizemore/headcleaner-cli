@@ -26,7 +26,7 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
-from .diagnostics import ExtractionMetrics, compute_confidence
+from .diagnostics import Diagnostic, ExtractionMetrics, compute_confidence
 from .emit import manifest as manifest_emit
 from .emit import markdown as md_emit
 from .emit import okf as okf_emit
@@ -215,9 +215,10 @@ def _planned_adapters(source: Path, opts: RunOptions) -> list[Adapter]:
 
 def _run_planned_adapters(
     adapters: list[Adapter], source: Path, relpath: str, opts: RunOptions
-) -> tuple[Adapter, list[tuple[str, dict]], list[str]]:
+) -> tuple[Adapter, list[tuple[str, dict]], list[str], list[Diagnostic]]:
     """Run planned adapters, retrying only typed AdapterError failures."""
     attempts: list[str] = []
+    diagnostics: list[Diagnostic] = []
     last_error: AdapterError | None = None
     for adapter in adapters:
         attempts.append(adapter.name)
@@ -226,9 +227,25 @@ def _run_planned_adapters(
                 adapter, source, relpath, opts.ocr, opts.on_engine_progress, opts=opts
             )
         except AdapterError as error:
+            diagnostics.append(
+                Diagnostic(
+                    code="ENGINE_ATTEMPT_FAILED",
+                    severity="warning",
+                    message=f"Engine {adapter.name} could not extract the source",
+                    evidence={"engine": adapter.name, "error": str(error)},
+                )
+            )
             last_error = error
             continue
-        return adapter, pairs, attempts
+        diagnostics.append(
+            Diagnostic(
+                code="ENGINE_ATTEMPT_SUCCEEDED",
+                severity="info",
+                message=f"Engine {adapter.name} extracted the source",
+                evidence={"engine": adapter.name},
+            )
+        )
+        return adapter, pairs, attempts, diagnostics
     if last_error is not None:
         raise last_error
     raise AdapterError("no adapter")
@@ -244,6 +261,7 @@ def _emit_one(
     md_root: Path,
     okf_root: Path,
     engine_attempts: list[str] | None = None,
+    engine_diagnostics: list[Diagnostic] | None = None,
 ) -> FileResult:
     """Normalize + emit one adapter output dict. Returns the FileResult."""
     result = FileResult(
@@ -254,6 +272,7 @@ def _emit_one(
         md_path=None,
         okf_path=None,
         status="skipped",
+        diagnostics=list(engine_diagnostics or []),
     )
     doc = normalize(_make_sf(source, msg_rp), extracted, engine=engine_name)
     result.sha256 = doc.source_sha256
@@ -434,7 +453,9 @@ def _process_sequential(
 
         started = time.perf_counter()
         try:
-            adapter, pairs, attempts = _run_planned_adapters(adapters, sf.path, rel, opts)
+            adapter, pairs, attempts, diagnostics = _run_planned_adapters(
+                adapters, sf.path, rel, opts
+            )
         except AdapterError as e:
             result = FileResult(
                 source_path=str(sf.path),
@@ -479,6 +500,7 @@ def _process_sequential(
                 md_root,
                 okf_root,
                 attempts,
+                diagnostics,
             )
             for msg_rp, extracted in pairs
         ]
