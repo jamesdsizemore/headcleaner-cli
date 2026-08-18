@@ -192,7 +192,7 @@ def _run_adapter(
     return pairs
 
 
-def _planned_adapters(source: Path, opts: RunOptions) -> list[Adapter]:
+def _planned_adapters(source: Path, opts: RunOptions) -> list[tuple[Adapter, str]]:
     """Resolve the deterministic, policy-filtered adapter sequence for a source."""
     try:
         plan = build_engine_plan(
@@ -207,20 +207,20 @@ def _planned_adapters(source: Path, opts: RunOptions) -> list[Adapter]:
             return []
         raise
     return [
-        adapter
+        (adapter, attempt.reason)
         for attempt in plan.attempts
         if (adapter := get_adapter(source, requested_engine=attempt.engine)) is not None
     ]
 
 
 def _run_planned_adapters(
-    adapters: list[Adapter], source: Path, relpath: str, opts: RunOptions
+    adapters: list[tuple[Adapter, str]], source: Path, relpath: str, opts: RunOptions
 ) -> tuple[Adapter, list[tuple[str, dict]], list[str], list[Diagnostic]]:
     """Run planned adapters, retrying only typed AdapterError failures."""
     attempts: list[str] = []
     diagnostics: list[Diagnostic] = []
     last_error: AdapterError | None = None
-    for adapter in adapters:
+    for adapter, reason in adapters:
         attempts.append(adapter.name)
         try:
             pairs = _run_adapter(
@@ -232,7 +232,7 @@ def _run_planned_adapters(
                     code="ENGINE_ATTEMPT_FAILED",
                     severity="warning",
                     message=f"Engine {adapter.name} could not extract the source",
-                    evidence={"engine": adapter.name, "error": str(error)},
+                    evidence={"engine": adapter.name, "reason": reason, "error": str(error)},
                 )
             )
             last_error = error
@@ -242,7 +242,7 @@ def _run_planned_adapters(
                 code="ENGINE_ATTEMPT_SUCCEEDED",
                 severity="info",
                 message=f"Engine {adapter.name} extracted the source",
-                evidence={"engine": adapter.name},
+                evidence={"engine": adapter.name, "reason": reason},
             )
         )
         return adapter, pairs, attempts, diagnostics
@@ -409,7 +409,7 @@ def _process_sequential(
     for i, sf in enumerate(all_files, start=1):
         rel = str(sf.relpath)
         adapters = _planned_adapters(sf.path, opts)
-        adapter = adapters[0] if adapters else None
+        adapter = adapters[0][0] if adapters else None
         if adapter is None:
             result = FileResult(
                 source_path=str(sf.path),
