@@ -36,6 +36,11 @@ def test_get_adapter_returns_none_for_unsupported(tmp_path: Path) -> None:
     assert get_adapter(tmp_path / "x") is None
 
 
+def test_get_adapter_honors_requested_compatible_engine(tmp_path: Path) -> None:
+    assert get_adapter(tmp_path / "x.txt", requested_engine="txt").name == "txt"
+    assert get_adapter(tmp_path / "x.txt", requested_engine="html") is None
+
+
 def test_txt_adapter_extracts_content(txt_path: Path) -> None:
     out = TxtAdapter().extract(txt_path)
     assert out["title"] == "test"

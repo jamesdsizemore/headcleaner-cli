@@ -102,11 +102,13 @@ def adapters() -> list[Adapter]:
     return list(_ADAPTERS)
 
 
-def get_adapter(path: Path) -> Adapter | None:
+def get_adapter(path: Path, requested_engine: str | None = None) -> Adapter | None:
     """Return the adapter that handles `path`, or None if no engine supports it."""
     for adapter in adapters():
         try:
-            if adapter.supports(path):
+            if adapter.supports(path) and (
+                requested_engine is None or adapter.name == requested_engine
+            ):
                 return adapter
         except AdapterError:
             # OfficeCLI binary missing — skip silently; other engines still try
