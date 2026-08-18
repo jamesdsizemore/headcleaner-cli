@@ -32,6 +32,17 @@ def test_named_engine_disables_fallback_unless_explicitly_allowed() -> None:
     assert [attempt.engine for attempt in permissive.attempts] == ["primary", "fallback"]
 
 
+def test_default_plan_schedules_fallback_only_when_explicitly_allowed() -> None:
+    first = EngineCapability("primary", frozenset({".txt"}), (), "never", 1, frozenset())
+    second = EngineCapability("fallback", frozenset({".txt"}), (), "never", 2, frozenset())
+
+    strict = build_engine_plan(Path("note.txt"), [first, second])
+    permissive = build_engine_plan(Path("note.txt"), [first, second], allow_fallback=True)
+
+    assert [attempt.engine for attempt in strict.attempts] == ["primary"]
+    assert [attempt.engine for attempt in permissive.attempts] == ["primary", "fallback"]
+
+
 def test_network_capability_requires_explicit_permission() -> None:
     network = EngineCapability("remote", frozenset({".txt"}), (), "explicit", 1, frozenset())
 

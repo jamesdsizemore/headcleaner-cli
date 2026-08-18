@@ -62,6 +62,8 @@ def build_engine_plan(
             raise ValueError(f"unknown or incompatible engine: {requested_engine}")
         if not allow_fallback:
             compatible = compatible[:1]
+    elif not allow_fallback:
+        compatible = compatible[:1]
     for capability in compatible:
         if capability.network_mode == "explicit" and not allow_network:
             raise ValueError(f"engine {capability.name} requires --allow-network")
