@@ -7,7 +7,8 @@ from pathlib import Path
 
 import pytest
 
-from headcleaner import router
+from headcleaner import router, run
+from headcleaner.engine_plan import EngineCapability
 from headcleaner.engines.base import Adapter, AdapterError
 from headcleaner.run import RunOptions, run_pipeline
 
@@ -150,6 +151,57 @@ def test_run_pipeline_retries_only_typed_adapter_failures_when_fallback_is_allow
     assert [
         diagnostic["evidence"]["reason"] for diagnostic in manifest["results"][0]["diagnostics"]
     ] == ["router-priority", "router-priority"]
+
+
+def test_run_pipeline_records_unavailable_tool_before_running_fallback(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    calls: list[str] = []
+
+    class Primary(Adapter):
+        name = "primary"
+        extensions = {".availability"}
+
+        def extract(self, source: Path, *, progress=None) -> dict:
+            calls.append(self.name)
+            return {"title": "wrong", "body_md": "must not run"}
+
+    class Fallback(Adapter):
+        name = "fallback"
+        extensions = {".availability"}
+
+        def extract(self, source: Path, *, progress=None) -> dict:
+            calls.append(self.name)
+            return {"title": "fallback", "body_md": "recovered"}
+
+    monkeypatch.setattr(router, "_ADAPTERS", [Primary(), Fallback()])
+    monkeypatch.setattr(
+        run,
+        "engine_capabilities",
+        lambda: [
+            EngineCapability(
+                "primary", frozenset({".availability"}), ("missing-tool",), "never", 1, frozenset()
+            ),
+            EngineCapability("fallback", frozenset({".availability"}), (), "never", 2, frozenset()),
+        ],
+    )
+    (tmp_path / "note.availability").write_text("source", encoding="utf-8")
+
+    record = run_pipeline(
+        RunOptions(
+            input_root=tmp_path,
+            output_root=tmp_path / "out",
+            fmt="md",
+            allow_fallback=True,
+            use_cache=False,
+        )
+    )
+
+    assert calls == ["fallback"]
+    assert [diagnostic.code for diagnostic in record.results[0].diagnostics] == [
+        "ENGINE_REQUIRED_TOOL_UNAVAILABLE",
+        "ENGINE_ATTEMPT_SUCCEEDED",
+    ]
 
 
 def test_run_pipeline_does_not_retry_untyped_adapter_errors(

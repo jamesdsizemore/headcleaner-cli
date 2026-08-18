@@ -20,6 +20,7 @@ from __future__ import annotations
 import datetime as _dt
 import json
 import multiprocessing
+import shutil
 import time
 from collections.abc import Callable
 from concurrent.futures import ProcessPoolExecutor, as_completed
@@ -192,25 +193,47 @@ def _run_adapter(
     return pairs
 
 
-def _planned_adapters(source: Path, opts: RunOptions) -> list[tuple[Adapter, str]]:
+def _planned_adapters(
+    source: Path, opts: RunOptions
+) -> tuple[list[tuple[Adapter, str]], list[Diagnostic]]:
     """Resolve the deterministic, policy-filtered adapter sequence for a source."""
     try:
+        capabilities = engine_capabilities()
+        available_tools = frozenset(
+            tool
+            for capability in capabilities
+            for tool in capability.requires_tools
+            if shutil.which(tool)
+        )
         plan = build_engine_plan(
             source,
-            engine_capabilities(),
+            capabilities,
             requested_engine=opts.requested_engine,
             allow_fallback=opts.allow_fallback,
             allow_network=opts.allow_network,
+            available_tools=available_tools,
         )
     except ValueError as error:
         if str(error).startswith("unknown or incompatible engine:"):
-            return []
+            return [], []
         raise
+    diagnostics = [
+        Diagnostic(
+            code=code,
+            severity="warning",
+            message=f"Engine {attempt.engine} is unavailable",
+            evidence={"engine": attempt.engine, "reason": attempt.reason},
+        )
+        for attempt in plan.attempts
+        if attempt.outcome == "unavailable"
+        for code in attempt.diagnostic_codes
+    ]
     return [
         (adapter, attempt.reason)
         for attempt in plan.attempts
+        if attempt.outcome == "planned"
         if (adapter := get_adapter(source, requested_engine=attempt.engine)) is not None
-    ]
+    ], diagnostics
 
 
 def _run_planned_adapters(
@@ -408,7 +431,7 @@ def _process_sequential(
 
     for i, sf in enumerate(all_files, start=1):
         rel = str(sf.relpath)
-        adapters = _planned_adapters(sf.path, opts)
+        adapters, plan_diagnostics = _planned_adapters(sf.path, opts)
         adapter = adapters[0][0] if adapters else None
         if adapter is None:
             result = FileResult(
@@ -421,6 +444,7 @@ def _process_sequential(
                 status="skipped",
                 error="no adapter",
                 duration_seconds=0.0,
+                diagnostics=plan_diagnostics,
             )
             _finish_result(opts, record, result)
             continue
@@ -456,6 +480,7 @@ def _process_sequential(
             adapter, pairs, attempts, diagnostics = _run_planned_adapters(
                 adapters, sf.path, rel, opts
             )
+            diagnostics = plan_diagnostics + diagnostics
         except AdapterError as e:
             result = FileResult(
                 source_path=str(sf.path),

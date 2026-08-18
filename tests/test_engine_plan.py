@@ -43,6 +43,27 @@ def test_default_plan_schedules_fallback_only_when_explicitly_allowed() -> None:
     assert [attempt.engine for attempt in permissive.attempts] == ["primary", "fallback"]
 
 
+def test_plan_records_unavailable_required_tool_before_fallback() -> None:
+    unavailable = EngineCapability(
+        "primary", frozenset({".txt"}), ("missing-tool",), "never", 1, frozenset()
+    )
+    fallback = EngineCapability("fallback", frozenset({".txt"}), (), "never", 2, frozenset())
+
+    plan = build_engine_plan(
+        Path("note.txt"),
+        [unavailable, fallback],
+        allow_fallback=True,
+        available_tools=frozenset(),
+    )
+
+    assert [(attempt.engine, attempt.outcome) for attempt in plan.attempts] == [
+        ("primary", "unavailable"),
+        ("fallback", "planned"),
+    ]
+    assert plan.attempts[0].reason == "required-tool-unavailable"
+    assert plan.attempts[0].diagnostic_codes == ("ENGINE_REQUIRED_TOOL_UNAVAILABLE",)
+
+
 def test_network_capability_requires_explicit_permission() -> None:
     network = EngineCapability("remote", frozenset({".txt"}), (), "explicit", 1, frozenset())
 

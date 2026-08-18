@@ -42,6 +42,7 @@ def build_engine_plan(
     requested_engine: str | None = None,
     allow_fallback: bool = False,
     allow_network: bool = False,
+    available_tools: frozenset[str] | None = None,
 ) -> EnginePlan:
     """Build a stable extension-compatible plan without running an engine."""
     compatible = sorted(
@@ -73,7 +74,26 @@ def build_engine_plan(
         attempts=tuple(
             EngineAttempt(
                 engine=capability.name,
-                reason="requested" if requested_engine else "router-priority",
+                reason=(
+                    "required-tool-unavailable"
+                    if available_tools is not None
+                    and not set(capability.requires_tools).issubset(available_tools)
+                    else "requested"
+                    if requested_engine
+                    else "router-priority"
+                ),
+                outcome=(
+                    "unavailable"
+                    if available_tools is not None
+                    and not set(capability.requires_tools).issubset(available_tools)
+                    else "planned"
+                ),
+                diagnostic_codes=(
+                    ("ENGINE_REQUIRED_TOOL_UNAVAILABLE",)
+                    if available_tools is not None
+                    and not set(capability.requires_tools).issubset(available_tools)
+                    else ()
+                ),
             )
             for capability in compatible
         ),
