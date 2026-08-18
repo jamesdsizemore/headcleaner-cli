@@ -16,6 +16,7 @@ from pathlib import Path
 
 import yaml
 
+from ..model import render_markdown
 from ..normalize import CanonicalDoc
 
 
@@ -28,7 +29,7 @@ def render(doc: CanonicalDoc, *, obsidian_compat: bool = False) -> str:
     """
     fm = doc.to_okf_frontmatter(obsidian_compat=obsidian_compat)
     yaml_block = yaml.safe_dump(fm, sort_keys=False, allow_unicode=True).strip()
-    body = doc.body_md.rstrip() + "\n"
+    body = render_markdown(doc.elements).rstrip() + "\n"
     return f"---\n{yaml_block}\n---\n\n{body}"
 
 

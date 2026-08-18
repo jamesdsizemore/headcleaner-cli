@@ -74,3 +74,18 @@ class Element:
             f"{source_sha}\0{kind}\0{ordinal}\0{normalized}".encode()
         ).hexdigest()
         return cls(digest, kind, ordinal, text, source_location, attributes)
+
+
+def render_markdown(elements: list[Element]) -> str:
+    """Render the canonical element sequence without reparsing body Markdown."""
+    rendered: list[str] = []
+    for element in elements:
+        if element.kind == "heading":
+            rendered.append(f"# {element.text}")
+        elif element.kind == "quote":
+            rendered.append(f"> {element.text}")
+        elif element.kind == "code":
+            rendered.append(f"```\n{element.text}\n```")
+        else:
+            rendered.append(element.text)
+    return "\n\n".join(rendered)

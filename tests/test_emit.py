@@ -11,6 +11,7 @@ from headcleaner.emit import manifest as manifest_emit
 from headcleaner.emit import markdown as md_emit
 from headcleaner.emit import okf as okf_emit
 from headcleaner.emit import okf_index
+from headcleaner.model import Element
 from headcleaner.normalize import normalize
 from headcleaner.walk import SourceFile
 
@@ -45,6 +46,19 @@ def test_markdown_emitter_writes_file(tmp_path: Path) -> None:
     assert "title" in fm
     assert "engine" in fm
     assert "sha256" in fm
+
+
+def test_markdown_emitter_renders_explicit_element_sequence(tmp_path: Path) -> None:
+    doc = _make_doc(tmp_path, "x.txt", "legacy body")
+    doc.elements = [
+        Element.create(doc.source_sha256, "heading", 0, "Title"),
+        Element.create(doc.source_sha256, "paragraph", 1, "Paragraph"),
+    ]
+
+    text = md_emit.write(doc, tmp_path).read_text(encoding="utf-8")
+
+    assert "# Title\n\nParagraph\n" in text
+    assert "legacy body" not in text
 
 
 def test_okf_emitter_has_required_type(tmp_path: Path) -> None:

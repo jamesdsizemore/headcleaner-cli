@@ -11,6 +11,7 @@ from pathlib import Path
 
 import yaml
 
+from ..model import render_markdown
 from ..normalize import CanonicalDoc
 
 
@@ -18,7 +19,7 @@ def render(doc: CanonicalDoc) -> str:
     """Return the full .md contents (frontmatter + body) for this doc."""
     fm = doc.to_md_frontmatter()
     yaml_block = yaml.safe_dump(fm, sort_keys=False, allow_unicode=True).strip()
-    body = doc.body_md.rstrip() + "\n"
+    body = render_markdown(doc.elements).rstrip() + "\n"
     return f"---\n{yaml_block}\n---\n\n{body}"
 
 
