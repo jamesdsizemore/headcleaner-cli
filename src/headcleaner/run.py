@@ -64,6 +64,11 @@ class RunOptions:
     dry_run: bool = False  # Eng #42 — emit what would convert without writing
     json_output: bool = False  # Eng #43 — emit one JSON line per event on stdout
 
+    # Contract 1.3: deterministic engine-selection policy (execution wiring follows).
+    requested_engine: str | None = None
+    allow_fallback: bool = False
+    allow_network: bool = False
+
     # v0.8.0: heuristic cleanup pipeline (12 stages borrowed from any2md)
     clean_md: bool = False
 

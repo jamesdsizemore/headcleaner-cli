@@ -170,6 +170,20 @@ def cli() -> None:
     default=False,
     help="Eng #43: emit one JSON line per event on stdout (for piping to jq).",
 )
+@click.option("--engine", "requested_engine", default=None, help="Use a specific extraction engine.")
+@click.option("--no-fallback", is_flag=True, default=False, help="Do not attempt alternate engines.")
+@click.option(
+    "--allow-fallback",
+    is_flag=True,
+    default=False,
+    help="Permit declared fallback engines after typed extraction failures.",
+)
+@click.option(
+    "--allow-network",
+    is_flag=True,
+    default=False,
+    help="Permit engines that explicitly require network access.",
+)
 @click.option(
     "--theme",
     type=click.Choice(["neon", "light", "dark", "mono"], case_sensitive=False),
@@ -197,6 +211,10 @@ def convert(
     write_bundle_manifest: bool,
     dry_run: bool,
     json_output: bool,
+    requested_engine: str | None,
+    no_fallback: bool,
+    allow_fallback: bool,
+    allow_network: bool,
     theme: str,
     crossref: bool,
     policy: Path | None,
@@ -211,6 +229,8 @@ def convert(
 
     # Apply the requested theme before anything renders (TUI + plain lines)
     _theme.set_theme(theme)
+    if no_fallback and allow_fallback:
+        raise click.UsageError("--no-fallback and --allow-fallback cannot be used together")
 
     # Rebuild the OfficeCLI adapter with the requested timeout.
     # Other adapters are constructed once in router._ADAPTERS but their
@@ -236,6 +256,9 @@ def convert(
         write_bundle_manifest=write_bundle_manifest,
         dry_run=dry_run,
         json_output=json_output,
+        requested_engine=requested_engine,
+        allow_fallback=allow_fallback,
+        allow_network=allow_network,
         clean_md=clean_md,
     )
 

@@ -3,7 +3,9 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+from click.testing import CliRunner
 
+from headcleaner.cli import cli
 from headcleaner.engine_plan import EngineCapability, build_engine_plan
 from headcleaner.router import engine_capabilities
 
@@ -46,3 +48,11 @@ def test_live_router_capabilities_preserve_current_extension_precedence() -> Non
     plan = build_engine_plan(Path("note.txt"), capabilities)
 
     assert plan.attempts[0].engine == "txt"
+
+
+def test_convert_help_exposes_engine_plan_policy_flags() -> None:
+    result = CliRunner().invoke(cli, ["convert", "--help"])
+
+    assert result.exit_code == 0
+    for option in ("--engine", "--no-fallback", "--allow-fallback", "--allow-network"):
+        assert option in result.output
