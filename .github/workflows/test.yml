@@ -57,7 +57,10 @@ jobs:
       - name: Install LibreOffice
         run: |
           sudo apt-get update
-          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends libreoffice
+          sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            libreoffice-writer \
+            libreoffice-calc \
+            libreoffice-impress
 
       - name: Sync test dependencies
         run: uv sync --group dev --python 3.12
