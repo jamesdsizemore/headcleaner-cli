@@ -113,6 +113,25 @@ def test_epub_fallback_extracts_chapters(tmp_path: Path) -> None:
     assert out["metadata"].get("fallback") is True
 
 
+def test_epub_fallback_reports_malformed_archive(tmp_path: Path) -> None:
+    """EPUB fallback returns a structured extraction error for an invalid archive."""
+    import headcleaner.engines.epub as _epub_mod
+
+    f = tmp_path / "broken.epub"
+    f.write_bytes(b"not a zip archive")
+    saved = _epub_mod.HAS_EBOOKLIB
+    _epub_mod.HAS_EBOOKLIB = False
+    try:
+        out = EpubAdapter().extract(f)
+    finally:
+        _epub_mod.HAS_EBOOKLIB = saved
+
+    assert out["title"] == "broken"
+    assert out["metadata"]["format"] == "epub"
+    assert out["metadata"]["error"]
+    assert "could not parse epub" in out["body_md"]
+
+
 # ---------------------------------------------------------------------------
 # Eng #10: MSG
 # ---------------------------------------------------------------------------

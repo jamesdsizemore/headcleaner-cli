@@ -108,11 +108,11 @@ class EpubAdapter(Adapter):
                     with zf.open(name) as f:
                         chapters.append(_html_to_text(f.read().decode("utf-8", errors="replace")))
         except Exception as e:
-            return Extracted(
-                title=source.stem,
-                body_md=f"(could not parse epub: {e})",
-                metadata={"format": "epub", "error": str(e)},
-            )
+            return {
+                "title": source.stem,
+                "body_md": f"(could not parse epub: {e})",
+                "metadata": {"format": "epub", "error": str(e)},
+            }
         return {
             "title": source.stem,
             "body_md": "\n\n---\n\n".join(c for c in chapters if c),

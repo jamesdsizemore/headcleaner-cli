@@ -13,7 +13,6 @@ the bundle root and inspecting the frontmatter of each concept.
 from __future__ import annotations
 
 import re
-from collections import defaultdict
 from pathlib import Path
 
 import yaml
@@ -57,48 +56,9 @@ def _index_md(directory_name: str, concepts: list[tuple[Path, dict]]) -> str:
     return f"{title}\n\n## Concepts\n\n{body}\n"
 
 
-def generate(bundle_root: Path) -> int:
-    """Walk a freshly-written OKF bundle and emit index.md in each subdir.
-
-    Returns the number of index.md files written.
-    """
-    if not bundle_root.is_dir():
-        return 0
-
-    # Collect concepts grouped by parent directory
-    by_dir: dict[Path, list[tuple[Path, dict]]] = defaultdict(list)
-    for md_path in bundle_root.rglob("*.md"):
-        # Skip existing index.md (in case this is re-run)
-        if md_path.name == "index.md":
-            continue
-        fm = _read_frontmatter(md_path)
-        if fm is None or "type" not in fm:
-            continue
-        by_dir[md_path.parent].append((md_path, fm))
-
-    written = 0
-    for directory, concepts in by_dir.items():
-        if len(concepts) < 1:
-            continue
-        index_path = directory / "index.md"
-        directory_name = directory.relative_to(bundle_root).as_posix() or directory.name
-        index_path.write_text(_index_md(directory_name, concepts), encoding="utf-8")
-        written += 1
-
-    # Also write a top-level index if we have anything
-    if bundle_root in by_dir and (bundle_root / "index.md") not in [
-        p for p, _ in by_dir[bundle_root] if p.name == "index.md"
-    ]:
-        pass  # already handled by the loop above
-
-    return written
-
-
 # ---------------------------------------------------------------------------
 # Batch 4 / Eng #37: log.md (OKF §9) generation + #38 enriched index.md
 # ---------------------------------------------------------------------------
-
-_FRONTMATTER_RE = re.compile(r"\A---\s*\n(.*?)\n---\s*\n", re.DOTALL)
 
 
 def _first_sentence(body_md: str) -> str:
