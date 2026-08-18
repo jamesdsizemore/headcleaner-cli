@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import inspect
 import json
+import sys
 import textwrap
 from pathlib import Path
 
@@ -76,11 +77,14 @@ def test_eml_routes_via_router(tmp_path: Path) -> None:
 # --- .pst stub (best-effort; tests both branches) -----------------------------
 
 
-def test_pst_adapter_raises_when_libpff_missing(tmp_path: Path) -> None:
+def test_pst_adapter_raises_when_libpff_missing(tmp_path: Path, monkeypatch) -> None:
     f = tmp_path / "x.pst"
     f.write_bytes(b"not a real pst but the adapter should fail before reading")
-    # libpff-python is NOT in our deps; adapter should raise AdapterError
-    # immediately, NOT crash with ImportError.
+    # The test is about the fallback path. CI installs readpst, so disable it
+    # explicitly instead of depending on the host's available executables.
+    monkeypatch.setattr("headcleaner.engines.pst._readpst_available", lambda: None)
+    monkeypatch.setitem(sys.modules, "libpff", None)
+
     with pytest.raises(AdapterError) as exc:
         PstAdapter().extract(f)
     assert "libpff-python" in str(exc.value) or "libpff" in str(exc.value).lower()

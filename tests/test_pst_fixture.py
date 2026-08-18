@@ -29,6 +29,7 @@ def test_readpst_honors_explicit_windows_override(monkeypatch, tmp_path: Path) -
 
 def test_windows_readpst_candidates_cover_msys2_installations() -> None:
     paths = _windows_readpst_paths({"MSYS2_ROOT": r"C:\tools\msys64"})
+    normalized = {str(path).replace("/", "\\") for path in paths}
 
-    assert Path(r"C:\tools\msys64\usr\bin\readpst.exe") in paths
-    assert Path(r"C:\tools\msys64\ucrt64\bin\readpst.exe") in paths
+    assert r"C:\tools\msys64\usr\bin\readpst.exe" in normalized
+    assert r"C:\tools\msys64\ucrt64\bin\readpst.exe" in normalized
