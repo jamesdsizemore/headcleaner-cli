@@ -842,3 +842,21 @@ def notion_import(export: Path, output: Path) -> None:
     )
     n = import_notion_export(export, output)
     click.echo(f"Imported {n} concepts to {output}")
+
+
+@cli.command(name="verify-render")
+@click.argument("input", type=click.Path(exists=True, dir_okay=False, path_type=Path))
+@click.argument("output", type=click.Path(exists=True, dir_okay=False, path_type=Path))
+@click.option("--output-dir", type=click.Path(path_type=Path), default=None)
+@click.option("--json", "json_output", is_flag=True, default=False)
+def verify_render_cmd(input: Path, output: Path, output_dir: Path | None, json_output: bool) -> None:
+    """Verify rendered fidelity for existing source and output artifacts."""
+    from dataclasses import asdict
+
+    from .render_verify import verify_render
+
+    report = verify_render(input, output, output_dir=output_dir)
+    if json_output:
+        click.echo(json.dumps(asdict(report), sort_keys=True))
+    else:
+        click.echo(f"{report.status}: {report.renderer or 'no compatible renderer'}")
