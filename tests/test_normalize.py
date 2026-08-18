@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+from datetime import UTC
 from pathlib import Path
 
-from headcleaner.normalize import normalize, default_generated, default_stale_after
+from headcleaner.normalize import default_generated, default_stale_after, normalize
 from headcleaner.walk import SourceFile
 
 
@@ -27,6 +28,14 @@ def test_normalize_basic(tmp_path: Path) -> None:
     assert doc.source_uri.startswith("file:///")
     assert doc.engine == "txt"
     assert doc.source_format == ".txt"
+
+
+def test_normalize_builds_legacy_paragraph_element_without_changing_body(tmp_path: Path) -> None:
+    doc = _make_doc(tmp_path, "x.txt", "hello\n\nworld")
+
+    assert doc.body_md == "hello\n\nworld"
+    assert [element.kind for element in doc.elements] == ["paragraph"]
+    assert doc.elements[0].text == "hello\n\nworld"
 
 
 def test_canonical_doc_okf_frontmatter_required_keys(tmp_path: Path) -> None:
@@ -65,8 +74,8 @@ def test_default_generated_uses_env_user() -> None:
 
 
 def test_default_stale_after_is_future_date() -> None:
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     s = default_stale_after()
-    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    today = datetime.now(UTC).strftime("%Y-%m-%d")
     assert s > today  # strictly after today

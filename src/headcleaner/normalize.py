@@ -10,10 +10,11 @@ import hashlib
 import os
 import socket
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+from .model import Element
 from .walk import SourceFile
 
 
@@ -32,6 +33,7 @@ class CanonicalDoc:
     engine: str  # adapter name that produced this
     metadata: dict[str, Any] = field(default_factory=dict)
     attachments: list[dict] = field(default_factory=list)
+    elements: list[Element] = field(default_factory=list)
 
     # OKF v0.2 trust family defaults (honest — see docs/OKF_NOTES.md)
     okf_type: str = "Document"
@@ -95,7 +97,7 @@ class CanonicalDoc:
             "format": self.source_format,
             "engine": self.engine,
             "sha256": self.source_sha256,
-            "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "generated_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
         }
 
     def _description(self) -> str:
@@ -124,7 +126,7 @@ def default_generated() -> str:
 
 def default_stale_after() -> str:
     """180 days from now, ISO date (OKF §5.2 freshness)."""
-    return (datetime.now(timezone.utc) + timedelta(days=180)).strftime("%Y-%m-%d")
+    return (datetime.now(UTC) + timedelta(days=180)).strftime("%Y-%m-%d")
 
 
 def normalize(source: SourceFile, adapter_dict: dict, engine: str) -> CanonicalDoc:
@@ -135,6 +137,7 @@ def normalize(source: SourceFile, adapter_dict: dict, engine: str) -> CanonicalD
     attachments = adapter_dict.get("attachments") or []
 
     sha = _sha256(source.path)
+    elements = adapter_dict.get("elements") or [Element.create(sha, "paragraph", 0, body_md)]
 
     abs_path = source.path.resolve()
     source_uri = abs_path.as_uri()  # file:///C:/.../foo.docx on Windows
@@ -151,6 +154,7 @@ def normalize(source: SourceFile, adapter_dict: dict, engine: str) -> CanonicalD
         engine=engine,
         metadata=metadata,
         attachments=attachments,
+        elements=elements,
     )
 
 
