@@ -84,8 +84,8 @@ source URI, format, engine, sha256, generated_at).
 | `.rtf` | striprtf | control words stripped, plain text body |
 | `.odt`, `.ods`, `.odp` | odfpy | text → paragraphs; spreadsheets → GFM tables; slides → per-slide text |
 | `.msg` | extract-msg | Outlook headers + body + attachments |
-| `.pst` (best-effort) | libpff-python | item count only; full extraction ships in v1.0 |
-| `.doc`, `.xls`, `.ppt` | (clear-error path) | convert with LibreOffice first |
+| `.pst` | `readpst` (preferred) + libpff-python fallback | one concept per message with bodies/attachments; fallback is metadata-only |
+| `.doc`, `.xls`, `.ppt` | LibreOffice headless → modern Office adapter | install LibreOffice; HeadCleaner converts automatically |
 
 Run `headcleaner templates` to see the live list.
 

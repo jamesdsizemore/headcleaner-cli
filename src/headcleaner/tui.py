@@ -22,6 +22,7 @@ from textual.widgets import Footer, Header, Log, ProgressBar, Static
 
 from . import __version__
 from .emit.manifest import FileResult
+from .i18n import tr
 from .run import RunOptions, run_pipeline
 from .theme import (
     BG_PANEL,
@@ -95,7 +96,7 @@ class HeadCleanerApp(App):
         title_line = (
             segment(LOGO_SMALL, NEON_PINK, bold=True)
             + " "
-            + segment("walking", NEON_CYAN, dim=True)
+            + segment(tr("walking"), NEON_CYAN, dim=True)
             + " "
             + paint(str(self.opts.input_root), NEON_PURPLE)
         )
@@ -121,7 +122,7 @@ class HeadCleanerApp(App):
             + segment("›", NEON_PINK_DIM)
             + segment(self._status_label(), STATUS_ACTIVE if not self._finished else STATUS_OK)
             + paint(
-                f"─── {self.opts.output_root.name or 'out'} ───",
+                f"─── {self.opts.output_root.name or tr('output')} ───",
                 NEON_CYAN_DIM,
                 dim=True,
             )
@@ -129,8 +130,8 @@ class HeadCleanerApp(App):
 
     def _status_label(self) -> str:
         if self._finished:
-            return self._final_summary or "done"
-        return f"{SPINNER_FRAMES[self._spinner_idx % len(SPINNER_FRAMES)]} running"
+            return self._final_summary or tr("done")
+        return f"{SPINNER_FRAMES[self._spinner_idx % len(SPINNER_FRAMES)]} {tr('running')}"
 
     def _tick_spinner(self) -> None:
         self._spinner_idx += 1
@@ -144,20 +145,20 @@ class HeadCleanerApp(App):
         self.sub_title = f"→ {self.opts.output_root}"
         self._log(paint(LOGO_SMALL, NEON_PINK, bold=True) + paint(f"  v{__version__}", NEON_CYAN))
         self._log(
-            segment("  input:  ", FG_MUTED, dim=True)
+            segment(f"  {tr('input')}:  ", FG_MUTED, dim=True)
             + paint(str(self.opts.input_root), NEON_PURPLE)
         )
         self._log(
-            segment("  output: ", FG_MUTED, dim=True)
+            segment(f"  {tr('output')}: ", FG_MUTED, dim=True)
             + paint(str(self.opts.output_root), NEON_PURPLE)
         )
         self._log(
-            segment("  format: ", FG_MUTED, dim=True)
+            segment(f"  {tr('format')}: ", FG_MUTED, dim=True)
             + segment(self.opts.fmt, NEON_CYAN, bold=True)
             + paint("  (ocr=on)" if self.opts.ocr else "", NEON_PINK)
         )
         self._log(
-            segment("  started ", FG_MUTED, dim=True)
+            segment(f"  {tr('started')} ", FG_MUTED, dim=True)
             + paint(datetime.now().isoformat(timespec="seconds"), NEON_CYAN_DIM)
         )
         self._log("")
@@ -224,7 +225,7 @@ class HeadCleanerApp(App):
         self._final_summary = f"{ICON_DONE} ok={ok} skipped={skipped} failed={failed}"
         self._log("")
         self._log(
-            segment("  ✓ done  ", NEON_CYAN, bold=True)
+            segment(f"  ✓ {tr('done')}  ", NEON_CYAN, bold=True)
             + segment("ok=", NEON_CYAN)
             + paint(str(ok), NEON_CYAN, bold=True)
             + segment(" skipped=", FG_MUTED)
@@ -233,7 +234,7 @@ class HeadCleanerApp(App):
             + paint(str(failed), NEON_PINK, bold=True)
         )
         self._log(
-            segment("  manifest: ", FG_MUTED, dim=True)
+            segment(f"  {tr('manifest')}: ", FG_MUTED, dim=True)
             + paint(f"{record.output_root}/manifest.json", NEON_PURPLE)
         )
         try:
@@ -242,7 +243,7 @@ class HeadCleanerApp(App):
             pass
 
     def _on_error(self, exc: Exception) -> None:
-        msg = segment("  � pipeline crashed: ", STATUS_FAILED, bold=True) + paint(
+        msg = segment(f"  ✗ {tr('pipeline crashed')}: ", STATUS_FAILED, bold=True) + paint(
             str(exc), NEON_PINK
         )
         self._log(msg)

@@ -12,8 +12,9 @@ headcleaner convert ~/Documents/inbox --format both --output ~/Documents/inbox.c
 - **Engine coverage:** 7 formats out of the box (XLSX, DOCX, PPTX, PDF, HTML, HTM, TXT) — see [docs/FORMAT_MATRIX.md](docs/FORMAT_MATRIX.md) for the 16-format v1.0 roadmap
 - **TUI:** omp-inspired animated terminal (box-drawing panels, neon palette, powerline separators)
 - **Linter:** `headcleaner lint` reviews the converted Markdown / OKF for formatting issues
-- **Per-message PST:** one OKF concept per email (via readpst) so review/sign-off works file-by-file
-- **office_oxide backend:** Pure-Rust Python bindings for Office formats (~100x faster than OfficeCLI)
+- **Localization:** gettext catalogs for English, Spanish (`--lang es`), and Simplified Chinese (`--lang zh-CN`) across CLI/TUI runtime status
+- **Legacy Office:** `.doc`, `.xls`, and `.ppt` convert through LibreOffice headless, then follow the normal Office extraction pipeline
+- **PST:** per-message concepts with full bodies and attachments through `readpst`, including MSYS2-aware Windows discovery
 - **Heuristic cleanup:** `headcleaner convert --clean` runs a 12-stage any2md-inspired cleanup pipeline
 - **all2md fallback:** Auto-handles 38 extra formats (Jupyter, LaTeX, reST, sourcecode, etc.) when all2md is installed
 - **`headcleaner mcp`:** Run headcleaner as an MCP server exposing 14 `okf_*` tools to any MCP agent host (Claude Code, Cursor, etc.) — install with `uv pip install "headcleaner[mcp]"`
@@ -98,6 +99,25 @@ Other commands:
   headcleaner attest <DIR>       Compute Merkle root + optional ed25519 signature
   headcleaner verify <DIR>       Verify an attestation against the bundle
 ```
+
+## Languages
+
+HeadCleaner uses standard-library gettext catalogs at runtime. English is the
+fallback; Spanish and Simplified Chinese are available for conversion and TUI
+runtime status:
+
+```bash
+headcleaner --lang es convert ./inbox --output ./out --no-tui
+headcleaner --lang zh-CN convert ./inbox --output ./out
+
+# Equivalent process default (the CLI option takes precedence)
+HEADCLEANER_LANG=es headcleaner convert ./inbox --output ./out
+```
+
+Catalog sources live under `src/headcleaner/locales/`; they are compiled with
+Babel during development and shipped in the wheel. Add new source strings to
+the `.po` catalogs, compile them with `uv run pybabel compile -d
+src/headcleaner/locales -D headcleaner`, and test each supported locale.
 ## Why OKF?
 
 OKF (Open Knowledge Format, v0.2) is just **markdown + YAML frontmatter in a directory hierarchy**. That means:
@@ -142,7 +162,7 @@ See [docs/FORMAT_MATRIX.md](docs/FORMAT_MATRIX.md) for the full engine × librar
 | `.pst` | **per-message** (one OKF concept per email) | readpst (libpst) + libpff-python fallback |
 | `.docx`, `.xlsx`, `.pptx` | **office_oxide** (primary, ~100x faster), OfficeCLI binary (fallback) | office_oxide 0.1.8 (PyO3) |
 | `.ipynb`, `.latex`, `.rst`, sourcecode, `.enex`, `.chm`, etc. (38 formats) | all2md (when installed) | all2md 1.12 |
-| `.doc`, `.xls`, `.ppt` | clear error path | needs `libreoffice --convert-to` first |
+| `.doc`, `.xls`, `.ppt` | LibreOffice headless → office_oxide / OfficeCLI | LibreOffice + modern Office engine |
 
 ## Live mode
 
@@ -191,7 +211,7 @@ back automatically.
 
 - **PyPI**: `pip install headcleaner` (built via uv, published via OIDC trusted publishing on tag push)
 - **Homebrew**: `brew install headcleaner` (formula in `packaging/homebrew/`)
-- **Docker**: `docker pull ghcr.io/local/headcleaner` (multi-stage image with tesseract)
+- **Docker**: `docker pull ghcr.io/jamesdsizemore/headcleaner-cli` (multi-stage image with Tesseract and `readpst`)
 - **Windows**: `winget install headcleaner`, `scoop install headcleaner`, `choco install headcleaner`
 - **Static binary**: `pip install pyinstaller && pyinstaller packaging/pyinstaller/headcleaner.spec`
 

@@ -20,6 +20,36 @@ If npm is missing:
 
 After install, restart your shell so `PATH` updates.
 
+## "LibreOffice is required to convert .doc/.xls/.ppt"
+
+Legacy Office formats are converted automatically through LibreOffice before
+HeadCleaner sends their DOCX/XLSX/PPTX result to the configured modern Office
+engine. Install LibreOffice and make `soffice` or `libreoffice` discoverable on
+`PATH`; then rerun the original command. `headcleaner doctor` reports the
+modern engine status. If conversion fails, HeadCleaner includes LibreOffice's
+stderr in its error message.
+
+## "readpst" is missing or PST output has metadata only
+
+Full PST body and attachment extraction requires `readpst`. Install the native
+backend and rerun:
+
+```bash
+# Debian / Ubuntu
+sudo apt install pst-utils
+
+# macOS
+brew install libpst
+
+# Windows: from an MSYS2 UCRT64 shell
+pacman -S mingw-w64-ucrt-x86_64-libpst
+```
+
+On Windows, `C:\\msys64\\ucrt64\\bin\\readpst.exe` is discovered automatically.
+For a nonstandard install, set `HEADCLEANER_READPST` to the full executable
+path before invoking HeadCleaner. Without it, the optional libpff fallback can
+only produce metadata summaries; `headcleaner doctor` reports this as a warning.
+
 ## "officecli timed out after 60s"
 
 Some very large Office files (200+ page PowerPoint decks, 50MB+ Excel

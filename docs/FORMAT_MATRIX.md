@@ -26,8 +26,8 @@
 | 8 | `.csv`, `.tsv` | `csv` | stdlib `csv` | ✓ | GFM table | none |
 | 9 | `.json` | `json` | stdlib `json` | ✓ | fenced ```json block + pretty-printed | none |
 | 10 | `.eml` | `eml` | stdlib `email` | ✓ | headers + body MD + attachments | none |
-| 11 | `.pst` | `pst` | `libpff-python` (optional) | ○ | item count stub (full extraction deferred to v1.0) | best-effort: warn + skip if lib missing |
-| 12 | `.doc`, `.xls`, `.ppt` | `legacy_office` | (none shipped) | ○ | clear error: convert with LibreOffice first | none |
+| 11 | `.pst` | `pst` | `readpst` (libpst) | ○ | one concept per message, including bodies/attachments | `libpff-python` metadata fallback |
+| 12 | `.doc`, `.xls`, `.ppt` | `legacy_office` | LibreOffice headless → modern Office adapter | ○ | full modern-engine extraction | clear install/configuration error |
 | 13 | `.epub` | `epub` | `ebooklib` | ✓ | per-chapter MD, joined with `---` | raw zip + bs4 fallback |
 | 14 | `.rtf` | `rtf` | `striprtf` | ✓ | plain text in fenced block | regex fallback |
 | 15 | `.odt`, `.ods`, `.odp` | `odf` | `odfpy` | ✓ | ODT → MD; ODS → GFM table; ODP → per-slide text | raw-XML fallback |
@@ -92,11 +92,20 @@ Encrypted PDFs: error out cleanly with a clear message.
 
 ### PST
 
-`libpff-python` ships binary wheels for Windows x64 and macOS arm64 only.
-On Linux it's source-only and requires `libpff` headers. We mark it
-optional and gracefully skip if the import fails. Users on Linux can
-install `libpff-python` from source or convert their PST to MSG with
-`readpst -e` first.
+`readpst` is the preferred extraction backend: it emits a MIME tree that
+HeadCleaner turns into one concept per message, retaining message bodies and
+attachments. `libpff-python` remains a metadata-only fallback when `readpst`
+is unavailable.
+
+- **Windows:** install MSYS2, then run `pacman -S mingw-w64-ucrt-x86_64-libpst`
+  from an MSYS2 shell. HeadCleaner automatically finds
+  `C:\\msys64\\ucrt64\\bin\\readpst.exe`; use `HEADCLEANER_READPST` to point to a
+  custom executable.
+- **Debian/Ubuntu:** `sudo apt install pst-utils`
+- **macOS:** `brew install libpst`
+
+The test suite pins a real CC-BY-4.0 PST fixture from `libyal/testdata`; see
+`tests/fixtures/ATTRIBUTION.md` for its source and SHA-256.
 
 ### OCR
 
@@ -110,10 +119,8 @@ OCR is slow (~1 sec per page on commodity hardware). Keep it opt-in.
 
 ### Legacy Office formats (`.doc`, `.xls`, `.ppt`)
 
-Pre-2007 binary formats are NOT supported by OfficeCLI. Options:
-
-- Use LibreOffice headless: `libreoffice --convert-to docx old.doc`
-  (produces a `.docx` you can then convert with headcleaner)
-- Use `antiword` for `.doc` and `xlrd` for `.xls` (third-party)
-
-ENHANCEMENTS.md #18 plans to ship a `libreoffice` shim adapter.
+HeadCleaner converts pre-2007 binary Office files automatically through
+LibreOffice headless, then processes the generated DOCX/XLSX/PPTX through the
+configured modern Office backend. Install LibreOffice and ensure `soffice` or
+`libreoffice` is on `PATH`. The converter runs with an isolated temporary
+profile and reports its stderr if conversion fails.

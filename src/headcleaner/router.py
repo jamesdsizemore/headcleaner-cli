@@ -43,13 +43,15 @@ _ADAPTERS: list[Adapter] = [
     LegacyOfficeAdapter(),
     # PST is best-effort: raises AdapterError on missing binary
     PstAdapter(),
-    # OfficeCLI last: requires `officecli` binary on PATH
-    OfficeCLIAdapter(),
 ]
 
-# Opt-in all2md fallback adapter (formats headcleaner does not have a
-# native adapter for: jupyter, latex, rst, sourcecode, enex, chm, etc.).
-# Tolerated if all2md is not installed (registers nothing).
+# The Office adapter is optional. Register it only when office_oxide or
+# OfficeCLI is available; otherwise all unrelated commands remain usable.
+try:
+    _ADAPTERS.append(OfficeCLIAdapter())
+except AdapterError:
+    pass
+
 # v0.9.0: zsv SIMD CSV adapter (liquidaty/zsv, MIT). Inserted at the
 # CsvAdapter position so that when the zsv binary is on PATH, ZsvAdapter
 # replaces CsvAdapter for .csv/.tsv. When zsv is not installed, ZsvAdapter's

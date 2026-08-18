@@ -527,7 +527,7 @@ deployment and ship them.
 
 These don't fit the 4-batch structure cleanly but are worth a line:
 
-- **i18n** — localize the TUI strings (currently English-only). Use `gettext`; ship en + es + zh-CN to start.
+- **i18n** — shipped (v0.14.0): gettext runtime catalogs for English, Spanish, and Simplified Chinese (`--lang en|es|zh-CN`, with `HEADCLEANER_LANG` default).
 - **`headcleaner doctor`** — diagnose common issues: check Python version, OfficeCLI install, PATH, write permissions on output dir, etc. Single command that prints a go/no-go summary.
 - **Plugin protocol** — let third parties ship a `headcleaner_plugin` package that registers custom adapters via entry points. Avoids `headcleaner` having to grow to thousands of formats.
 - **Schema validation** — emit a JSON Schema for the OKF frontmatter so editors (VS Code, IntelliJ) can autocomplete and validate.

@@ -1,0 +1,43 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: es\n"
+
+msgid "input"
+msgstr "entrada"
+
+msgid "output"
+msgstr "salida"
+
+msgid "format"
+msgstr "formato"
+
+msgid "done"
+msgstr "completado"
+
+msgid "running"
+msgstr "en ejecución"
+
+msgid "walking"
+msgstr "recorriendo"
+
+msgid "started"
+msgstr "iniciado"
+
+msgid "manifest"
+msgstr "manifiesto"
+
+msgid "pipeline crashed"
+msgstr "la canalización falló"
+
+msgid "Quit"
+msgstr "Salir"
+
+msgid "headcleaner {version}"
+msgstr "headcleaner {version}"
+
+msgid "mode: DRY RUN (no files will be written)"
+msgstr "modo: SIMULACIÓN (no se escribirán archivos)"
+
+msgid "dry run — no files written"
+msgstr "simulación — no se escribieron archivos"

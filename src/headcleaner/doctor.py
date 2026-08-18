@@ -16,6 +16,7 @@ Checks performed:
 7. Registry file       (parses as TOML; `$HEADCLEANER_REGISTRY` honored)
 8. Loaded bundles      (informational MCP-server state hint)
 """
+
 from __future__ import annotations
 
 import os
@@ -26,6 +27,8 @@ import tomllib
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
+
+from .engines.pst import _readpst_available
 
 # ---------------------------------------------------------------------------
 # CheckResult
@@ -127,9 +130,8 @@ def check_tesseract() -> CheckResult:
 
 
 def check_readpst() -> CheckResult:
-    # readpst is the CLI tool that libpff-python wraps; detecting the lib
-    # is sufficient for our purposes (the Python lib is already optional).
-    path = shutil.which("readpst")
+    """Check the PST adapter's full Windows-aware ``readpst`` discovery path."""
+    path = _readpst_available()
     if path:
         return CheckResult(
             name="readpst",
@@ -139,8 +141,12 @@ def check_readpst() -> CheckResult:
     return CheckResult(
         name="readpst",
         status=STATUS_WARN,
-        detail="not found on PATH (optional — needed for PST extraction)",
-        fix="choco install libpst  /  brew install libpst",
+        detail="not found (optional — needed for full PST message bodies and attachments)",
+        fix=(
+            "Windows: install MSYS2, then `pacman -S mingw-w64-ucrt-x86_64-libpst`; "
+            "or set $HEADCLEANER_READPST to readpst.exe. "
+            "Linux: install `pst-utils`; macOS: `brew install libpst`."
+        ),
     )
 
 

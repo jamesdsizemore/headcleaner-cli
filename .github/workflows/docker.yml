@@ -32,13 +32,21 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Build and smoke-test the image
+        run: |
+          docker build --tag headcleaner:ci .
+          docker run --rm --entrypoint sh \
+            -v "${{ github.workspace }}/tests/fixtures:/fixtures:ro" \
+            headcleaner:ci \
+            -c 'mkdir -p /tmp/pst && readpst -e -q -o /tmp/pst /fixtures/outlook.pst && test -n "$(find /tmp/pst -type f -print -quit)"'
+
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
           context: .
           push: ${{ github.event_name != 'pull_request' }}
           tags: |
-            ghcr.io/local/headcleaner:${{ steps.meta.outputs.VERSION }}
-            ghcr.io/local/headcleaner:latest
+            ghcr.io/jamesdsizemore/headcleaner-cli:${{ steps.meta.outputs.VERSION }}
+            ghcr.io/jamesdsizemore/headcleaner-cli:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max

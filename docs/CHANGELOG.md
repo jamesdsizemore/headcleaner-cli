@@ -4,7 +4,49 @@ All notable changes to headcleaner are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [0.12.0] - 2026-08-16
+## [0.14.0] - 2026-08-17
+
+### Added
+
+- **Diagnostics, plugins, reports, and schema validation** — `headcleaner doctor`
+  provides a GO/NO-GO preflight; third-party adapters can register through the
+  `headcleaner_plugin` entry-point group; conversions emit `REPORT.md`; and
+  OKF frontmatter has an editor/CI JSON Schema.
+- **gettext localization** — English fallback plus Spanish (`--lang es`) and
+  Simplified Chinese (`--lang zh-CN`) catalogs for CLI/TUI runtime status.
+  `HEADCLEANER_LANG` supplies a process default.
+- **Real legacy Office conversion** — `.doc`, `.xls`, and `.ppt` are converted
+  headlessly by LibreOffice in an isolated temporary profile, then passed to
+  the modern Office adapter. CI exercises real DOC/XLS/PPT round trips.
+- **Robust PST extraction** — added a pinned CC-BY real PST fixture and
+  `readpst` integration coverage. Windows now discovers MSYS2 installations
+  and supports the `HEADCLEANER_READPST` override.
+
+### Fixed
+
+- Docker image uses Debian's `pst-utils`, excludes the Linux-unportable
+  `libpff-python` source build, preserves virtualenv console-script shebangs,
+  includes a real PST smoke test, and starts without an optional Office backend.
+- GitHub Actions uses the available `astral-sh/setup-uv@v10.0.1`; Docker image
+  metadata and GHCR tags point to the public repository.
+- PST/doctor diagnostics now provide verified Debian, macOS, and MSYS2 install
+  guidance instead of stale package names.
+
+### Verification
+
+- Complete Python 3.13 all-extras suite passes; built wheels contain all gettext
+  `.po` and `.mo` catalogs.
+- Local Docker build, real PST extraction, CLI startup, and real LibreOffice
+  legacy conversion smoke paths pass.
+
+## [0.13.0] - 2026-08-17
+
+### Added
+
+- **Cross-bundle MCP registry** — persistent `@slug` registry and cross-bundle
+  search/context support for `headcleaner mcp`.
+
+
 
 ### Added
 

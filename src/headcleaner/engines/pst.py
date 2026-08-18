@@ -4,7 +4,8 @@ Two backends, tried in order:
 
 1. **`readpst` subprocess** (preferred, cross-platform) — runs the
    `readpst` CLI from `libpst` (`brew install libpst` on macOS,
-   `apt install libpst-tools` on Linux, available in MSYS2 on Windows).
+   `apt install pst-utils` on Linux, and the MSYS2 package
+   `mingw-w64-ucrt-x86_64-libpst` on Windows).
    Output is parsed with stdlib `mailbox.mbox()`.
 
 2. **`libpff-python`** (Windows/macOS fallback) — native bindings when
@@ -24,17 +25,18 @@ from __future__ import annotations
 
 import email
 import mailbox
+import os
 import re
 import shutil
 import subprocess
 import tempfile
+from collections.abc import Callable, Mapping
 from pathlib import Path
-from typing import Callable
 
 from .base import Adapter, AdapterError
 
-
 _READPST_NAMES = ("readpst", "readpst.exe")
+_READPST_OVERRIDE_ENV = "HEADCLEANER_READPST"
 _REC_SUBJECT = re.compile(r"^\s*Subject:\s*(.*?)\s*$", re.MULTILINE | re.IGNORECASE)
 _REC_FROM = re.compile(r"^\s*From:\s*(.*?)\s*$", re.MULTILINE | re.IGNORECASE)
 _REC_TO = re.compile(r"^\s*To:\s*(.*?)\s*$", re.MULTILINE | re.IGNORECASE)
@@ -47,12 +49,40 @@ def _sanitize_slug(s: str, max_len: int = 80) -> str:
     return s[:max_len] or "untitled"
 
 
+def _windows_readpst_paths(env: Mapping[str, str] | None = None) -> tuple[Path, ...]:
+    """Return known MSYS2 and standalone Windows locations for ``readpst.exe``."""
+    environment = os.environ if env is None else env
+    msys_root = Path(environment.get("MSYS2_ROOT", r"C:\\msys64"))
+    candidates = [
+        msys_root / "usr" / "bin" / "readpst.exe",
+        msys_root / "mingw64" / "bin" / "readpst.exe",
+        msys_root / "ucrt64" / "bin" / "readpst.exe",
+        msys_root / "clang64" / "bin" / "readpst.exe",
+    ]
+    program_files = environment.get("ProgramFiles")
+    if program_files:
+        candidates.append(Path(program_files) / "libpst" / "readpst.exe")
+    return tuple(candidates)
+
+
 def _readpst_available() -> str | None:
-    """Return the path to readpst if available, else None."""
+    """Return a configured, PATH-resolved, or Windows-discovered readpst binary."""
+    override = os.environ.get(_READPST_OVERRIDE_ENV)
+    if override:
+        explicit = Path(override).expanduser()
+        if explicit.is_file():
+            return str(explicit)
+        found = shutil.which(override)
+        if found:
+            return found
     for name in _READPST_NAMES:
         found = shutil.which(name)
         if found:
             return found
+    if os.name == "nt":
+        for candidate in _windows_readpst_paths():
+            if candidate.is_file():
+                return str(candidate)
     return None
 
 
@@ -61,8 +91,9 @@ def _run_readpst(pst_path: Path, tmp_dir: Path) -> Path:
     binary = _readpst_available()
     if binary is None:
         raise AdapterError(
-            "readpst not on PATH. Install libpst: `brew install libpst` "
-            "(macOS), `apt install libpst-tools` (Linux), or MSYS2 pacman -S libpst (Windows)."
+            "readpst not found. Install libpst: `brew install libpst` (macOS), "
+            "`apt install pst-utils` (Linux), or `pacman -S mingw-w64-ucrt-x86_64-libpst` "
+            "(Windows MSYS2); or set HEADCLEANER_READPST to the executable path."
         )
     # -e = extract to mbox, -D = include deleted items, -q = quiet
     cmd = [binary, "-e", "-D", "-q", "-o", str(tmp_dir), str(pst_path)]

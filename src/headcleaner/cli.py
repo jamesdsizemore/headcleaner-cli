@@ -1,6 +1,6 @@
 """headcleaner CLI entrypoint.
 
-Subcommands (all shipped as of v0.13.0):
+Subcommands (all shipped as of v0.14.0):
   convert    Convert a folder to Markdown / OKF / both
   templates  List supported formats and engines
   agents     List detected engines and their install status
@@ -10,18 +10,33 @@ Subcommands (all shipped as of v0.13.0):
 from __future__ import annotations
 
 import json
-
 import sys
 from pathlib import Path
 
 import click
 
 from . import __version__
+from .i18n import SUPPORTED_LOCALES, set_locale, tr
 from .run import RunOptions, run_pipeline
 from .tui import run_with_tui
 
 
+def _select_language(_ctx: click.Context, _param: click.Parameter, value: str | None) -> str | None:
+    """Activate locale before Click renders help or invokes any subcommand."""
+    set_locale(value)
+    return value
+
+
 @click.group()
+@click.option(
+    "--lang",
+    type=click.Choice(("en", "es", "zh-CN"), case_sensitive=False),
+    default=None,
+    callback=_select_language,
+    is_eager=True,
+    expose_value=False,
+    help=f"Interface language (default: $HEADCLEANER_LANG or {SUPPORTED_LOCALES[0]}).",
+)
 @click.version_option(__version__, prog_name="headcleaner")
 def cli() -> None:
     """headcleaner — walk a folder, emit Markdown and/or OKF v0.2."""
@@ -125,6 +140,7 @@ def cli() -> None:
 )
 @click.option(
     "--git-commit",
+    "git_commit_flag",
     is_flag=True,
     default=False,
     help="Eng #32: after a successful run, `git add` the output dir and `git commit` it.",
@@ -153,11 +169,6 @@ def cli() -> None:
     is_flag=True,
     default=False,
     help="Eng #43: emit one JSON line per event on stdout (for piping to jq).",
-)
-@click.option(
-    "--tui / --no-tui",
-    default=None,
-    help="Force / disable the animated TUI (default: auto-detect TTY).",
 )
 @click.option(
     "--theme",
@@ -276,12 +287,12 @@ def convert(
     import sys as _sys
 
     err = _sys.stderr
-    err.write(f"headcleaner {__version__}\n")
-    err.write(f"  input:  {input_dir}\n")
-    err.write(f"  output: {output}\n")
-    err.write(f"  format: {fmt}\n")
+    err.write(tr("headcleaner {version}").format(version=__version__) + "\n")
+    err.write(f"  {tr('input')}:  {input_dir}\n")
+    err.write(f"  {tr('output')}: {output}\n")
+    err.write(f"  {tr('format')}: {fmt}\n")
     if dry_run:
-        err.write("  mode:   DRY RUN (no files will be written)\n")
+        err.write("  " + tr("mode: DRY RUN (no files will be written)") + "\n")
     err.write("\n")
     err.flush()
 
@@ -295,11 +306,11 @@ def convert(
     ok = sum(1 for r in record.results if r.status == "ok")
     skipped = sum(1 for r in record.results if r.status == "skipped")
     failed = sum(1 for r in record.results if r.status == "failed")
-    err.write(f"\n✓ done  ok={ok}  skipped={skipped}  failed={failed}\n")
+    err.write(f"\n✓ {tr('done')}  ok={ok}  skipped={skipped}  failed={failed}\n")
     if dry_run:
-        err.write("(dry run — no files written)\n")
+        err.write(f"({tr('dry run — no files written')})\n")
     else:
-        err.write(f"manifest: {output}/manifest.json\n")
+        err.write(f"{tr('manifest')}: {output}/manifest.json\n")
     sys.exit(0 if failed == 0 else 1)
 
 
@@ -377,8 +388,8 @@ def watch(
     """
     from .engines.officecli import OfficeCLIAdapter
     from .router import adapters as get_adapters
-    from .webhook import post_webhook
     from .watch import watch_directory
+    from .webhook import post_webhook
 
     for a in get_adapters():
         if isinstance(a, OfficeCLIAdapter):
@@ -723,9 +734,8 @@ def view_cmd(
         import webbrowser
 
         def handler(*a, **kw):
-            return http.server.SimpleHTTPRequestHandler(
-                    *a, directory=str(out_path.parent), **kw
-                )
+            return http.server.SimpleHTTPRequestHandler(*a, directory=str(out_path.parent), **kw)
+
         with socketserver.TCPServer((host, port), handler) as httpd:
             url = f"http://{host}:{port}/{out_path.name}"
             click.echo(f"serving {url}  (Ctrl+C to stop)")
@@ -781,7 +791,7 @@ def mcp_cmd(bundles: tuple[Path, ...], named_bundles: tuple[str, ...]) -> None:
 @click.argument("output", type=click.Path(file_okay=False, path_type=Path))
 def notion_import(export: Path, output: Path) -> None:
     """Eng #31: reverse a Notion workspace export into an OKF bundle."""
-    from .notion import import_notion_export, detect_export
+    from .notion import detect_export, import_notion_export
 
     counts = detect_export(export)
     click.echo(
