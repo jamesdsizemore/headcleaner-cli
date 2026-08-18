@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from .engine_plan import EngineCapability
 from .engines.base import Adapter, AdapterError
 from .engines.csv_json import CsvAdapter, JsonAdapter
 from .engines.eml import EmlAdapter
@@ -119,3 +120,18 @@ def registered_extensions() -> set[str]:
     for a in adapters():
         out.update(a.extensions)
     return out
+
+
+def engine_capabilities() -> list[EngineCapability]:
+    """Project the existing adapter registry into deterministic plan capabilities."""
+    return [
+        EngineCapability(
+            name=adapter.name,
+            extensions=frozenset(adapter.extensions),
+            requires_tools=(),
+            network_mode="never",
+            priority=priority,
+            supports_traits=frozenset(),
+        )
+        for priority, adapter in enumerate(adapters())
+    ]

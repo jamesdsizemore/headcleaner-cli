@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from headcleaner.engine_plan import EngineCapability, build_engine_plan
+from headcleaner.router import engine_capabilities
 
 
 def test_default_plan_starts_with_router_selection_and_is_deterministic() -> None:
@@ -37,3 +38,11 @@ def test_network_capability_requires_explicit_permission() -> None:
 
     allowed = build_engine_plan(Path("note.txt"), [network], allow_network=True)
     assert allowed.attempts[0].engine == "remote"
+
+
+def test_live_router_capabilities_preserve_current_extension_precedence() -> None:
+    capabilities = engine_capabilities()
+
+    plan = build_engine_plan(Path("note.txt"), capabilities)
+
+    assert plan.attempts[0].engine == "txt"
