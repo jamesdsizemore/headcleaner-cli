@@ -751,6 +751,26 @@ def view_cmd(
         webbrowser.open(out_path.as_uri())
 
 
+@cli.command(name="benchmark")
+@click.argument("input_dir", type=click.Path(exists=True, file_okay=False, path_type=Path))
+@click.option("--baseline", type=click.Path(path_type=Path), default=None)
+@click.option("--json", "json_output", is_flag=True, default=False)
+@click.option("--update-baseline", is_flag=True, default=False)
+def benchmark(input_dir: Path, baseline: Path | None, json_output: bool, update_baseline: bool) -> None:
+    """Measure attributed fixture conversion quality against explicit expectations."""
+    from .benchmark import run_benchmark
+
+    try:
+        report = run_benchmark(input_dir, baseline=baseline, update_baseline=update_baseline)
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
+    if json_output:
+        click.echo(json.dumps(report, ensure_ascii=False, sort_keys=True))
+    else:
+        summary = report["summary"]
+        click.echo(f"benchmark: {summary['passed']}/{summary['fixture_count']} fixtures passed")
+
+
 @cli.command(name="mcp")
 @click.argument("bundles", nargs=-1, type=click.Path(exists=True, file_okay=False, path_type=Path))
 @click.option(

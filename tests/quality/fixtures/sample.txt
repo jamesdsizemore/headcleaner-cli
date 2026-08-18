@@ -1,0 +1,3 @@
+# HeadCleaner quality fixture
+
+Retained benchmark anchor.

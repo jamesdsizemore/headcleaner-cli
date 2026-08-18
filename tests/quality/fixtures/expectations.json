@@ -1,0 +1,7 @@
+{
+  "sample.txt": {
+    "text_anchors": ["Retained benchmark anchor."],
+    "headings": ["HeadCleaner quality fixture"],
+    "table_anchors": []
+  }
+}

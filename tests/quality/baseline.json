@@ -1,0 +1,23 @@
+{
+  "fixtures": [
+    {
+      "fixture_id": "sample.txt",
+      "metrics": {
+        "heading_order": 1.0,
+        "output_exists": 1.0,
+        "table_anchor_recall": 1.0,
+        "text_anchor_recall": 1.0
+      },
+      "source_sha256": "410f2467bf45391df8453e9721a8601f02875e120f444cb4b36cdc11d413bced",
+      "status": "ok",
+      "warnings": []
+    }
+  ],
+  "schema_version": "1.0",
+  "summary": {
+    "failed": 0,
+    "fixture_count": 1,
+    "passed": 1
+  },
+  "tool_version": "0.14.0"
+}
