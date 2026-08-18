@@ -7,6 +7,8 @@ from pathlib import Path
 
 import pytest
 
+from headcleaner import router
+from headcleaner.engines.base import Adapter, AdapterError
 from headcleaner.run import RunOptions, run_pipeline
 
 
@@ -95,3 +97,79 @@ def test_run_pipeline_does_not_silently_fallback_from_requested_engine(
     assert record.results[0].status == "skipped"
     assert record.results[0].engine is None
     assert record.results[0].error == "no adapter"
+
+
+def test_run_pipeline_retries_only_typed_adapter_failures_when_fallback_is_allowed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    class Primary(Adapter):
+        name = "primary"
+        extensions = {".fallback"}
+
+        def extract(self, source: Path, *, progress=None) -> dict:
+            raise AdapterError("primary unavailable")
+
+    class Fallback(Adapter):
+        name = "fallback"
+        extensions = {".fallback"}
+
+        def extract(self, source: Path, *, progress=None) -> dict:
+            return {"title": "fallback", "body_md": "recovered"}
+
+    monkeypatch.setattr(router, "_ADAPTERS", [Primary(), Fallback()])
+    (tmp_path / "note.fallback").write_text("source", encoding="utf-8")
+
+    record = run_pipeline(
+        RunOptions(
+            input_root=tmp_path,
+            output_root=tmp_path / "out",
+            fmt="md",
+            allow_fallback=True,
+            use_cache=False,
+        )
+    )
+
+    assert len(record.results) == 1
+    assert record.results[0].status == "ok"
+    assert record.results[0].engine == "fallback"
+    assert record.results[0].metrics is not None
+    assert record.results[0].metrics.engine_attempts == ["primary", "fallback"]
+
+
+def test_run_pipeline_does_not_retry_untyped_adapter_errors(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    calls: list[str] = []
+
+    class Primary(Adapter):
+        name = "primary"
+        extensions = {".untyped"}
+
+        def extract(self, source: Path, *, progress=None) -> dict:
+            calls.append(self.name)
+            raise RuntimeError("unexpected failure")
+
+    class Fallback(Adapter):
+        name = "fallback"
+        extensions = {".untyped"}
+
+        def extract(self, source: Path, *, progress=None) -> dict:
+            calls.append(self.name)
+            return {"title": "fallback", "body_md": "should not run"}
+
+    monkeypatch.setattr(router, "_ADAPTERS", [Primary(), Fallback()])
+    (tmp_path / "note.untyped").write_text("source", encoding="utf-8")
+
+    record = run_pipeline(
+        RunOptions(
+            input_root=tmp_path,
+            output_root=tmp_path / "out",
+            fmt="md",
+            allow_fallback=True,
+            use_cache=False,
+        )
+    )
+
+    assert calls == ["primary"]
+    assert record.results[0].status == "failed"
+    assert record.results[0].error == "RuntimeError: unexpected failure"

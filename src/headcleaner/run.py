@@ -32,10 +32,11 @@ from .emit import markdown as md_emit
 from .emit import okf as okf_emit
 from .emit import okf_index
 from .emit.manifest import FileResult, RunRecord
+from .engine_plan import build_engine_plan
 from .engines.base import Adapter, AdapterError
 from .jsonlog import emit_json_event  # Batch 4 / Eng #43
 from .normalize import normalize
-from .router import get_adapter
+from .router import engine_capabilities, get_adapter
 from .walk import walk
 
 
@@ -191,6 +192,48 @@ def _run_adapter(
     return pairs
 
 
+def _planned_adapters(source: Path, opts: RunOptions) -> list[Adapter]:
+    """Resolve the deterministic, policy-filtered adapter sequence for a source."""
+    try:
+        plan = build_engine_plan(
+            source,
+            engine_capabilities(),
+            requested_engine=opts.requested_engine,
+            allow_fallback=opts.allow_fallback,
+            allow_network=opts.allow_network,
+        )
+    except ValueError as error:
+        if str(error).startswith("unknown or incompatible engine:"):
+            return []
+        raise
+    return [
+        adapter
+        for attempt in plan.attempts
+        if (adapter := get_adapter(source, requested_engine=attempt.engine)) is not None
+    ]
+
+
+def _run_planned_adapters(
+    adapters: list[Adapter], source: Path, relpath: str, opts: RunOptions
+) -> tuple[Adapter, list[tuple[str, dict]], list[str]]:
+    """Run planned adapters, retrying only typed AdapterError failures."""
+    attempts: list[str] = []
+    last_error: AdapterError | None = None
+    for adapter in adapters:
+        attempts.append(adapter.name)
+        try:
+            pairs = _run_adapter(
+                adapter, source, relpath, opts.ocr, opts.on_engine_progress, opts=opts
+            )
+        except AdapterError as error:
+            last_error = error
+            continue
+        return adapter, pairs, attempts
+    if last_error is not None:
+        raise last_error
+    raise AdapterError("no adapter")
+
+
 def _emit_one(
     opts: RunOptions,
     record: RunRecord,
@@ -200,6 +243,7 @@ def _emit_one(
     extracted: dict,
     md_root: Path,
     okf_root: Path,
+    engine_attempts: list[str] | None = None,
 ) -> FileResult:
     """Normalize + emit one adapter output dict. Returns the FileResult."""
     result = FileResult(
@@ -215,7 +259,7 @@ def _emit_one(
     result.sha256 = doc.source_sha256
     result.metrics = ExtractionMetrics(
         character_count=len(doc.body_md),
-        engine_attempts=[engine_name],
+        engine_attempts=engine_attempts or [engine_name],
         confidence_inputs={"required_anchors_ok": True, "ocr_warning": False},
     )
     result.confidence, _ = compute_confidence(result.metrics)
@@ -345,7 +389,8 @@ def _process_sequential(
 
     for i, sf in enumerate(all_files, start=1):
         rel = str(sf.relpath)
-        adapter = get_adapter(sf.path, requested_engine=opts.requested_engine)
+        adapters = _planned_adapters(sf.path, opts)
+        adapter = adapters[0] if adapters else None
         if adapter is None:
             result = FileResult(
                 source_path=str(sf.path),
@@ -389,9 +434,7 @@ def _process_sequential(
 
         started = time.perf_counter()
         try:
-            pairs = _run_adapter(
-                adapter, sf.path, rel, opts.ocr, opts.on_engine_progress, opts=opts
-            )
+            adapter, pairs, attempts = _run_planned_adapters(adapters, sf.path, rel, opts)
         except AdapterError as e:
             result = FileResult(
                 source_path=str(sf.path),
@@ -435,6 +478,7 @@ def _process_sequential(
                 extracted,
                 md_root,
                 okf_root,
+                attempts,
             )
             for msg_rp, extracted in pairs
         ]
@@ -626,7 +670,7 @@ def run_pipeline(opts: RunOptions) -> RunRecord:
             }
         )
 
-    if opts.jobs > 1:
+    if opts.jobs > 1 and not opts.allow_fallback:
         _process_parallel(opts, record, cache, total, all_files)
     else:
         _process_sequential(opts, record, cache, total, all_files)
