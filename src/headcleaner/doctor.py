@@ -117,11 +117,26 @@ def check_officecli() -> CheckResult:
 def check_engine_capabilities() -> CheckResult:
     """Report the deterministic engine catalog used by selection plans."""
     capabilities = engine_capabilities()
-    names = ", ".join(capability.name for capability in capabilities)
+    details: list[str] = []
+    has_unselectable = False
+    for capability in capabilities:
+        missing_tools = [tool for tool in capability.requires_tools if shutil.which(tool) is None]
+        reasons: list[str] = []
+        if missing_tools:
+            reasons.append(f"missing tools: {', '.join(missing_tools)}")
+        if capability.network_mode == "explicit":
+            reasons.append("network disabled")
+        selectable = not reasons
+        has_unselectable = has_unselectable or not selectable
+        tools = ", ".join(capability.requires_tools) or "none"
+        suffix = "" if selectable else f" ({'; '.join(reasons)})"
+        details.append(
+            f"{capability.name} (tools={tools}; selectable={'yes' if selectable else 'no'}){suffix}"
+        )
     return CheckResult(
         name="engine-capabilities",
-        status=STATUS_OK,
-        detail=f"{len(capabilities)} registered engines: {names}",
+        status=STATUS_WARN if has_unselectable else STATUS_OK,
+        detail=f"{len(capabilities)} registered engines: {'; '.join(details)}",
     )
 
 

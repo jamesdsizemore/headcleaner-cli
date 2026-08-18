@@ -17,6 +17,7 @@ from headcleaner.doctor import (
     render_text,
     run_all,
 )
+from headcleaner.engine_plan import EngineCapability
 
 # ---------------------------------------------------------------------------
 # Pure unit tests for individual checks
@@ -41,6 +42,26 @@ class TestChecks:
         assert r.name == "engine-capabilities"
         assert r.status == STATUS_OK
         assert "txt" in r.detail
+
+    def test_engine_capabilities_reports_missing_tool_and_network_policy(self, monkeypatch):
+        capability = EngineCapability(
+            name="remote",
+            extensions=frozenset({".txt"}),
+            requires_tools=("missing-tool",),
+            network_mode="explicit",
+            priority=0,
+            supports_traits=frozenset(),
+        )
+        monkeypatch.setattr(_doctor, "engine_capabilities", lambda: [capability])
+        monkeypatch.setattr(_doctor.shutil, "which", lambda _: None)
+
+        r = _doctor.check_engine_capabilities()
+
+        assert r.status == STATUS_WARN
+        assert "remote" in r.detail
+        assert "tools=missing-tool" in r.detail
+        assert "selectable=no" in r.detail
+        assert "network disabled" in r.detail
 
     def test_path_missing_fails(self, monkeypatch):
         monkeypatch.delenv("PATH", raising=False)
