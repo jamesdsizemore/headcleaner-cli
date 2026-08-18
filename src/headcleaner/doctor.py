@@ -29,6 +29,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .engines.pst import _readpst_available
+from .router import engine_capabilities
 
 # ---------------------------------------------------------------------------
 # CheckResult
@@ -110,6 +111,17 @@ def check_officecli() -> CheckResult:
         status=STATUS_FAIL,
         detail="not found on PATH",
         fix="npm i -g @officecli/officecli (https://github.com/iOfficeAI/OfficeCLI)",
+    )
+
+
+def check_engine_capabilities() -> CheckResult:
+    """Report the deterministic engine catalog used by selection plans."""
+    capabilities = engine_capabilities()
+    names = ", ".join(capability.name for capability in capabilities)
+    return CheckResult(
+        name="engine-capabilities",
+        status=STATUS_OK,
+        detail=f"{len(capabilities)} registered engines: {names}",
     )
 
 
@@ -248,6 +260,7 @@ ALL_CHECKS: list[tuple[str, Callable[[], CheckResult]]] = [
     ("Python version", check_python),
     ("PATH environment", check_path),
     ("OfficeCLI on PATH", check_officecli),
+    ("Engine capabilities", check_engine_capabilities),
     ("Tesseract on PATH", check_tesseract),
     ("readpst on PATH", check_readpst),
     ("Output directory", check_output_dir),

@@ -35,6 +35,13 @@ class TestChecks:
         assert r.status in (STATUS_OK, STATUS_FAIL)
         assert r.name == "officecli"
 
+    def test_engine_capabilities_lists_live_registered_engines(self):
+        r = _doctor.check_engine_capabilities()
+
+        assert r.name == "engine-capabilities"
+        assert r.status == STATUS_OK
+        assert "txt" in r.detail
+
     def test_path_missing_fails(self, monkeypatch):
         monkeypatch.delenv("PATH", raising=False)
         r = _doctor.check_path()
