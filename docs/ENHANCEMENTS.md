@@ -528,7 +528,7 @@ deployment and ship them.
 These don't fit the 4-batch structure cleanly but are worth a line:
 
 - **i18n** — shipped (v0.14.0): gettext runtime catalogs for English, Spanish, and Simplified Chinese (`--lang en|es|zh-CN`, with `HEADCLEANER_LANG` default).
-- **`headcleaner doctor`** — diagnose common issues: check Python version, OfficeCLI install, PATH, write permissions on output dir, etc. Single command that prints a go/no-go summary.
-- **Plugin protocol** — let third parties ship a `headcleaner_plugin` package that registers custom adapters via entry points. Avoids `headcleaner` having to grow to thousands of formats.
-- **Schema validation** — emit a JSON Schema for the OKF frontmatter so editors (VS Code, IntelliJ) can autocomplete and validate.
-- **Conversion report** — after `convert`, write a Markdown summary file (`<output>/REPORT.md`) with per-format stats (engine, count, avg time, error rate). Useful for org-wide adoption dashboards.
+- **`headcleaner doctor`** — shipped (v0.14.0): diagnose Python, OfficeCLI, PATH, write permissions, registry state, and PST extractor availability with a GO/NO-GO summary.
+- **Plugin protocol** — shipped (v0.14.0): third-party `headcleaner_plugin` entry points can register custom adapters without expanding the core format registry.
+- **Schema validation** — shipped (v0.14.0): an OKF frontmatter JSON Schema supports editor autocomplete and CI validation.
+- **Conversion report** — shipped (v0.14.0): `convert` can write `REPORT.md` with per-format engine, count, duration, and error-rate statistics.
