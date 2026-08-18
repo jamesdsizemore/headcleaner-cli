@@ -29,6 +29,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from ..diagnostics import Diagnostic, ExtractionMetrics
+
 
 @dataclass
 class FileResult:
@@ -41,6 +43,9 @@ class FileResult:
     status: str  # "ok" | "skipped" | "failed"
     error: str | None = None
     duration_seconds: float | None = None  # extraction + emission wall time
+    diagnostics: list[Diagnostic] = field(default_factory=list)
+    metrics: ExtractionMetrics | None = None
+    confidence: float | None = None
 
 
 @dataclass
@@ -60,7 +65,7 @@ class RunRecord:
 
     def to_json(self) -> str:
         d = asdict(self)
-        return json.dumps(d, indent=2, ensure_ascii=False)
+        return json.dumps(d, indent=2, ensure_ascii=False, sort_keys=True)
 
 
 def write(record: RunRecord, output_root: Path) -> Path:

@@ -23,9 +23,10 @@ import multiprocessing
 import time
 from collections.abc import Callable
 from concurrent.futures import ProcessPoolExecutor, as_completed
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from pathlib import Path
 
+from .diagnostics import ExtractionMetrics, compute_confidence
 from .emit import manifest as manifest_emit
 from .emit import markdown as md_emit
 from .emit import okf as okf_emit
@@ -106,8 +107,8 @@ def _save_cache_jsonl(output_root: Path, result: FileResult) -> None:
     path = output_root / "manifest.jsonl"
     output_root.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as f:
-        # asdict + json ensure consistent field names
-        f.write(json.dumps(result.__dict__, ensure_ascii=False) + "\n")
+        # asdict + json ensure consistent field names for nested diagnostics.
+        f.write(json.dumps(asdict(result), ensure_ascii=False, sort_keys=True) + "\n")
 
 
 # ---- Multi-concept adapter dispatch (Eng #7) ---------------------------------
@@ -207,6 +208,12 @@ def _emit_one(
     )
     doc = normalize(_make_sf(source, msg_rp), extracted, engine=engine_name)
     result.sha256 = doc.source_sha256
+    result.metrics = ExtractionMetrics(
+        character_count=len(doc.body_md),
+        engine_attempts=[engine_name],
+        confidence_inputs={"required_anchors_ok": True, "ocr_warning": False},
+    )
+    result.confidence, _ = compute_confidence(result.metrics)
 
     if not opts.dry_run:
         if opts.fmt in {"md", "both"}:
