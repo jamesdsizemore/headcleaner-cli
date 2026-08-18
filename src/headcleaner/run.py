@@ -252,7 +252,7 @@ def _process_one(args: tuple[str, str, str, str, bool, bool]) -> list[dict]:
     side; the worker only confirms the source is processable and returns
     the extracted list of bodies for the orchestrator to emit.
     """
-    source_str, relpath, engine_name, fmt, ocr, clean_md = args
+    source_str, relpath, engine_name, fmt, ocr, clean_md, requested_engine = args
     from .engines.base import AdapterError
     from .router import get_adapter as _get_adapter
 
@@ -265,7 +265,7 @@ def _process_one(args: tuple[str, str, str, str, bool, bool]) -> list[dict]:
 
     source = Path(source_str)
     started = time.perf_counter()
-    adapter = _get_adapter(source)
+    adapter = _get_adapter(source, requested_engine=requested_engine)
     if adapter is None:
         return [
             {
@@ -345,7 +345,7 @@ def _process_sequential(
 
     for i, sf in enumerate(all_files, start=1):
         rel = str(sf.relpath)
-        adapter = get_adapter(sf.path)
+        adapter = get_adapter(sf.path, requested_engine=opts.requested_engine)
         if adapter is None:
             result = FileResult(
                 source_path=str(sf.path),
@@ -465,7 +465,7 @@ def _process_parallel(
     work = []
     for sf in all_files:
         rel = str(sf.relpath)
-        adapter = get_adapter(sf.path)
+        adapter = get_adapter(sf.path, requested_engine=opts.requested_engine)
         engine_name = adapter.name if adapter else None
 
         if opts.use_cache and engine_name and rel in cache:
@@ -504,7 +504,17 @@ def _process_parallel(
             _finish_result(opts, record, result)
             continue
 
-        work.append((str(sf.path), rel, engine_name, opts.fmt, opts.ocr, opts.clean_md))
+        work.append(
+            (
+                str(sf.path),
+                rel,
+                engine_name,
+                opts.fmt,
+                opts.ocr,
+                opts.clean_md,
+                opts.requested_engine,
+            )
+        )
 
     if not work:
         return

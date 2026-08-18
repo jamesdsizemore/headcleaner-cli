@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from headcleaner.run import RunOptions, run_pipeline
 
 
@@ -71,3 +73,25 @@ def test_run_pipeline_dry_run_does_not_write_report(mixed_dir: Path, tmp_path: P
     )
 
     assert not (out / "REPORT.md").exists()
+
+
+@pytest.mark.parametrize("jobs", [1, 2])
+def test_run_pipeline_does_not_silently_fallback_from_requested_engine(
+    tmp_path: Path, jobs: int
+) -> None:
+    (tmp_path / "note.txt").write_text("engine policy", encoding="utf-8")
+
+    record = run_pipeline(
+        RunOptions(
+            input_root=tmp_path,
+            output_root=tmp_path / "out",
+            fmt="md",
+            requested_engine="html",
+            jobs=jobs,
+        )
+    )
+
+    assert len(record.results) == 1
+    assert record.results[0].status == "skipped"
+    assert record.results[0].engine is None
+    assert record.results[0].error == "no adapter"
