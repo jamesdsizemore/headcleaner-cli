@@ -137,7 +137,12 @@ def normalize(source: SourceFile, adapter_dict: dict, engine: str) -> CanonicalD
     attachments = adapter_dict.get("attachments") or []
 
     sha = _sha256(source.path)
-    elements = adapter_dict.get("elements") or [Element.create(sha, "paragraph", 0, body_md)]
+    supplied_elements = adapter_dict.get("elements")
+    elements = (
+        [_coerce_element(element, sha) for element in supplied_elements]
+        if supplied_elements
+        else [Element.create(sha, "paragraph", 0, body_md)]
+    )
 
     abs_path = source.path.resolve()
     source_uri = abs_path.as_uri()  # file:///C:/.../foo.docx on Windows
@@ -155,6 +160,36 @@ def normalize(source: SourceFile, adapter_dict: dict, engine: str) -> CanonicalD
         metadata=metadata,
         attachments=attachments,
         elements=elements,
+    )
+
+
+def _coerce_element(value: Element | dict[str, Any], source_sha: str) -> Element:
+    if isinstance(value, Element):
+        return value
+    if not isinstance(value, dict):
+        raise ValueError("invalid element")
+    kind = value.get("kind")
+    ordinal = value.get("ordinal")
+    text = value.get("text")
+    if not isinstance(kind, str) or not isinstance(ordinal, int) or not isinstance(text, str):
+        raise ValueError("invalid element")
+    element_id = value.get("id")
+    if element_id:
+        return Element(
+            element_id,
+            kind,
+            ordinal,
+            text,
+            value.get("source_location"),
+            value.get("attributes"),
+        )
+    return Element.create(
+        source_sha,
+        kind,
+        ordinal,
+        text,
+        source_location=value.get("source_location"),
+        attributes=value.get("attributes"),
     )
 
 

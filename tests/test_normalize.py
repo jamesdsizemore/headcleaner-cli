@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import UTC
 from pathlib import Path
 
+from headcleaner.model import Element
 from headcleaner.normalize import default_generated, default_stale_after, normalize
 from headcleaner.walk import SourceFile
 
@@ -36,6 +37,34 @@ def test_normalize_builds_legacy_paragraph_element_without_changing_body(tmp_pat
     assert doc.body_md == "hello\n\nworld"
     assert [element.kind for element in doc.elements] == ["paragraph"]
     assert doc.elements[0].text == "hello\n\nworld"
+
+
+def test_normalize_preserves_adapter_supplied_elements(tmp_path: Path) -> None:
+    source = tmp_path / "x.txt"
+    source.write_text("body", encoding="utf-8")
+    supplied = Element.create("adapter-source", "heading", 0, "Title")
+
+    doc = normalize(
+        _make_source(source),
+        {"body_md": "body", "elements": [supplied]},
+        engine="txt",
+    )
+
+    assert doc.elements == [supplied]
+
+
+def test_normalize_assigns_id_to_adapter_element_dictionary(tmp_path: Path) -> None:
+    source = tmp_path / "x.txt"
+    source.write_text("body", encoding="utf-8")
+
+    doc = normalize(
+        _make_source(source),
+        {"body_md": "body", "elements": [{"kind": "heading", "ordinal": 0, "text": "Title"}]},
+        engine="txt",
+    )
+
+    assert doc.elements[0].kind == "heading"
+    assert len(doc.elements[0].id) == 64
 
 
 def test_canonical_doc_okf_frontmatter_required_keys(tmp_path: Path) -> None:
