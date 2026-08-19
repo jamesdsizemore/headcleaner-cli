@@ -297,7 +297,20 @@ def _emit_one(
         status="skipped",
         diagnostics=list(engine_diagnostics or []),
     )
-    doc = normalize(_make_sf(source, msg_rp), extracted, engine=engine_name)
+    try:
+        doc = normalize(_make_sf(source, msg_rp), extracted, engine=engine_name)
+    except ValueError as error:
+        result.status = "failed"
+        result.error = str(error)
+        result.diagnostics.append(
+            Diagnostic(
+                code="INVALID_ELEMENT",
+                severity="error",
+                message="Adapter supplied an invalid document element",
+                evidence={"engine": engine_name, "error": str(error)},
+            )
+        )
+        return result
     result.sha256 = doc.source_sha256
     result.metrics = ExtractionMetrics(
         character_count=len(doc.body_md),

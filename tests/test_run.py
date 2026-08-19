@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from headcleaner import router, run
+from headcleaner.emit.manifest import RunRecord
 from headcleaner.engine_plan import EngineCapability
 from headcleaner.engines.base import Adapter, AdapterError
 from headcleaner.run import RunOptions, run_pipeline
@@ -55,6 +56,27 @@ def test_run_pipeline_okf_only(mixed_dir: Path, tmp_path: Path) -> None:
     record = run_pipeline(RunOptions(input_root=mixed_dir, output_root=out, fmt="okf"))
     assert all(r.okf_path for r in record.results)
     assert all(r.md_path is None for r in record.results)
+
+
+def test_emit_one_isolates_invalid_adapter_element(tmp_path: Path) -> None:
+    source = tmp_path / "bad.txt"
+    source.write_text("body", encoding="utf-8")
+    options = RunOptions(input_root=tmp_path, output_root=tmp_path / "out", fmt="md")
+
+    result = run._emit_one(
+        options,
+        RunRecord(),
+        source,
+        "bad.txt",
+        "plugin",
+        {"body_md": "body", "elements": [{"kind": "invalid", "ordinal": 0, "text": "bad"}]},
+        tmp_path / "out" / "_md",
+        tmp_path / "out" / "okf",
+    )
+
+    assert result.status == "failed"
+    assert result.md_path is None
+    assert [diagnostic.code for diagnostic in result.diagnostics] == ["INVALID_ELEMENT"]
 
 
 def test_run_pipeline_writes_conversion_report(mixed_dir: Path, tmp_path: Path) -> None:
