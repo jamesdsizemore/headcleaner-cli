@@ -47,6 +47,8 @@ class RunOptions:
     output_root: Path
     fmt: str = "both"  # "md" | "okf" | "both"
     ocr: bool = False
+    ocr_profile: str = "balanced"
+    ocr_languages: tuple[str, ...] = ()
     include_glob: list[str] | None = None
     exclude_glob: list[str] | None = None
     continue_on_error: bool = True
@@ -163,6 +165,9 @@ def _run_adapter(
     # Honor the OCR flag (PDF adapter only)
     if adapter.name == "pdf" and ocr and hasattr(adapter, "ocr"):
         adapter.ocr = True
+        if opts is not None:
+            adapter.ocr_profile = opts.ocr_profile
+            adapter.ocr_lang = "+".join(opts.ocr_languages)
 
     def _progress(cur: int, total: int) -> None:
         if on_engine_progress is not None:

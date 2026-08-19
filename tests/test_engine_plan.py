@@ -86,5 +86,23 @@ def test_convert_help_exposes_engine_plan_policy_flags() -> None:
     result = CliRunner().invoke(cli, ["convert", "--help"])
 
     assert result.exit_code == 0
-    for option in ("--engine", "--no-fallback", "--allow-fallback", "--allow-network"):
+    for option in (
+        "--engine",
+        "--no-fallback",
+        "--allow-fallback",
+        "--allow-network",
+        "--ocr-profile",
+        "--ocr-lang",
+    ):
         assert option in result.output
+
+
+def test_ocr_preflight_fails_before_processing_without_tesseract(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.setattr("headcleaner.cli.shutil.which", lambda _name: None)
+
+    result = CliRunner().invoke(cli, ["convert", str(tmp_path), "--ocr", "--no-tui"])
+
+    assert result.exit_code == 2
+    assert "OCR_TESSERACT_UNAVAILABLE" in result.output

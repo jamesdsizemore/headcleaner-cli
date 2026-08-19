@@ -23,9 +23,12 @@ class PdfAdapter(Adapter):
     name = "pdf"
     extensions = {".pdf"}
 
-    def __init__(self, ocr: bool = False, ocr_lang: str = "eng") -> None:
+    def __init__(
+        self, ocr: bool = False, ocr_lang: str = "eng", ocr_profile: str = "balanced"
+    ) -> None:
         self.ocr = ocr
         self.ocr_lang = ocr_lang
+        self.ocr_profile = ocr_profile
 
     def extract(self, source: Path, *, progress=None) -> dict:
         if self.ocr:
@@ -60,6 +63,8 @@ class PdfAdapter(Adapter):
                         except Exception:
                             pass  # progress is best-effort; never block extraction
                     page_md = self._render_page(page)
+                    if not page_md and self.ocr:
+                        page_md = self._ocr_page(page)
                     try:
                         tables = page.extract_tables() or []
                     except Exception:
@@ -104,6 +109,8 @@ class PdfAdapter(Adapter):
                 "source_format": ".pdf",
                 "image_only_pages": image_only_pages,
                 "ocr_enabled": self.ocr,
+                "ocr_profile": self.ocr_profile if self.ocr else None,
+                "ocr_languages": self.ocr_lang.split("+") if self.ocr else [],
             },
             "tabular_assets": tabular_assets,
             "attachments": [],
@@ -136,6 +143,20 @@ class PdfAdapter(Adapter):
             out.append(text)
 
         return "\n\n".join(out).strip()
+
+    def _ocr_page(self, page) -> str:
+        """OCR an image-only page using only the declared profile options."""
+        import pytesseract
+
+        from ..ocr import get_profile
+
+        profile = get_profile(self.ocr_profile)
+        image = page.to_image(resolution=300).original
+        return pytesseract.image_to_string(
+            image,
+            lang=self.ocr_lang,
+            config=f"--psm {profile.tesseract_psm}",
+        ).strip()
 
 
 def _table_to_markdown(table: list[list[str | None]]) -> str:

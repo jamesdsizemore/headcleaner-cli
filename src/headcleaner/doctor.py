@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import os
 import shutil
+import subprocess
 import sys
 import tempfile
 import tomllib
@@ -29,6 +30,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .engines.pst import _readpst_available
+from .ocr import installed_languages
 from .router import engine_capabilities
 
 # ---------------------------------------------------------------------------
@@ -143,10 +145,21 @@ def check_engine_capabilities() -> CheckResult:
 def check_tesseract() -> CheckResult:
     path = shutil.which("tesseract")
     if path:
+        try:
+            languages = installed_languages(path)
+        except (OSError, subprocess.SubprocessError) as error:
+            return CheckResult(
+                name="tesseract-languages",
+                status=STATUS_WARN,
+                detail=(
+                    f"installed at {path}, but languages could not be queried: "
+                    f"{type(error).__name__}"
+                ),
+            )
         return CheckResult(
-            name="tesseract",
+            name="tesseract-languages",
             status=STATUS_OK,
-            detail=f"installed at {path}",
+            detail=f"installed at {path}; languages: {', '.join(languages) or 'none'}",
         )
     return CheckResult(
         name="tesseract",

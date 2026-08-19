@@ -10,6 +10,8 @@ Subcommands (all shipped as of v0.14.0):
 from __future__ import annotations
 
 import json
+import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -61,6 +63,14 @@ def cli() -> None:
     help="Output directory (created if missing).",
 )
 @click.option("--ocr", is_flag=True, default=False, help="Enable Tesseract OCR for scanned PDFs.")
+@click.option(
+    "--ocr-profile",
+    type=click.Choice(["fast", "balanced", "archival", "handwriting_experimental"]),
+    default="balanced",
+    show_default=True,
+    help="OCR preprocessing and Tesseract segmentation profile.",
+)
+@click.option("--ocr-lang", default=None, help="Comma-separated Tesseract language codes.")
 @click.option(
     "--officecli-timeout",
     type=int,
@@ -170,8 +180,12 @@ def cli() -> None:
     default=False,
     help="Eng #43: emit one JSON line per event on stdout (for piping to jq).",
 )
-@click.option("--engine", "requested_engine", default=None, help="Use a specific extraction engine.")
-@click.option("--no-fallback", is_flag=True, default=False, help="Do not attempt alternate engines.")
+@click.option(
+    "--engine", "requested_engine", default=None, help="Use a specific extraction engine."
+)
+@click.option(
+    "--no-fallback", is_flag=True, default=False, help="Do not attempt alternate engines."
+)
 @click.option(
     "--allow-fallback",
     is_flag=True,
@@ -196,6 +210,8 @@ def convert(
     fmt: str,
     output: Path,
     ocr: bool,
+    ocr_profile: str,
+    ocr_lang: str | None,
     officecli_timeout: int,
     include: tuple[str, ...],
     exclude: tuple[str, ...],
@@ -231,6 +247,28 @@ def convert(
     _theme.set_theme(theme)
     if no_fallback and allow_fallback:
         raise click.UsageError("--no-fallback and --allow-fallback cannot be used together")
+    requested_ocr_languages = tuple(
+        code.strip() for code in (ocr_lang or "").split(",") if code.strip()
+    )
+    if ocr:
+        from .ocr import get_profile, installed_languages, validate_requested_languages
+
+        profile = get_profile(ocr_profile)
+        executable = shutil.which("tesseract")
+        if executable is None:
+            raise click.UsageError(
+                "OCR_TESSERACT_UNAVAILABLE: install Tesseract or run without --ocr"
+            )
+        try:
+            available_languages = installed_languages(executable)
+        except (OSError, subprocess.SubprocessError) as error:
+            raise click.UsageError(
+                f"OCR_TESSERACT_UNAVAILABLE: could not query installed languages ({type(error).__name__})"
+            ) from error
+        requested_ocr_languages = validate_requested_languages(
+            requested_ocr_languages or profile.requested_languages,
+            available_languages,
+        )
 
     # Rebuild the OfficeCLI adapter with the requested timeout.
     # Other adapters are constructed once in router._ADAPTERS but their
@@ -244,6 +282,8 @@ def convert(
         output_root=output,
         fmt=fmt.lower(),
         ocr=ocr,
+        ocr_profile=ocr_profile,
+        ocr_languages=requested_ocr_languages,
         include_glob=list(include) if include else None,
         exclude_glob=list(exclude) if exclude else None,
         continue_on_error=not no_continue_on_error,
@@ -779,7 +819,9 @@ def view_cmd(
 @click.option("--baseline", type=click.Path(path_type=Path), default=None)
 @click.option("--json", "json_output", is_flag=True, default=False)
 @click.option("--update-baseline", is_flag=True, default=False)
-def benchmark(input_dir: Path, baseline: Path | None, json_output: bool, update_baseline: bool) -> None:
+def benchmark(
+    input_dir: Path, baseline: Path | None, json_output: bool, update_baseline: bool
+) -> None:
     """Measure attributed fixture conversion quality against explicit expectations."""
     from .benchmark import run_benchmark
 
@@ -849,7 +891,9 @@ def notion_import(export: Path, output: Path) -> None:
 @click.argument("output", type=click.Path(exists=True, dir_okay=False, path_type=Path))
 @click.option("--output-dir", type=click.Path(path_type=Path), default=None)
 @click.option("--json", "json_output", is_flag=True, default=False)
-def verify_render_cmd(input: Path, output: Path, output_dir: Path | None, json_output: bool) -> None:
+def verify_render_cmd(
+    input: Path, output: Path, output_dir: Path | None, json_output: bool
+) -> None:
     """Verify rendered fidelity for existing source and output artifacts."""
     from dataclasses import asdict
 
