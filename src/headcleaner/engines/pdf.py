@@ -39,6 +39,8 @@ class PdfAdapter(Adapter):
 
         pages_md: list[str] = []
         image_only_pages: list[int] = []
+        tabular_assets: list[dict] = []
+        table_ordinal = 0
 
         try:
             with pdfplumber.open(source) as pdf:
@@ -58,6 +60,15 @@ class PdfAdapter(Adapter):
                         except Exception:
                             pass  # progress is best-effort; never block extraction
                     page_md = self._render_page(page)
+                    try:
+                        tables = page.extract_tables() or []
+                    except Exception:
+                        tables = []
+                    for table in tables:
+                        asset = _table_to_asset(table, page_number=idx, ordinal=table_ordinal)
+                        if asset is not None:
+                            tabular_assets.append(asset)
+                            table_ordinal += 1
                     if page_md:
                         pages_md.append(f"## Page {idx}\n\n{page_md}")
                     else:
@@ -94,6 +105,7 @@ class PdfAdapter(Adapter):
                 "image_only_pages": image_only_pages,
                 "ocr_enabled": self.ocr,
             },
+            "tabular_assets": tabular_assets,
             "attachments": [],
         }
 
@@ -147,3 +159,23 @@ def _table_to_markdown(table: list[list[str | None]]) -> str:
     for row in body:
         lines.append("| " + " | ".join(row) + " |")
     return "\n".join(lines)
+
+
+def _table_to_asset(
+    table: list[list[str | None]], *, page_number: int, ordinal: int
+) -> dict | None:
+    """Project a best-effort PDF table into an explicitly inferred asset payload."""
+    if not table or len(table) < 2:
+        return None
+    columns = ["" if cell is None else str(cell).strip() for cell in table[0]]
+    if not any(columns):
+        return None
+    rows = [["" if cell is None else str(cell).strip() for cell in row] for row in table[1:]]
+    return {
+        "kind": "pdf_table",
+        "ordinal": ordinal,
+        "columns": columns,
+        "rows": rows,
+        "source_location": {"page": page_number, "start": None, "end": None},
+        "provenance": {"engine": "pdf", "inferred": True, "confidence": "advisory"},
+    }
