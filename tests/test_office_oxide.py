@@ -119,6 +119,31 @@ def test_office_oxide_available_returns_bool() -> None:
     assert isinstance(office_oxide_available(), bool)
 
 
+def test_officecli_html_fallback_extracts_worksheet_assets(tmp_path: Path, monkeypatch) -> None:
+    source = tmp_path / "book.xlsx"
+    source.write_bytes(b"placeholder")
+    adapter = OfficeCLIAdapter(prefer_oxide=False)
+    monkeypatch.setattr(
+        adapter,
+        "_run_officecli",
+        lambda _: (
+            "<html><body><table><tr><th>Name</th><th>Score</th></tr><tr><td>Ada</td><td>10</td></tr></table></body></html>"
+        ),
+    )
+
+    result = adapter._extract_with_officecli(source)
+
+    assert result["tabular_assets"] == [
+        {
+            "kind": "worksheet",
+            "ordinal": 0,
+            "columns": ["Name", "Score"],
+            "rows": [["Ada", "10"]],
+            "provenance": {"engine": "officecli", "backend": "officecli"},
+        }
+    ]
+
+
 @pytest.mark.skipif(not office_oxide_available(), reason="office_oxide not installed")
 def test_adapter_uses_oxide_by_default(tmp_path: Path) -> None:
     """With office_oxide installed, the adapter uses it as primary backend."""

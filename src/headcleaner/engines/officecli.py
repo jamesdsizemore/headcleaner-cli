@@ -154,6 +154,11 @@ class OfficeCLIAdapter(Adapter):
                 "source_format": source.suffix.lower(),
                 "backend": "officecli",
             },
+            "tabular_assets": (
+                self._worksheet_assets(cleaned)
+                if source.suffix.lower() in {".xls", ".xlsx"}
+                else []
+            ),
             "attachments": [],
         }
 
@@ -192,3 +197,27 @@ class OfficeCLIAdapter(Adapter):
         if soup.title and soup.title.string:
             return soup.title.string.strip()
         return None
+
+    @staticmethod
+    def _worksheet_assets(soup_html: str) -> list[dict]:
+        """Project OfficeCLI HTML tables into worksheet asset payloads."""
+        soup = BeautifulSoup(soup_html, "lxml")
+        assets: list[dict] = []
+        for ordinal, table in enumerate(soup.find_all("table")):
+            rows = [
+                [cell.get_text(" ", strip=True) for cell in row.find_all(["th", "td"])]
+                for row in table.find_all("tr")
+            ]
+            rows = [row for row in rows if row]
+            if not rows:
+                continue
+            assets.append(
+                {
+                    "kind": "worksheet",
+                    "ordinal": ordinal,
+                    "columns": rows[0],
+                    "rows": rows[1:],
+                    "provenance": {"engine": "officecli", "backend": "officecli"},
+                }
+            )
+        return assets
