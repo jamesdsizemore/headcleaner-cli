@@ -72,6 +72,33 @@ def test_okf_emitter_has_required_type(tmp_path: Path) -> None:
     assert fm["verified"] == "human:pending"
 
 
+def test_okf_emitter_writes_tabular_asset_sidecars(tmp_path: Path) -> None:
+    source = tmp_path / "data.csv"
+    source.write_text("name\nAda\n", encoding="utf-8")
+    doc = normalize(
+        SourceFile(path=source, relpath=Path("data.csv"), size_bytes=source.stat().st_size),
+        {
+            "body_md": "| name |\n| --- |\n| Ada |\n",
+            "tabular_assets": [
+                {
+                    "kind": "csv",
+                    "ordinal": 0,
+                    "columns": ["name"],
+                    "rows": [["Ada"]],
+                    "provenance": {"engine": "csv"},
+                }
+            ],
+        },
+        engine="csv",
+    )
+
+    text = okf_emit.write(doc, tmp_path / "out").read_text(encoding="utf-8")
+
+    asset = doc.tabular_assets[0]
+    assert (tmp_path / "out" / asset.sidecar_relpath).read_text(encoding="utf-8") == "name\nAda\n"
+    assert asset.sidecar_relpath in text
+
+
 def test_okf_index_generates_index_md(tmp_path: Path) -> None:
     doc_a = _make_doc_with_relpath(tmp_path, "sub/a.txt", "a")
     doc_b = _make_doc_with_relpath(tmp_path, "sub/b.txt", "b")

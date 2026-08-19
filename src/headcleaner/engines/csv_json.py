@@ -65,6 +65,15 @@ class CsvAdapter(Adapter):
                 "rows": len(body),
                 "cols": len(header),
             },
+            "tabular_assets": [
+                {
+                    "kind": "csv",
+                    "ordinal": 0,
+                    "columns": header,
+                    "rows": body,
+                    "provenance": {"engine": self.name, "delimiter": dialect.delimiter},
+                }
+            ],
             "attachments": [],
         }
 

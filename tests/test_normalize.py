@@ -7,6 +7,7 @@ from pathlib import Path
 
 from headcleaner.model import Element
 from headcleaner.normalize import default_generated, default_stale_after, normalize
+from headcleaner.tabular import TabularAsset
 from headcleaner.walk import SourceFile
 
 
@@ -65,6 +66,32 @@ def test_normalize_assigns_id_to_adapter_element_dictionary(tmp_path: Path) -> N
 
     assert doc.elements[0].kind == "heading"
     assert len(doc.elements[0].id) == 64
+
+
+def test_normalize_coerces_adapter_tabular_asset_dictionary(tmp_path: Path) -> None:
+    source = tmp_path / "data.csv"
+    source.write_text("name\nAda\n", encoding="utf-8")
+
+    doc = normalize(
+        _make_source(source),
+        {
+            "body_md": "| name |\n| --- |\n| Ada |\n",
+            "tabular_assets": [
+                {
+                    "kind": "csv",
+                    "ordinal": 0,
+                    "columns": ["name"],
+                    "rows": [["Ada"]],
+                    "provenance": {"engine": "csv"},
+                }
+            ],
+        },
+        engine="csv",
+    )
+
+    assert len(doc.tabular_assets) == 1
+    assert isinstance(doc.tabular_assets[0], TabularAsset)
+    assert doc.tabular_assets[0].columns == ("name",)
 
 
 def test_canonical_doc_okf_frontmatter_required_keys(tmp_path: Path) -> None:

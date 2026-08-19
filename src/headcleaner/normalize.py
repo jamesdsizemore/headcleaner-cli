@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any
 
 from .model import Element
+from .tabular import TabularAsset
 from .walk import SourceFile
 
 
@@ -34,6 +35,7 @@ class CanonicalDoc:
     metadata: dict[str, Any] = field(default_factory=dict)
     attachments: list[dict] = field(default_factory=list)
     elements: list[Element] = field(default_factory=list)
+    tabular_assets: list[TabularAsset] = field(default_factory=list)
 
     # OKF v0.2 trust family defaults (honest — see docs/OKF_NOTES.md)
     okf_type: str = "Document"
@@ -74,6 +76,11 @@ class CanonicalDoc:
             "generated": self.okf_generated,
             "verified": self.okf_verified,
         }
+        if self.tabular_assets:
+            fm["assets"] = [
+                {"id": asset.id, "kind": asset.kind, "path": asset.sidecar_relpath}
+                for asset in self.tabular_assets
+            ]
         if obsidian_compat:
             sources = fm["sources"]
             if sources and isinstance(sources[0], dict):
@@ -143,6 +150,9 @@ def normalize(source: SourceFile, adapter_dict: dict, engine: str) -> CanonicalD
         if supplied_elements
         else [Element.create(sha, "paragraph", 0, body_md)]
     )
+    tabular_assets = [
+        _coerce_tabular_asset(asset, sha) for asset in adapter_dict.get("tabular_assets") or []
+    ]
 
     abs_path = source.path.resolve()
     source_uri = abs_path.as_uri()  # file:///C:/.../foo.docx on Windows
@@ -160,6 +170,7 @@ def normalize(source: SourceFile, adapter_dict: dict, engine: str) -> CanonicalD
         metadata=metadata,
         attachments=attachments,
         elements=elements,
+        tabular_assets=tabular_assets,
     )
 
 
@@ -190,6 +201,37 @@ def _coerce_element(value: Element | dict[str, Any], source_sha: str) -> Element
         text,
         source_location=value.get("source_location"),
         attributes=value.get("attributes"),
+    )
+
+
+def _coerce_tabular_asset(value: TabularAsset | dict[str, Any], source_sha: str) -> TabularAsset:
+    if isinstance(value, TabularAsset):
+        return value
+    if not isinstance(value, dict):
+        raise ValueError("invalid tabular asset")
+    kind = value.get("kind")
+    ordinal = value.get("ordinal")
+    columns = value.get("columns")
+    rows = value.get("rows")
+    provenance = value.get("provenance")
+    if (
+        not isinstance(kind, str)
+        or not isinstance(ordinal, int)
+        or not isinstance(columns, list)
+        or not isinstance(rows, list)
+        or not isinstance(provenance, dict)
+    ):
+        raise ValueError("invalid tabular asset")
+    return TabularAsset.create(
+        source_sha,
+        kind,
+        ordinal,
+        columns,
+        rows,
+        source_location=value.get("source_location"),
+        formula_cells=value.get("formula_cells") or (),
+        merged_ranges=value.get("merged_ranges") or (),
+        provenance=provenance,
     )
 
 

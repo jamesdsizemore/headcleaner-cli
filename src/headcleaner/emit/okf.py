@@ -12,6 +12,8 @@ See docs/OKF_NOTES.md for the contract and the honesty policy
 
 from __future__ import annotations
 
+import csv
+import json
 from pathlib import Path
 
 import yaml
@@ -48,8 +50,39 @@ def okf_relpath_for(doc: CanonicalDoc) -> Path:
 
 def write(doc: CanonicalDoc, output_root: Path, *, obsidian_compat: bool = False) -> Path:
     """Write the OKF concept file. Returns the absolute path."""
+    _write_tabular_assets(doc, output_root)
     rel = okf_relpath_for(doc)
     out_path = output_root / rel
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(render(doc, obsidian_compat=obsidian_compat), encoding="utf-8")
     return out_path
+
+
+def _write_tabular_assets(doc: CanonicalDoc, output_root: Path) -> None:
+    """Write table sidecars below the bundle root, never beside source files."""
+    for asset in doc.tabular_assets:
+        csv_path = output_root / asset.sidecar_relpath
+        csv_path.parent.mkdir(parents=True, exist_ok=True)
+        with csv_path.open("w", encoding="utf-8", newline="") as handle:
+            writer = csv.writer(handle, lineterminator="\n")
+            writer.writerow(asset.columns)
+            writer.writerows(asset.rows)
+        metadata_path = csv_path.with_suffix(".json")
+        metadata_path.write_text(
+            json.dumps(
+                {
+                    "id": asset.id,
+                    "kind": asset.kind,
+                    "source_location": asset.source_location,
+                    "formula_cells": asset.formula_cells,
+                    "merged_ranges": asset.merged_ranges,
+                    "provenance": asset.provenance,
+                    "sidecar_relpath": asset.sidecar_relpath,
+                },
+                ensure_ascii=False,
+                indent=2,
+                sort_keys=True,
+            )
+            + "\n",
+            encoding="utf-8",
+        )

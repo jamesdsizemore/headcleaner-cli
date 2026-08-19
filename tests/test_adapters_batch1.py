@@ -50,6 +50,15 @@ def test_csv_adapter_basic(tmp_path) -> None:
     assert "| Alice | 92 |" in body
     assert "| Bob | 87 |" in body
     assert "2 rows × 2 columns" in body
+    assert out["tabular_assets"] == [
+        {
+            "kind": "csv",
+            "ordinal": 0,
+            "columns": ["name", "score"],
+            "rows": [["Alice", "92"], ["Bob", "87"]],
+            "provenance": {"engine": "csv", "delimiter": ","},
+        }
+    ]
 
 
 def test_csv_adapter_handles_pipe_in_value(tmp_path) -> None:
