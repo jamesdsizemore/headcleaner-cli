@@ -143,7 +143,7 @@ def normalize(source: SourceFile, adapter_dict: dict, engine: str) -> CanonicalD
     metadata = adapter_dict.get("metadata") or {}
     attachments = adapter_dict.get("attachments") or []
 
-    sha = _sha256(source.path)
+    sha = adapter_dict.get("_source_sha256") or _sha256(source.path)
     supplied_elements = adapter_dict.get("elements")
     elements = (
         [_coerce_element(element, sha) for element in supplied_elements]
@@ -155,7 +155,7 @@ def normalize(source: SourceFile, adapter_dict: dict, engine: str) -> CanonicalD
     ]
 
     abs_path = source.path.resolve()
-    source_uri = abs_path.as_uri()  # file:///C:/.../foo.docx on Windows
+    source_uri = adapter_dict.get("_source_uri") or abs_path.as_uri()
 
     return CanonicalDoc(
         title=title,

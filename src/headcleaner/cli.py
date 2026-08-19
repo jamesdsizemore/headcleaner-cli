@@ -19,6 +19,7 @@ import click
 
 from . import __version__
 from .i18n import SUPPORTED_LOCALES, set_locale, tr
+from .policy import AttachmentLimits
 from .run import RunOptions, run_pipeline
 from .tui import run_with_tui
 
@@ -71,6 +72,34 @@ def cli() -> None:
     help="OCR preprocessing and Tesseract segmentation profile.",
 )
 @click.option("--ocr-lang", default=None, help="Comma-separated Tesseract language codes.")
+@click.option(
+    "--attachment-max-depth",
+    type=click.IntRange(min=1),
+    default=AttachmentLimits().max_depth,
+    show_default=True,
+    help="Maximum recursive attachment depth.",
+)
+@click.option(
+    "--attachment-max-members",
+    type=click.IntRange(min=1),
+    default=AttachmentLimits().max_members,
+    show_default=True,
+    help="Maximum attachment members per run.",
+)
+@click.option(
+    "--attachment-max-member-bytes",
+    type=click.IntRange(min=1),
+    default=AttachmentLimits().max_member_bytes,
+    show_default=True,
+    help="Maximum decompressed bytes for one attachment.",
+)
+@click.option(
+    "--attachment-max-total-bytes",
+    type=click.IntRange(min=1),
+    default=AttachmentLimits().max_total_bytes,
+    show_default=True,
+    help="Maximum total decompressed attachment bytes per run.",
+)
 @click.option(
     "--officecli-timeout",
     type=int,
@@ -212,6 +241,10 @@ def convert(
     ocr: bool,
     ocr_profile: str,
     ocr_lang: str | None,
+    attachment_max_depth: int,
+    attachment_max_members: int,
+    attachment_max_member_bytes: int,
+    attachment_max_total_bytes: int,
     officecli_timeout: int,
     include: tuple[str, ...],
     exclude: tuple[str, ...],
@@ -250,6 +283,15 @@ def convert(
     requested_ocr_languages = tuple(
         code.strip() for code in (ocr_lang or "").split(",") if code.strip()
     )
+    try:
+        attachment_limits = AttachmentLimits(
+            max_depth=attachment_max_depth,
+            max_members=attachment_max_members,
+            max_member_bytes=attachment_max_member_bytes,
+            max_total_bytes=attachment_max_total_bytes,
+        )
+    except ValueError as error:
+        raise click.UsageError(f"invalid attachment limits: {error}") from error
     if ocr:
         from .ocr import get_profile, installed_languages, validate_requested_languages
 
@@ -284,6 +326,7 @@ def convert(
         ocr=ocr,
         ocr_profile=ocr_profile,
         ocr_languages=requested_ocr_languages,
+        attachment_limits=attachment_limits,
         include_glob=list(include) if include else None,
         exclude_glob=list(exclude) if exclude else None,
         continue_on_error=not no_continue_on_error,

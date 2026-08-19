@@ -7,8 +7,12 @@ filename + size.
 
 from __future__ import annotations
 
+import mimetypes
+from hashlib import sha256
 from pathlib import Path
 
+from ..attachments import AttachmentIdentity
+from ..policy import AttachmentLimits
 from .base import Adapter
 
 try:
@@ -32,7 +36,10 @@ class MsgAdapter(Adapter):
     name = "msg"
     extensions = (".msg",)
 
-    def extract(self, source: Path) -> "Extracted":  # noqa: F821
+    def __init__(self, attachment_limits: AttachmentLimits | None = None) -> None:
+        self.attachment_limits = attachment_limits or AttachmentLimits()
+
+    def extract(self, source: Path) -> Extracted:  # noqa: F821
         if not HAS_EXTRACT_MSG:
             return {
                 "title": source.stem,
@@ -67,16 +74,62 @@ class MsgAdapter(Adapter):
             body = ""
 
         attachments = []
+        attachment_records: list[dict] = []
+        attachment_diagnostics: list[dict] = []
+        source_sha = sha256(source.read_bytes()).hexdigest()
+        total_bytes = 0
         try:
-            for att in msg.attachments or []:
+            for ordinal, att in enumerate(msg.attachments or []):
+                payload = getattr(att, "data", None) or b""
+                reason = None
+                if ordinal >= self.attachment_limits.max_members:
+                    reason = "max_members"
+                elif len(payload) > self.attachment_limits.max_member_bytes:
+                    reason = "max_member_bytes"
+                elif total_bytes + len(payload) > self.attachment_limits.max_total_bytes:
+                    reason = "max_total_bytes"
+                if reason is not None:
+                    attachment_diagnostics.append(
+                        {
+                            "code": "ATTACHMENT_QUARANTINED",
+                            "reason": reason,
+                            "ordinal": ordinal,
+                        }
+                    )
+                    continue
+                filename = (
+                    getattr(att, "longFilename", None) or getattr(att, "shortFilename", None) or ""
+                )
                 attachments.append(
                     {
-                        "filename": getattr(att, "longFilename", None)
-                        or getattr(att, "shortFilename", None)
-                        or "unknown",
-                        "size": len(att.data) if getattr(att, "data", None) else 0,
+                        "filename": filename or "unknown",
+                        "size": len(payload),
                     }
                 )
+                attachment_id = f"msg-part-{ordinal}"
+                media_type = getattr(att, "mimetype", None) or mimetypes.guess_type(filename)[0]
+                identity = AttachmentIdentity.from_payload(
+                    parent_source_sha256=source_sha,
+                    parent_attachment_id=attachment_id,
+                    child_ordinal=ordinal,
+                    original_filename=filename,
+                    media_type=media_type or "application/octet-stream",
+                    payload=payload,
+                )
+                attachment_records.append(
+                    {
+                        "attachment_id": attachment_id,
+                        "parent_source_sha256": source_sha,
+                        "parent_attachment_id": attachment_id,
+                        "child_ordinal": ordinal,
+                        "filename": identity.original_filename,
+                        "media_type": identity.media_type,
+                        "payload": payload,
+                        "source_uri": identity.source_uri,
+                        "sha256": identity.extracted_sha256,
+                    }
+                )
+                total_bytes += len(payload)
         except Exception:
             pass
 
@@ -110,4 +163,6 @@ class MsgAdapter(Adapter):
                 "date": date,
                 "attachment_count": len(attachments),
             },
+            "attachments": attachment_records,
+            "attachment_diagnostics": attachment_diagnostics,
         }

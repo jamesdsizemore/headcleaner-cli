@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import json
+import zipfile
+from email.message import EmailMessage
+from io import BytesIO
 from pathlib import Path
 
 import pytest
@@ -11,6 +14,8 @@ from headcleaner import router, run
 from headcleaner.emit.manifest import RunRecord
 from headcleaner.engine_plan import EngineCapability
 from headcleaner.engines.base import Adapter, AdapterError
+from headcleaner.engines.eml import EmlAdapter
+from headcleaner.policy import AttachmentLimits
 from headcleaner.run import RunOptions, run_pipeline
 
 
@@ -49,6 +54,145 @@ def test_run_pipeline_md_only(mixed_dir: Path, tmp_path: Path) -> None:
     record = run_pipeline(RunOptions(input_root=mixed_dir, output_root=out, fmt="md"))
     assert all(r.md_path for r in record.results)
     assert all(r.okf_path is None for r in record.results)
+
+
+@pytest.mark.parametrize("jobs", [1, 2])
+def test_run_pipeline_converts_safe_eml_attachment_as_logical_child(
+    tmp_path: Path, jobs: int
+) -> None:
+    (tmp_path / "mail.eml").write_bytes(
+        b'MIME-Version: 1.0\nContent-Type: multipart/mixed; boundary="BOUNDARY"\n\n'
+        b"--BOUNDARY\nContent-Type: text/plain\n\nParent\n"
+        b"--BOUNDARY\nContent-Type: text/plain\n"
+        b"Content-Disposition: attachment; filename=../child.txt\n\nChild\n"
+        b"--BOUNDARY--\n"
+    )
+
+    assert EmlAdapter().extract(tmp_path / "mail.eml")["attachments"]
+    assert router.get_adapter(tmp_path / "child.txt") is not None
+
+    out = tmp_path / "out"
+    record = run_pipeline(
+        RunOptions(
+            input_root=tmp_path,
+            output_root=out,
+            fmt="md",
+            requested_engine="eml",
+            jobs=jobs,
+        )
+    )
+
+    children = [result for result in record.results if result.relpath.startswith("_attachments/")]
+    assert children, [
+        (result.relpath, result.engine, result.status, result.error) for result in record.results
+    ]
+    child = children[0]
+    assert child.status == "ok", child
+    assert child.source_path.startswith("attachment:")
+    assert child.md_path is not None
+    assert "source: attachment:" in Path(child.md_path).read_text(encoding="utf-8")
+
+
+def test_run_pipeline_recurses_safe_zip_sibling_and_quarantines_traversal(tmp_path: Path) -> None:
+    archive_buffer = BytesIO()
+    with zipfile.ZipFile(archive_buffer, "w") as archive:
+        archive.writestr("../escape.txt", b"unsafe")
+        archive.writestr("safe.txt", b"safe child")
+    message = EmailMessage()
+    message["Subject"] = "Archive"
+    message.set_content("Parent")
+    message.add_attachment(
+        archive_buffer.getvalue(),
+        maintype="application",
+        subtype="zip",
+        filename="bundle.zip",
+    )
+    (tmp_path / "mail.eml").write_bytes(message.as_bytes())
+
+    out = tmp_path / "out"
+    record = run_pipeline(RunOptions(input_root=tmp_path, output_root=out, fmt="md"))
+
+    safe_children = [
+        result
+        for result in record.results
+        if result.engine == "txt" and result.relpath.startswith("_attachments/")
+    ]
+    quarantined = [
+        result
+        for result in record.results
+        if result.error and "ATTACHMENT_QUARANTINED" in result.error
+    ]
+    assert len(safe_children) == 1
+    assert safe_children[0].source_path.startswith("attachment:")
+    assert quarantined and "path_traversal" in quarantined[0].error
+    assert not (out / "_staging").exists()
+
+
+def test_run_pipeline_records_adapter_attachment_quarantine_on_parent(tmp_path: Path) -> None:
+    message = EmailMessage()
+    message["Subject"] = "Limited"
+    message.set_content("Parent")
+    message.add_attachment(b"too-large", maintype="text", subtype="plain", filename="large.txt")
+    (tmp_path / "mail.eml").write_bytes(message.as_bytes())
+
+    record = run_pipeline(
+        RunOptions(
+            input_root=tmp_path,
+            output_root=tmp_path / "out",
+            fmt="md",
+            attachment_limits=AttachmentLimits(
+                max_depth=2,
+                max_members=2,
+                max_member_bytes=4,
+                max_total_bytes=8,
+            ),
+        )
+    )
+
+    parent = next(result for result in record.results if result.relpath == "mail.eml")
+    assert [diagnostic.code for diagnostic in parent.diagnostics] == [
+        "ENGINE_ATTEMPT_SUCCEEDED",
+        "ATTACHMENT_QUARANTINED",
+    ]
+    assert parent.diagnostics[-1].evidence["reason"] == "max_member_bytes"
+
+
+def test_run_pipeline_enforces_recursive_email_depth_boundary(tmp_path: Path) -> None:
+    inner = EmailMessage()
+    inner["Subject"] = "Inner"
+    inner.set_content("Inner body")
+    inner.add_attachment(b"deep", maintype="text", subtype="plain", filename="deep.txt")
+    outer = EmailMessage()
+    outer["Subject"] = "Outer"
+    outer.set_content("Outer body")
+    outer.add_attachment(
+        inner.as_bytes(),
+        maintype="application",
+        subtype="octet-stream",
+        filename="inner.eml",
+    )
+    (tmp_path / "outer.eml").write_bytes(outer.as_bytes())
+
+    record = run_pipeline(
+        RunOptions(
+            input_root=tmp_path,
+            output_root=tmp_path / "out",
+            fmt="md",
+            attachment_limits=AttachmentLimits(
+                max_depth=1,
+                max_members=5,
+                max_member_bytes=1024 * 1024,
+                max_total_bytes=2 * 1024 * 1024,
+            ),
+        )
+    )
+
+    assert any(
+        result.engine == "eml" and result.source_path.startswith("attachment:")
+        for result in record.results
+    )
+    assert any(result.error == "ATTACHMENT_QUARANTINED: max_depth" for result in record.results)
+    assert not any(result.engine == "txt" for result in record.results)
 
 
 def test_run_pipeline_okf_only(mixed_dir: Path, tmp_path: Path) -> None:

@@ -13,16 +13,21 @@ import email
 import email.policy
 import re
 from email.message import Message
+from hashlib import sha256
 from pathlib import Path
 
 from markdownify import markdownify
 
+from ..attachments import AttachmentIdentity, AttachmentLimits
 from .base import Adapter, AdapterError
 
 
 class EmlAdapter(Adapter):
     name = "eml"
     extensions = {".eml"}
+
+    def __init__(self, attachment_limits: AttachmentLimits | None = None) -> None:
+        self.attachment_limits = attachment_limits or AttachmentLimits()
 
     def extract(self, source: Path, *, progress=None) -> dict:
         try:
@@ -35,6 +40,9 @@ class EmlAdapter(Adapter):
         headers_md = self._render_headers(msg)
         body_md = self._render_body(msg)
         attachments_md = self._render_attachments(msg)
+        attachments, attachment_diagnostics = self._extract_attachments(
+            msg, sha256(raw).hexdigest()
+        )
 
         full_md = "\n\n".join(s for s in (headers_md, body_md, attachments_md) if s)
 
@@ -51,7 +59,8 @@ class EmlAdapter(Adapter):
                 "message_id": str(msg.get("Message-ID", "")),
                 "byte_size": source.stat().st_size,
             },
-            "attachments": [],
+            "attachments": attachments,
+            "attachment_diagnostics": attachment_diagnostics,
         }
 
     @staticmethod
@@ -103,3 +112,62 @@ class EmlAdapter(Adapter):
         if not attachments:
             return ""
         return "## Attachments\n\n" + "\n".join(attachments) + "\n"
+
+    def _extract_attachments(
+        self, msg: Message, parent_source_sha256: str
+    ) -> tuple[list[dict], list[dict]]:
+        """Expose attachment bytes with deterministic, non-filesystem child provenance."""
+        if not msg.is_multipart():
+            return [], []
+        attachments: list[dict] = []
+        diagnostics: list[dict] = []
+        total_bytes = 0
+        for ordinal, part in enumerate(msg.iter_attachments()):
+            payload = part.get_payload(decode=True) or b""
+            if ordinal >= self.attachment_limits.max_members:
+                diagnostics.append(
+                    {"code": "ATTACHMENT_QUARANTINED", "reason": "max_members", "ordinal": ordinal}
+                )
+                continue
+            if len(payload) > self.attachment_limits.max_member_bytes:
+                diagnostics.append(
+                    {
+                        "code": "ATTACHMENT_QUARANTINED",
+                        "reason": "max_member_bytes",
+                        "ordinal": ordinal,
+                    }
+                )
+                continue
+            if total_bytes + len(payload) > self.attachment_limits.max_total_bytes:
+                diagnostics.append(
+                    {
+                        "code": "ATTACHMENT_QUARANTINED",
+                        "reason": "max_total_bytes",
+                        "ordinal": ordinal,
+                    }
+                )
+                continue
+            attachment_id = f"eml-part-{ordinal}"
+            identity = AttachmentIdentity.from_payload(
+                parent_source_sha256=parent_source_sha256,
+                parent_attachment_id=attachment_id,
+                child_ordinal=ordinal,
+                original_filename=part.get_filename() or "",
+                media_type=part.get_content_type(),
+                payload=payload,
+            )
+            attachments.append(
+                {
+                    "attachment_id": attachment_id,
+                    "parent_source_sha256": parent_source_sha256,
+                    "parent_attachment_id": attachment_id,
+                    "child_ordinal": ordinal,
+                    "filename": identity.original_filename,
+                    "media_type": identity.media_type,
+                    "payload": payload,
+                    "source_uri": identity.source_uri,
+                    "sha256": identity.extracted_sha256,
+                }
+            )
+            total_bytes += len(payload)
+        return attachments, diagnostics

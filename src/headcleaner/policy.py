@@ -41,6 +41,23 @@ class PolicyFinding:
     message: str
 
 
+@dataclass(frozen=True)
+class AttachmentLimits:
+    """Central, required bounds for recursive attachment handling."""
+
+    max_depth: int = 2
+    max_members: int = 100
+    max_member_bytes: int = 25 * 1024 * 1024
+    max_total_bytes: int = 100 * 1024 * 1024
+
+    def __post_init__(self) -> None:
+        for field_name in ("max_depth", "max_members", "max_member_bytes", "max_total_bytes"):
+            if getattr(self, field_name) <= 0:
+                raise ValueError(f"{field_name} must be positive")
+        if self.max_total_bytes < self.max_member_bytes:
+            raise ValueError("max_total_bytes must be at least max_member_bytes")
+
+
 @dataclass
 class Policy:
     require_type: str = "*"
@@ -50,7 +67,7 @@ class Policy:
     require_sha256: bool = False
 
     @classmethod
-    def load(cls, path: Path) -> "Policy":
+    def load(cls, path: Path) -> Policy:
         data = tomllib.loads(path.read_text(encoding="utf-8"))
         pol = data.get("policy", {})
         return cls(
@@ -95,8 +112,6 @@ def evaluate(policy: Policy, bundle_root: Path) -> list[PolicyFinding]:
             continue
         if "type" not in fm:
             continue  # not an OKF concept
-
-        rel = str(md_path.relative_to(bundle_root))
 
         # type
         ctype = str(fm.get("type", ""))

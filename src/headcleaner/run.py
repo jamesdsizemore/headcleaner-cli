@@ -19,14 +19,17 @@ from __future__ import annotations
 
 import datetime as _dt
 import json
+import mimetypes
 import multiprocessing
 import shutil
 import time
 from collections.abc import Callable
 from concurrent.futures import ProcessPoolExecutor, as_completed
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
+from . import router
+from .attachments import AttachmentBudget, expand_archive_payload, is_archive_payload
 from .diagnostics import Diagnostic, ExtractionMetrics, compute_confidence
 from .emit import manifest as manifest_emit
 from .emit import markdown as md_emit
@@ -37,6 +40,7 @@ from .engine_plan import build_engine_plan
 from .engines.base import Adapter, AdapterError
 from .jsonlog import emit_json_event  # Batch 4 / Eng #43
 from .normalize import normalize
+from .policy import AttachmentLimits
 from .router import engine_capabilities, get_adapter
 from .walk import walk
 
@@ -49,6 +53,7 @@ class RunOptions:
     ocr: bool = False
     ocr_profile: str = "balanced"
     ocr_languages: tuple[str, ...] = ()
+    attachment_limits: AttachmentLimits = field(default_factory=AttachmentLimits)
     include_glob: list[str] | None = None
     exclude_glob: list[str] | None = None
     continue_on_error: bool = True
@@ -144,6 +149,202 @@ def _per_message_relpath(source: Path, relpath: str, idx: int) -> str:
     return f"{parent}/{source.stem}-{idx:04d}.md"
 
 
+def _record_attachment_quarantine(
+    opts: RunOptions,
+    record: RunRecord,
+    attachment: dict,
+    diagnostic: dict,
+) -> None:
+    source_sha = str(attachment.get("sha256") or "")
+    ordinal = int(diagnostic.get("ordinal", attachment.get("child_ordinal", 0)))
+    reason = str(diagnostic.get("reason") or "unsafe")
+    raw_evidence = diagnostic.get("evidence") or {}
+    evidence = {"reason": reason, "ordinal": ordinal}
+    if isinstance(raw_evidence, dict):
+        evidence.update(
+            {str(key): value for key, value in raw_evidence.items() if isinstance(value, str | int)}
+        )
+    _finish_result(
+        opts,
+        record,
+        FileResult(
+            source_path=str(attachment.get("source_uri") or "attachment:unknown"),
+            relpath=f"_attachments/quarantine/{source_sha[:16] or 'unknown'}/{ordinal:04d}",
+            engine=None,
+            sha256=source_sha or None,
+            md_path=None,
+            okf_path=None,
+            status="skipped",
+            error=f"ATTACHMENT_QUARANTINED: {reason}",
+            diagnostics=[
+                Diagnostic(
+                    code="ATTACHMENT_QUARANTINED",
+                    severity="warning",
+                    message=f"Attachment quarantined: {reason}",
+                    evidence=evidence,
+                )
+            ],
+        ),
+    )
+
+
+def _emit_attachment_children(
+    opts: RunOptions,
+    record: RunRecord,
+    parent_extracted: dict,
+    md_root: Path,
+    okf_root: Path,
+    *,
+    depth: int = 1,
+    budget: AttachmentBudget | None = None,
+    already_counted: bool = False,
+) -> None:
+    """Bound, inspect, stage, and recursively dispatch logical attachment children."""
+    attachments = parent_extracted.get("attachments") or []
+    staging_root = opts.output_root / "_staging" / "attachments"
+    active_budget = budget or AttachmentBudget()
+    seen_ids: set[str] = set()
+    for attachment in attachments:
+        payload = attachment.get("payload")
+        source_uri = attachment.get("source_uri")
+        source_sha = attachment.get("sha256")
+        ordinal = attachment.get("child_ordinal")
+        attachment_id = str(attachment.get("attachment_id") or "")
+        if attachment_id in seen_ids:
+            _record_attachment_quarantine(
+                opts,
+                record,
+                attachment,
+                {"reason": "duplicate_member_id", "ordinal": ordinal or 0},
+            )
+            continue
+        seen_ids.add(attachment_id)
+        if (
+            not isinstance(payload, bytes)
+            or not isinstance(source_uri, str)
+            or not isinstance(source_sha, str)
+            or not isinstance(ordinal, int)
+        ):
+            _record_attachment_quarantine(
+                opts,
+                record,
+                attachment,
+                {"reason": "invalid_attachment_record", "ordinal": 0},
+            )
+            continue
+        if depth > opts.attachment_limits.max_depth:
+            _record_attachment_quarantine(
+                opts,
+                record,
+                attachment,
+                {"reason": "max_depth", "ordinal": ordinal, "evidence": {"depth": depth}},
+            )
+            continue
+        if not already_counted:
+            reason = None
+            if active_budget.members >= opts.attachment_limits.max_members:
+                reason = "max_members"
+            elif len(payload) > opts.attachment_limits.max_member_bytes:
+                reason = "max_member_bytes"
+            elif active_budget.total_bytes + len(payload) > opts.attachment_limits.max_total_bytes:
+                reason = "max_total_bytes"
+            if reason is not None:
+                _record_attachment_quarantine(
+                    opts, record, attachment, {"reason": reason, "ordinal": ordinal}
+                )
+                continue
+            active_budget.members += 1
+            active_budget.total_bytes += len(payload)
+
+        if is_archive_payload(attachment):
+            children, diagnostics = expand_archive_payload(
+                attachment,
+                opts.attachment_limits,
+                depth=depth + 1,
+                budget=active_budget,
+            )
+            for diagnostic in diagnostics:
+                _record_attachment_quarantine(opts, record, attachment, diagnostic)
+            if children:
+                _emit_attachment_children(
+                    opts,
+                    record,
+                    {"attachments": children},
+                    md_root,
+                    okf_root,
+                    depth=depth + 1,
+                    budget=active_budget,
+                    already_counted=True,
+                )
+            continue
+
+        suffix = Path(str(attachment.get("filename") or "")).suffix.lower()
+        if not suffix:
+            suffix = mimetypes.guess_extension(str(attachment.get("media_type") or "")) or ".bin"
+        relpath = f"_attachments/{source_sha[:16]}/{ordinal:04d}{suffix}"
+        staged = staging_root / source_sha[:16] / f"{ordinal:04d}{suffix}"
+        staged.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            staged.write_bytes(payload)
+            adapter = router.get_adapter(staged)
+            if adapter is None:
+                _finish_result(
+                    opts,
+                    record,
+                    FileResult(
+                        source_path=source_uri,
+                        relpath=relpath,
+                        engine=None,
+                        sha256=source_sha,
+                        md_path=None,
+                        okf_path=None,
+                        status="skipped",
+                        error="unsupported attachment type",
+                    ),
+                )
+                continue
+            try:
+                pairs = _run_adapter(adapter, staged, relpath, opts.ocr, None, opts=opts)
+            except AdapterError as error:
+                _finish_result(
+                    opts,
+                    record,
+                    FileResult(
+                        source_path=source_uri,
+                        relpath=relpath,
+                        engine=adapter.name,
+                        sha256=source_sha,
+                        md_path=None,
+                        okf_path=None,
+                        status="failed",
+                        error=str(error),
+                    ),
+                )
+                continue
+            for child_relpath, extracted in pairs:
+                extracted["_source_uri"] = source_uri
+                extracted["_source_sha256"] = source_sha
+                result = _emit_one(
+                    opts, record, staged, child_relpath, adapter.name, extracted, md_root, okf_root
+                )
+                result.source_path = source_uri
+                result.sha256 = source_sha
+                _finish_result(opts, record, result)
+                _emit_attachment_children(
+                    opts,
+                    record,
+                    extracted,
+                    md_root,
+                    okf_root,
+                    depth=depth + 1,
+                    budget=active_budget,
+                )
+        finally:
+            staged.unlink(missing_ok=True)
+    if depth == 1:
+        shutil.rmtree(opts.output_root / "_staging", ignore_errors=True)
+
+
 def _run_adapter(
     adapter,
     source: Path,
@@ -162,6 +363,8 @@ def _run_adapter(
     (see headcleaner.heuristics) is applied to each extracted body_md before
     returning.
     """
+    if opts is not None and hasattr(adapter, "attachment_limits"):
+        adapter.attachment_limits = opts.attachment_limits
     # Honor the OCR flag (PDF adapter only)
     if adapter.name == "pdf" and ocr and hasattr(adapter, "ocr"):
         adapter.ocr = True
@@ -302,6 +505,19 @@ def _emit_one(
         status="skipped",
         diagnostics=list(engine_diagnostics or []),
     )
+    for attachment_diagnostic in extracted.get("attachment_diagnostics") or []:
+        if not isinstance(attachment_diagnostic, dict):
+            continue
+        reason = str(attachment_diagnostic.get("reason") or "unsafe")
+        ordinal = int(attachment_diagnostic.get("ordinal") or 0)
+        result.diagnostics.append(
+            Diagnostic(
+                code="ATTACHMENT_QUARANTINED",
+                severity="warning",
+                message=f"Attachment quarantined: {reason}",
+                evidence={"reason": reason, "ordinal": ordinal},
+            )
+        )
     try:
         doc = normalize(_make_sf(source, msg_rp), extracted, engine=engine_name)
     except ValueError as error:
@@ -348,7 +564,7 @@ def _emit_one(
 # ---- Per-file worker (used by ProcessPoolExecutor) ---------------------------
 
 
-def _process_one(args: tuple[str, str, str, str, bool, bool]) -> list[dict]:
+def _process_one(args: tuple) -> list[dict]:
     """Worker for parallel mode.
 
     Returns a list of FileResult-like dicts (orchestrator converts back).
@@ -356,7 +572,18 @@ def _process_one(args: tuple[str, str, str, str, bool, bool]) -> list[dict]:
     side; the worker only confirms the source is processable and returns
     the extracted list of bodies for the orchestrator to emit.
     """
-    source_str, relpath, engine_name, fmt, ocr, clean_md, requested_engine = args
+    (
+        source_str,
+        relpath,
+        engine_name,
+        fmt,
+        ocr,
+        clean_md,
+        requested_engine,
+        ocr_profile,
+        ocr_languages,
+        attachment_limits,
+    ) = args
     from .engines.base import AdapterError
     from .router import get_adapter as _get_adapter
 
@@ -366,6 +593,9 @@ def _process_one(args: tuple[str, str, str, str, bool, bool]) -> list[dict]:
 
     _opts = _OptsShim()
     _opts.clean_md = clean_md
+    _opts.ocr_profile = ocr_profile
+    _opts.ocr_languages = ocr_languages
+    _opts.attachment_limits = attachment_limits
 
     source = Path(source_str)
     started = time.perf_counter()
@@ -551,6 +781,8 @@ def _process_sequential(
         for result in emitted:
             result.duration_seconds = elapsed_per_result
             _finish_result(opts, record, result)
+        for _msg_rp, extracted in pairs:
+            _emit_attachment_children(opts, record, extracted, md_root, okf_root)
 
 
 # ---- Parallel pipeline (--jobs N) ------------------------------------------
@@ -622,6 +854,9 @@ def _process_parallel(
                 opts.ocr,
                 opts.clean_md,
                 opts.requested_engine,
+                opts.ocr_profile,
+                opts.ocr_languages,
+                opts.attachment_limits,
             )
         )
 
@@ -664,6 +899,14 @@ def _process_parallel(
                         duration_seconds=r_dict.get("duration_seconds"),
                     )
                 _finish_result(opts, record, result)
+                if r_dict["status"] == "ok" and "_extracted" in r_dict:
+                    _emit_attachment_children(
+                        opts,
+                        record,
+                        r_dict["_extracted"],
+                        md_root,
+                        okf_root,
+                    )
 
 
 # ---- Shared helpers ---------------------------------------------------------
@@ -700,6 +943,9 @@ def run_pipeline(opts: RunOptions) -> RunRecord:
         format=opts.fmt,
         options={
             "ocr": opts.ocr,
+            "ocr_profile": opts.ocr_profile,
+            "ocr_languages": list(opts.ocr_languages),
+            "attachment_limits": asdict(opts.attachment_limits),
             "include_glob": opts.include_glob,
             "exclude_glob": opts.exclude_glob,
             "continue_on_error": opts.continue_on_error,

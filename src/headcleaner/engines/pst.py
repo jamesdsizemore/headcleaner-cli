@@ -31,8 +31,11 @@ import shutil
 import subprocess
 import tempfile
 from collections.abc import Callable, Mapping
+from hashlib import sha256
 from pathlib import Path
 
+from ..attachments import AttachmentIdentity
+from ..policy import AttachmentLimits
 from .base import Adapter, AdapterError
 
 _READPST_NAMES = ("readpst", "readpst.exe")
@@ -165,7 +168,67 @@ def _first_text(msg: email.message.Message) -> str:
         return payload.decode("utf-8", errors="replace")
 
 
-def _msg_to_concept_dict(msg: email.message.Message, source: Path, idx: int) -> dict:
+def _message_attachments(
+    msg: email.message.Message,
+    source: Path,
+    message_index: int,
+    limits: AttachmentLimits,
+) -> tuple[list[dict], list[dict]]:
+    source_sha = sha256(source.read_bytes()).hexdigest()
+    parts = (
+        list(msg.iter_attachments())
+        if hasattr(msg, "iter_attachments")
+        else [part for part in msg.walk() if part.get_content_disposition() == "attachment"]
+    )
+    attachments: list[dict] = []
+    diagnostics: list[dict] = []
+    total_bytes = 0
+    for ordinal, part in enumerate(parts):
+        payload = part.get_payload(decode=True) or b""
+        reason = None
+        if ordinal >= limits.max_members:
+            reason = "max_members"
+        elif len(payload) > limits.max_member_bytes:
+            reason = "max_member_bytes"
+        elif total_bytes + len(payload) > limits.max_total_bytes:
+            reason = "max_total_bytes"
+        if reason is not None:
+            diagnostics.append(
+                {"code": "ATTACHMENT_QUARANTINED", "reason": reason, "ordinal": ordinal}
+            )
+            continue
+        attachment_id = f"pst-message-{message_index}-part-{ordinal}"
+        identity = AttachmentIdentity.from_payload(
+            parent_source_sha256=source_sha,
+            parent_attachment_id=attachment_id,
+            child_ordinal=ordinal,
+            original_filename=part.get_filename() or "",
+            media_type=part.get_content_type(),
+            payload=payload,
+        )
+        attachments.append(
+            {
+                "attachment_id": attachment_id,
+                "parent_source_sha256": source_sha,
+                "parent_attachment_id": attachment_id,
+                "child_ordinal": ordinal,
+                "filename": identity.original_filename,
+                "media_type": identity.media_type,
+                "payload": payload,
+                "source_uri": identity.source_uri,
+                "sha256": identity.extracted_sha256,
+            }
+        )
+        total_bytes += len(payload)
+    return attachments, diagnostics
+
+
+def _msg_to_concept_dict(
+    msg: email.message.Message,
+    source: Path,
+    idx: int,
+    attachment_limits: AttachmentLimits | None = None,
+) -> dict:
     """Convert one email.message.Message into the canonical Adapter output dict."""
     subject = (msg.get("Subject") or "(no subject)").strip()
     if isinstance(subject, str):
@@ -176,7 +239,6 @@ def _msg_to_concept_dict(msg: email.message.Message, source: Path, idx: int) -> 
     message_id = (msg.get("Message-ID") or "").strip()
 
     body = _first_text(msg)
-    # Strip common HTML tags if no plaintext was found
     if "<html" in body.lower() or "<p>" in body.lower():
         body = re.sub(r"<[^>]+>", " ", body)
         body = re.sub(r"\s+", " ", body).strip()
@@ -191,13 +253,16 @@ def _msg_to_concept_dict(msg: email.message.Message, source: Path, idx: int) -> 
     if message_id:
         rows.append(("Message-ID", message_id))
     body_md += "| Field | Value |\n|---|---|\n"
-    for k, v in rows:
-        if v:
-            body_md += f"| **{k}** | {v} |\n"
+    for key, value in rows:
+        if value:
+            body_md += f"| **{key}** | {value} |\n"
     body_md += "\n"
     if body.strip():
         body_md += f"\n{body}\n"
 
+    attachments, attachment_diagnostics = _message_attachments(
+        msg, source, idx, attachment_limits or AttachmentLimits()
+    )
     return {
         "title": f"{source.stem} — {subject}",
         "body_md": body_md,
@@ -212,7 +277,8 @@ def _msg_to_concept_dict(msg: email.message.Message, source: Path, idx: int) -> 
             "message_id": message_id,
             "message_index": idx,
         },
-        "attachments": [],
+        "attachments": attachments,
+        "attachment_diagnostics": attachment_diagnostics,
     }
 
 
@@ -220,7 +286,8 @@ class PstAdapter(Adapter):
     name = "pst"
     extensions = {".pst"}
 
-    def __init__(self) -> None:
+    def __init__(self, attachment_limits: AttachmentLimits | None = None) -> None:
+        self.attachment_limits = attachment_limits or AttachmentLimits()
         try:
             import libpff  # noqa: F401
 
@@ -261,7 +328,7 @@ class PstAdapter(Adapter):
                     progress(i, total)
                 except Exception:
                     pass
-            out.append(_msg_to_concept_dict(msg, source, i))
+            out.append(_msg_to_concept_dict(msg, source, i, self.attachment_limits))
         return out
 
     def _extract_via_libpff(
