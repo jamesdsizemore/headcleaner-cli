@@ -99,12 +99,7 @@ def run_benchmark(
         if json.loads(baseline.read_text(encoding="utf-8")) != baseline_report:
             raise ValueError("metric regression against baseline")
     failed_metrics = sorted(
-        {
-            name
-            for row in rows
-            for name, value in row["metrics"].items()
-            if value < 1.0
-        }
+        {name for row in rows for name, value in row["metrics"].items() if value < 1.0}
     )
     if failed_metrics:
         raise ValueError(f"metric regression: {', '.join(failed_metrics)}")

@@ -10,6 +10,7 @@ After a successful run, write `<output>/REPORT.md` with per-format stats:
 Designed for org-wide adoption dashboards — a quick scan of the report
 shows whether the conversion is healthy.
 """
+
 from __future__ import annotations
 
 import datetime as _dt
@@ -87,9 +88,7 @@ def build_report(
     lines.append("")
 
     confidences = [
-        float(row["confidence"])
-        for row in rows
-        if isinstance(row.get("confidence"), (int, float))
+        float(row["confidence"]) for row in rows if isinstance(row.get("confidence"), (int, float))
     ]
     diagnostic_codes = Counter(
         diagnostic.get("code", "UNKNOWN")

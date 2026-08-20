@@ -24,11 +24,7 @@ class RenderVerification:
 
 def _anchors(path: Path) -> tuple[str, ...]:
     text = path.read_text(encoding="utf-8")
-    return tuple(
-        re.sub(r"^#+\s*", "", line).strip()
-        for line in text.splitlines()
-        if line.strip()
-    )
+    return tuple(re.sub(r"^#+\s*", "", line).strip() for line in text.splitlines() if line.strip())
 
 
 def verify_render(
@@ -41,18 +37,31 @@ def verify_render(
     supported = {".txt", ".md"}
     if source.suffix.lower() not in supported or output.suffix.lower() not in supported:
         return RenderVerification(
-            source_ref=str(source), output_ref=str(output), renderer=None,
-            page_results=(), aggregate={},
+            source_ref=str(source),
+            output_ref=str(output),
+            renderer=None,
+            page_results=(),
+            aggregate={},
             warnings=("No compatible renderers are registered for these artifacts.",),
             status="unavailable",
         )
 
     matches = _anchors(source) == _anchors(output)
-    page_results = ({"page_index": 0, "dimensions": None, "text_anchors_match": matches,
-                     "embedded_image_hashes_match": None, "diagnostic_codes": ()},)
+    page_results = (
+        {
+            "page_index": 0,
+            "dimensions": None,
+            "text_anchors_match": matches,
+            "embedded_image_hashes_match": None,
+            "diagnostic_codes": (),
+        },
+    )
     report = RenderVerification(
-        source_ref=str(source), output_ref=str(output), renderer="text-structural",
-        page_results=page_results, aggregate={"text_anchors_match": matches},
+        source_ref=str(source),
+        output_ref=str(output),
+        renderer="text-structural",
+        page_results=page_results,
+        aggregate={"text_anchors_match": matches},
         warnings=() if matches else ("Text anchors differ; review fidelity.",),
         status="ok",
     )
