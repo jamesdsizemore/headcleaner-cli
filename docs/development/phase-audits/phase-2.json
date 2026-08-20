@@ -5,7 +5,7 @@
     {
       "path": "README.md",
       "disposition": "updated",
-      "evidence": "Updated as the Phase 2 root navigation and contributor entry point; validated by scripts/verify_docs.py local-link and anchor audit."
+      "evidence": "Updated as the Phase 2 root navigation and contributor entry point; validated by scripts/verify_docs.py local-link and anchor audit. Phase 2 implementation was published in bed7648 and remote SHA parity was verified."
     },
     {
       "path": "docs/DOCS_REWRITE_TRACKER.md",

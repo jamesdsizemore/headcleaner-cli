@@ -14,7 +14,7 @@ This is the append-only record of implemented work and its verification. Before 
   - Ruff check and format check: all 34 changed Python files passed.
   - `uv lock --check` and `git diff --check`: passed.
 - **Portable-kit evidence:** governance-kit tests, Python compilation, and AGY/Claude plugin-manifest validation passed.
-- **Commit rule:** no commit was created. Any future commit must stage this file and the current phase audit; the versioned pre-commit hook enforces it.
+- **Publication:** `bed7648` (`feat(phase2): add cited knowledge workflows and governance`) was pushed to `origin/main`; local and remote SHA parity was verified.
 
 ## Commit audit template
 
