@@ -1,0 +1,391 @@
+{
+  "phase": "phase-2",
+  "status": "complete",
+  "entries": [
+    {
+      "path": "README.md",
+      "disposition": "updated",
+      "evidence": "Updated as the Phase 2 root navigation and contributor entry point; validated by scripts/verify_docs.py local-link and anchor audit."
+    },
+    {
+      "path": "docs/DOCS_REWRITE_TRACKER.md",
+      "disposition": "updated",
+      "evidence": "Corrected stale rewrite-status claims after Phase 2 warning remediation and linked the authoritative phase audit/history evidence."
+    },
+    {
+      "path": "docs/developer/architecture.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed against the delivered Phase 2 implementation surface and active documentation link/anchor validation."
+    },
+    {
+      "path": "docs/developer/canonical-model.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed against the delivered Phase 2 implementation surface and active documentation link/anchor validation."
+    },
+    {
+      "path": "docs/developer/chunking-and-indexing.md",
+      "disposition": "updated",
+      "evidence": "Replaced the stale rebuild-alias claim with the tested transactional hash-differential, in-place trust-state reconciliation contract."
+    },
+    {
+      "path": "docs/developer/ci-and-packaging.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed against the delivered Phase 2 implementation surface and active documentation link/anchor validation."
+    },
+    {
+      "path": "docs/developer/claims-and-policy.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed against the delivered Phase 2 implementation surface and active documentation link/anchor validation."
+    },
+    {
+      "path": "docs/developer/coding-standards.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed against the delivered Phase 2 implementation surface and active documentation link/anchor validation."
+    },
+    {
+      "path": "docs/developer/configuration-development.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed against the delivered Phase 2 implementation surface and active documentation link/anchor validation."
+    },
+    {
+      "path": "docs/developer/contributor-onboarding.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed against the delivered Phase 2 implementation surface and active documentation link/anchor validation."
+    },
+    {
+      "path": "docs/developer/debugging-guide.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed against the delivered Phase 2 implementation surface and active documentation link/anchor validation."
+    },
+    {
+      "path": "docs/developer/embeddings-and-vectors.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed against the delivered Phase 2 implementation surface and active documentation link/anchor validation."
+    },
+    {
+      "path": "docs/developer/graph-development.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed against the delivered Phase 2 implementation surface and active documentation link/anchor validation."
+    },
+    {
+      "path": "docs/developer/mcp-development.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed against the delivered Phase 2 implementation surface and active documentation link/anchor validation."
+    },
+    {
+      "path": "docs/developer/routing-and-fallback.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed against the delivered Phase 2 implementation surface and active documentation link/anchor validation."
+    },
+    {
+      "path": "docs/developer/serve-development.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed against the delivered Phase 2 implementation surface and active documentation link/anchor validation."
+    },
+    {
+      "path": "docs/developer/source-tree.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed against the delivered Phase 2 implementation surface and active documentation link/anchor validation."
+    },
+    {
+      "path": "docs/developer/sync-and-watch.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed against the delivered Phase 2 implementation surface and active documentation link/anchor validation."
+    },
+    {
+      "path": "docs/developer/testing-guide.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed against the delivered Phase 2 implementation surface and active documentation link/anchor validation."
+    },
+    {
+      "path": "docs/developer/tool-and-engine-development.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed against the delivered Phase 2 implementation surface and active documentation link/anchor validation."
+    },
+    {
+      "path": "docs/development/ACTIVE_PHASE.md",
+      "disposition": "updated",
+      "evidence": "Updated for Phase 2 documentation-governance workflow and reviewed by the active-document validator."
+    },
+    {
+      "path": "docs/development/DOCUMENTATION_GOVERNANCE.md",
+      "disposition": "updated",
+      "evidence": "Updated for Phase 2 documentation-governance workflow and reviewed by the active-document validator."
+    },
+    {
+      "path": "docs/development/DOCUMENTATION_INVENTORY.md",
+      "disposition": "updated",
+      "evidence": "Added the tracked active-document family matrix and its audit/commit reconciliation contract."
+    },
+    {
+      "path": "docs/development/README.md",
+      "disposition": "updated",
+      "evidence": "Linked the new documentation inventory as the human-readable companion to exhaustive phase-audit JSON."
+    },
+    {
+      "path": "docs/diagrams/README.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed as active diagram documentation; referenced local assets and navigation validate."
+    },
+    {
+      "path": "docs/getting-started/first-run.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed as active user documentation after the Phase 2 rewrite; local targets and anchors validate."
+    },
+    {
+      "path": "docs/getting-started/glossary.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed as active user documentation after the Phase 2 rewrite; local targets and anchors validate."
+    },
+    {
+      "path": "docs/getting-started/installation.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed as active user documentation after the Phase 2 rewrite; local targets and anchors validate."
+    },
+    {
+      "path": "docs/integrations/ci-overview.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed against the current integration surface and active documentation link/anchor validation."
+    },
+    {
+      "path": "docs/integrations/mcp-client-setup.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed against the current integration surface and active documentation link/anchor validation."
+    },
+    {
+      "path": "docs/integrations/mcp-overview.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed against the current integration surface and active documentation link/anchor validation."
+    },
+    {
+      "path": "docs/integrations/scripts-and-automation.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed against the current integration surface and active documentation link/anchor validation."
+    },
+    {
+      "path": "docs/integrations/serve-overview.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed against the current integration surface and active documentation link/anchor validation."
+    },
+    {
+      "path": "docs/maintainers/adr/0001-sqlite-fts5-as-local-baseline.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed against Phase 2 maintenance, trust, and compatibility policy; local targets and anchors validate."
+    },
+    {
+      "path": "docs/maintainers/adr/0002-okf-v0.2-as-canonical-format.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed against Phase 2 maintenance, trust, and compatibility policy; local targets and anchors validate."
+    },
+    {
+      "path": "docs/maintainers/adr/0003-human-pending-invariant.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed against Phase 2 maintenance, trust, and compatibility policy; local targets and anchors validate."
+    },
+    {
+      "path": "docs/maintainers/adr/0004-locked-dependency-policy.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed against Phase 2 maintenance, trust, and compatibility policy; local targets and anchors validate."
+    },
+    {
+      "path": "docs/maintainers/adr/0005-neon-palette-discipline.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed against Phase 2 maintenance, trust, and compatibility policy; local targets and anchors validate."
+    },
+    {
+      "path": "docs/maintainers/adr/0006-redacted-derivative-deferred.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed against Phase 2 maintenance, trust, and compatibility policy; local targets and anchors validate."
+    },
+    {
+      "path": "docs/maintainers/adr/0007-graph-bounded-vocabulary.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed against Phase 2 maintenance, trust, and compatibility policy; local targets and anchors validate."
+    },
+    {
+      "path": "docs/maintainers/adr/README.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed against Phase 2 maintenance, trust, and compatibility policy; local targets and anchors validate."
+    },
+    {
+      "path": "docs/maintainers/documentation-style-guide.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed against Phase 2 maintenance, trust, and compatibility policy; local targets and anchors validate."
+    },
+    {
+      "path": "docs/maintainers/incident-and-security.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed against Phase 2 maintenance, trust, and compatibility policy; local targets and anchors validate."
+    },
+    {
+      "path": "docs/maintainers/index.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed against Phase 2 maintenance, trust, and compatibility policy; local targets and anchors validate."
+    },
+    {
+      "path": "docs/maintainers/support-runbook.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed against Phase 2 maintenance, trust, and compatibility policy; local targets and anchors validate."
+    },
+    {
+      "path": "docs/maintainers/versioning-and-compatibility.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed against Phase 2 maintenance, trust, and compatibility policy; local targets and anchors validate."
+    },
+    {
+      "path": "docs/reference/cli-reference.md",
+      "disposition": "updated",
+      "evidence": "Updated index update command guidance for deleted/changed reconciliation, metadata refresh, FTS-row preservation, and rebuild fallback."
+    },
+    {
+      "path": "docs/reference/compatibility.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed against the current user-facing Phase 2 command and result contract; local targets and anchors validate."
+    },
+    {
+      "path": "docs/reference/configuration-reference.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed against the current user-facing Phase 2 command and result contract; local targets and anchors validate."
+    },
+    {
+      "path": "docs/reference/engine-directory.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed against the current user-facing Phase 2 command and result contract; local targets and anchors validate."
+    },
+    {
+      "path": "docs/reference/environment-variables.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed against the current user-facing Phase 2 command and result contract; local targets and anchors validate."
+    },
+    {
+      "path": "docs/reference/index.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed against the current user-facing Phase 2 command and result contract; local targets and anchors validate."
+    },
+    {
+      "path": "docs/reference/mcp-tool-reference.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed against the current user-facing Phase 2 command and result contract; local targets and anchors validate."
+    },
+    {
+      "path": "docs/reference/result-reference.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed against the current user-facing Phase 2 command and result contract; local targets and anchors validate."
+    },
+    {
+      "path": "docs/reference/serve-api-reference.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed against the current user-facing Phase 2 command and result contract; local targets and anchors validate."
+    },
+    {
+      "path": "docs/safety/permissions.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed against the Phase 2 trust and safety invariants; local targets and anchors validate."
+    },
+    {
+      "path": "docs/safety/privacy-and-data-handling.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed against the Phase 2 trust and safety invariants; local targets and anchors validate."
+    },
+    {
+      "path": "docs/safety/safety-overview.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed against the Phase 2 trust and safety invariants; local targets and anchors validate."
+    },
+    {
+      "path": "docs/safety/security-model.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed against the Phase 2 trust and safety invariants; local targets and anchors validate."
+    },
+    {
+      "path": "docs/schemas/README.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed as an authoritative, test-dependent schema contract; retained active and included in link/anchor validation."
+    },
+    {
+      "path": "docs/tutorials/ai-coding-assistant.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed as active user documentation after the Phase 2 rewrite; local targets and anchors validate."
+    },
+    {
+      "path": "docs/tutorials/ci-integration.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed as active user documentation after the Phase 2 rewrite; local targets and anchors validate."
+    },
+    {
+      "path": "docs/tutorials/email-and-attachments.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed as active user documentation after the Phase 2 rewrite; local targets and anchors validate."
+    },
+    {
+      "path": "docs/tutorials/first-10-minutes.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed as active user documentation after the Phase 2 rewrite; local targets and anchors validate."
+    },
+    {
+      "path": "docs/tutorials/index.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed as active user documentation after the Phase 2 rewrite; local targets and anchors validate."
+    },
+    {
+      "path": "docs/tutorials/local-search.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed as active user documentation after the Phase 2 rewrite; local targets and anchors validate."
+    },
+    {
+      "path": "docs/tutorials/pdf-and-ocr.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed as active user documentation after the Phase 2 rewrite; local targets and anchors validate."
+    },
+    {
+      "path": "docs/tutorials/python-project.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed as active user documentation after the Phase 2 rewrite; local targets and anchors validate."
+    },
+    {
+      "path": "docs/user-guide/checking-converted-output.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed as active user documentation after the Phase 2 rewrite; local targets and anchors validate."
+    },
+    {
+      "path": "docs/user-guide/citations-and-trust.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed as active user documentation after the Phase 2 rewrite; local targets and anchors validate."
+    },
+    {
+      "path": "docs/user-guide/everyday-workflow.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed as active user documentation after the Phase 2 rewrite; local targets and anchors validate."
+    },
+    {
+      "path": "docs/user-guide/faq.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed as active user documentation after the Phase 2 rewrite; local targets and anchors validate."
+    },
+    {
+      "path": "docs/user-guide/index.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed as active user documentation after the Phase 2 rewrite; local targets and anchors validate."
+    },
+    {
+      "path": "docs/user-guide/search-and-context.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed as active user documentation after the Phase 2 rewrite; local targets and anchors validate."
+    },
+    {
+      "path": "docs/user-guide/troubleshooting.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed as active user documentation after the Phase 2 rewrite; local targets and anchors validate."
+    },
+    {
+      "path": "docs/user-guide/understanding-results.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed as active user documentation after the Phase 2 rewrite; local targets and anchors validate."
+    },
+    {
+      "path": "docs/user-guide/working-with-ai-agents.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed as active user documentation after the Phase 2 rewrite; local targets and anchors validate."
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+# Documentation governance
+
+## Required delivery records
+
+Use the repository's `BACKLOG.md`, `ISSUES.md`, `MEMORY.md`, `DEVELOPMENT_HISTORY.md`, `DEPENDENCIES.md`, and `PINS.md` during implementation. Create a local, Git-ignored `.plans/` plan before multi-step work.
+
+## Required documentation audit
+
+Every phase considers root `README.md` and every active page under `docs/` (archives excluded). Create an audit, record an evidenced decision for each page, and verify it before claiming completion:
+
+```bash
+python scripts/verify_docs.py --write-audit-template <phase>
+python scripts/verify_docs.py --phase <phase>
+```
+
+Every commit stages `DEVELOPMENT_HISTORY.md` and the current phase audit. Install and honor the Git hook with `sh scripts/install-git-hooks.sh`; do not bypass it.

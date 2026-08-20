@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "headcleaner cited chunk v1",
+  "type": "object",
+  "required": ["id", "concept_id", "source_sha256", "element_ids", "ordinal", "heading_path", "text", "citation", "token_estimate", "chunking_version"],
+  "properties": {
+    "id": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "concept_id": {"type": "string"},
+    "source_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "element_ids": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "ordinal": {"type": "integer", "minimum": 0},
+    "heading_path": {"type": "array", "items": {"type": "string"}},
+    "text": {"type": "string"},
+    "citation": {"type": "object", "required": ["source_uri", "source_sha256", "page", "start", "end"]},
+    "token_estimate": {"type": "integer", "minimum": 0},
+    "chunking_version": {"type": "string"},
+    "oversize": {"type": "boolean"}
+  },
+  "additionalProperties": false
+}

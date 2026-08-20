@@ -1,0 +1,90 @@
+[
+  {
+    "repository": "docling-project/docling",
+    "url": "https://github.com/docling-project/docling",
+    "stars_at_research_time": 64970,
+    "language": "Python",
+    "updated_at": "2026-08-18T02:24:45Z",
+    "description": "Get your documents ready for gen AI"
+  },
+  {
+    "repository": "microsoft/markitdown",
+    "url": "https://github.com/microsoft/markitdown",
+    "stars_at_research_time": 174298,
+    "language": "Python",
+    "updated_at": "2026-08-18T02:32:08Z",
+    "description": "Python tool for converting files and office documents to Markdown."
+  },
+  {
+    "repository": "datalab-to/marker",
+    "url": "https://github.com/datalab-to/marker",
+    "stars_at_research_time": 38816,
+    "language": "Python",
+    "updated_at": "2026-08-18T02:28:22Z",
+    "description": "Convert PDF to markdown + JSON quickly with high accuracy"
+  },
+  {
+    "repository": "Unstructured-IO/unstructured",
+    "url": "https://github.com/Unstructured-IO/unstructured",
+    "stars_at_research_time": 15320,
+    "language": "HTML",
+    "updated_at": "2026-08-18T00:50:11Z",
+    "description": "Convert documents to structured data effortlessly. Unstructured is open-source ETL solution for transforming complex documents into clean, structured formats for language models.  Visit our website to learn more about our enterprise grade Platform product for production grade workflows, partitioning, enrichments, chunking and embedding."
+  },
+  {
+    "repository": "PaddlePaddle/PaddleOCR",
+    "url": "https://github.com/PaddlePaddle/PaddleOCR",
+    "stars_at_research_time": 87817,
+    "language": "Python",
+    "updated_at": "2026-08-18T02:10:51Z",
+    "description": "Turn any PDF or image document into structured data for your AI. A powerful, lightweight OCR toolkit that bridges the gap between images/PDFs and LLMs. Supports 100+ languages."
+  },
+  {
+    "repository": "ocrmypdf/OCRmyPDF",
+    "url": "https://github.com/ocrmypdf/OCRmyPDF",
+    "stars_at_research_time": 34473,
+    "language": "Python",
+    "updated_at": "2026-08-18T01:26:01Z",
+    "description": "OCRmyPDF adds an OCR text layer to scanned PDF files, allowing them to be searched"
+  },
+  {
+    "repository": "apache/tika",
+    "url": "https://github.com/apache/tika",
+    "stars_at_research_time": 3983,
+    "language": "Java",
+    "updated_at": "2026-08-18T00:45:02Z",
+    "description": "The Apache Tika toolkit detects and extracts metadata and text from over a thousand different file types (such as PPT, XLS, and PDF)."
+  },
+  {
+    "repository": "infiniflow/ragflow",
+    "url": "https://github.com/infiniflow/ragflow",
+    "stars_at_research_time": 88688,
+    "language": "Go",
+    "updated_at": "2026-08-18T02:31:48Z",
+    "description": "RAGFlow is a leading open-source Retrieval-Augmented Generation (RAG) engine that fuses cutting-edge RAG with Agent capabilities to create a superior context layer for LLMs"
+  },
+  {
+    "repository": "qdrant/qdrant",
+    "url": "https://github.com/qdrant/qdrant",
+    "stars_at_research_time": 34033,
+    "language": "Rust",
+    "updated_at": "2026-08-18T01:59:50Z",
+    "description": "Qdrant - High-performance, massive-scale Vector Database and Vector Search Engine for the next generation of AI. Also available in the cloud https://cloud.qdrant.io/"
+  },
+  {
+    "repository": "in-toto/in-toto",
+    "url": "https://github.com/in-toto/in-toto",
+    "stars_at_research_time": 1028,
+    "language": "Python",
+    "updated_at": "2026-08-14T05:38:17Z",
+    "description": "in-toto is a framework to protect supply chain integrity."
+  },
+  {
+    "repository": "modelcontextprotocol/servers",
+    "url": "https://github.com/modelcontextprotocol/servers",
+    "stars_at_research_time": 89643,
+    "language": "TypeScript",
+    "updated_at": "2026-08-18T01:16:13Z",
+    "description": "Model Context Protocol Servers"
+  }
+]

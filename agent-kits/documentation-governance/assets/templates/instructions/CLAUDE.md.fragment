@@ -1,0 +1,5 @@
+# Documentation governance
+
+Follow the shared `AGENTS.md` documentation-governance contract. Before a phase is complete, create an exhaustive audit with `python scripts/verify_docs.py --write-audit-template <phase>`, document every active page with evidence, and pass `python scripts/verify_docs.py --phase <phase>`.
+
+Keep the repository development records current during work. Before every commit, stage `DEVELOPMENT_HISTORY.md` plus the active audit and let `.githooks/pre-commit` run. Do not bypass the hook or claim phase completion from a partial audit.

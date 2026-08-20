@@ -7,6 +7,8 @@ stdio transport) is covered by FastMCP's own test suite.
 
 from __future__ import annotations
 
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -23,6 +25,25 @@ from headcleaner.mcp import (
     okf_search,
     okf_sql,
 )
+
+
+def test_mcp_import_resolves_fastmcp_lifespan_annotation() -> None:
+    """Importing the MCP integration must not emit an incomplete-field warning."""
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "import warnings; "
+            "from pydantic_settings.exceptions import IncompleteFieldDefinitionWarning; "
+            "warnings.simplefilter('error', IncompleteFieldDefinitionWarning); "
+            "import headcleaner.mcp",
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
 
 
 @pytest.fixture
@@ -70,6 +91,41 @@ def test_search_finds_matching_concepts(reg):
 def test_search_is_case_insensitive(reg):
     assert okf_search(reg, "ALPHA", None, 10)
     assert not okf_search(reg, "no_match_here_xyz", None, 10)
+
+
+def test_search_uses_cited_bundle_index_when_available(reg) -> None:
+    from headcleaner.chunking import Chunk, write_chunks
+    from headcleaner.index import rebuild_index
+
+    bundle = reg.get(None)
+    assert bundle is not None
+    write_chunks(
+        bundle.path,
+        [
+            Chunk(
+                id="chunk-alpha",
+                concept_id="concepts/alpha.md",
+                source_sha256="a" * 64,
+                element_ids=("element-alpha",),
+                ordinal=0,
+                heading_path=(),
+                text="Indexed alpha evidence",
+                citation={
+                    "source_uri": "file:///alpha.txt",
+                    "source_sha256": "a" * 64,
+                    "page": None,
+                    "start": 0,
+                    "end": 22,
+                },
+                token_estimate=3,
+            )
+        ],
+    )
+    rebuild_index(bundle.path)
+
+    hits = okf_search(reg, "indexed", None, limit=10)
+
+    assert hits[0]["citation"]["source_sha256"] == "a" * 64
 
 
 def test_get_concept_by_id(reg):
@@ -124,6 +180,72 @@ def test_impact_reports_outbound_and_inbound(reg):
     assert len(out["outbound"]) == 2  # beta, gamma
 
 
+def test_impact_surfaces_cited_graph_evidence_when_chunks_exist(reg, bundle_dir: Path) -> None:
+    from headcleaner.chunking import Chunk, write_chunks
+
+    write_chunks(
+        bundle_dir,
+        [
+            Chunk(
+                "c" * 64,
+                "concepts/alpha.md",
+                "a" * 64,
+                ("paragraph:0",),
+                0,
+                (),
+                "Alpha evidence",
+                {
+                    "source_uri": "file:///alpha",
+                    "source_sha256": "a" * 64,
+                    "page": None,
+                    "start": None,
+                    "end": None,
+                },
+                2,
+            )
+        ],
+    )
+
+    out = okf_impact(reg, "Alpha", None)
+
+    assert out["graph_evidence"]["edges"]
+    assert out["graph_evidence"]["edges"][0]["evidence_chunk_ids"] == []
+
+
+def test_impact_applies_bundle_local_graph_policy(reg, bundle_dir: Path) -> None:
+    from headcleaner.chunking import Chunk, write_chunks
+
+    write_chunks(
+        bundle_dir,
+        [
+            Chunk(
+                "c" * 64,
+                "concepts/alpha.md",
+                "a" * 64,
+                ("paragraph:0",),
+                0,
+                (),
+                "Alpha evidence",
+                {
+                    "source_uri": "file:///alpha",
+                    "source_sha256": "a" * 64,
+                    "page": None,
+                    "start": None,
+                    "end": None,
+                },
+                2,
+            )
+        ],
+    )
+    policy = bundle_dir / ".headcleaner" / "policy.toml"
+    policy.parent.mkdir()
+    policy.write_text("[graph]\nexclude_edge_kinds = ['contains']\n", encoding="utf-8")
+
+    out = okf_impact(reg, "Alpha", None)
+
+    assert out["graph_evidence"]["edges"] == []
+
+
 def test_impact_for_orphan(reg):
     """gamma is referenced by alpha but doesn't link back — inbound=1."""
     out = okf_impact(reg, "Gamma", None)
@@ -161,8 +283,6 @@ def test_doctor_finds_orphans(reg):
 
 
 def test_diff_finds_added_concept(reg, bundle_dir: Path):
-    # Snapshot current state
-    initial = okf_diff(reg, None)
     # Add a new file
     (bundle_dir / "concepts" / "delta.md").write_text(
         "---\ntype: Document\ntitle: Delta\n---\n\n# Delta",
@@ -170,6 +290,22 @@ def test_diff_finds_added_concept(reg, bundle_dir: Path):
     )
     after = okf_diff(reg, None)
     assert "concepts/delta.md" in after["added"]
+
+
+def test_diff_includes_typed_semantic_changes_for_modified_concept(reg, bundle_dir: Path):
+    path = bundle_dir / "concepts" / "alpha.md"
+    path.write_text(
+        path.read_text(encoding="utf-8").replace("title: Alpha", "title: Alpha updated"),
+        encoding="utf-8",
+    )
+
+    out = okf_diff(reg, None)
+
+    assert "concepts/alpha.md" in out["changed"]
+    assert any(
+        change["kind"] == "frontmatter"
+        for change in out["semantic"]["concepts/alpha.md"]["changes"]
+    )
 
 
 def test_sql_select_all_concepts(reg):

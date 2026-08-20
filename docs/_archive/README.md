@@ -1,0 +1,14 @@
+# Archived Documentation
+
+The markdown files in this archive were the previous documentation set for headcleaner-cli. They were archived on 2026-08-20 as part of the staged documentation rewrite tracked in [`docs/DOCS_REWRITE_TRACKER.md`](../DOCS_REWRITE_TRACKER.md). Nothing in this archive is authoritative anymore — the current documentation lives at the paths described in the tracker and in the root [`README.md`](../../README.md).
+
+The archive is preserved, not deleted, because several files inside it remain useful as deep context for maintainers:
+
+- `CHANGELOG.md` records the public release history up to and including the most recent tag. The new documentation links out to it for version-by-version change notes.
+- `PHASE2_BACKLOG.md` is the authoritative acceptance and error-recovery ledger for Phase 2 of the master enhancement plan. Its verification record at the bottom of the file is the immutable evidence that Phase 2 contracts 2.1 through 2.8 are accepted. Do not edit; do not delete.
+- `master-enhancement-development-plan.md` is the long-form enhancement master plan that organizes all thirty-two enhancements in `100x-enhancements-plan.md` into the four implementation phases. The new developer and maintainer documentation references it by phase and contract.
+- `100x-enhancements-plan.md` is the original thirty-two-item opportunity inventory that the master plan organizes.
+- `ARCHITECTURE.md`, `USER_GUIDE.md`, `USAGE.md`, `INSTALL.md`, `FAQ.md`, `TROUBLESHOOTING.md`, `OPERATIONS.md`, `PUBLISHING.md`, `CONTRIBUTING.md`, `PLUGINS.md`, `REGISTRY.md`, `OKF_NOTES.md`, `FORMAT_MATRIX.md`, `SCHEMA.md`, `VIEWER.md`, `ENHANCEMENTS.md`, `RESEARCH_15_REPOS_SCORED.md`, and `RESEARCH_OKF_VIEWERS.md` are the predecessor of the new documentation. Content from them has been reworked into the new getting-started, user-guide, reference, integrations, safety, developer, and maintainers trees.
+- `schemas/chunk.schema.json`, `schemas/graph.schema.json`, and `schemas/okf-frontmatter.schema.json` live at `docs/schemas/` at the repository root, not in this archive. They are authoritative contracts that tests and downstream consumers depend on, so they stay at their original paths even though the markdown documentation that referenced them has been moved here. They are referenced by the canonical-model and reference pages in the new developer guide.
+
+If you are looking for current documentation, start at [`README.md`](../../README.md) and follow the documentation map inside it. If you are looking for historical context for a specific decision, the search-by-filename will usually point you at the right archived file.

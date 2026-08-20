@@ -27,7 +27,7 @@ uv sync                              # install all deps into .venv
 uv run headcleaner --help            # CLI help
 uv run headcleaner convert IN OUT    # convert a folder
 uv run headcleaner lint OUT          # review converted output
-uv run pytest                        # run tests
+unset PYTHONPATH && uv run --no-sync --python 3.13 pytest  # required test gate
 uv run python -m headcleaner.cli    # same as `headcleaner`
 ```
 
@@ -56,7 +56,7 @@ src/headcleaner/
     okf_index.py  # per-directory index.md
     manifest.py   # run-level manifest.json
 
-tests/             # pytest, 43 tests
+tests/             # pytest suites
   conftest.py     # shared fixtures
   test_walk.py
   test_router.py
@@ -67,7 +67,7 @@ tests/             # pytest, 43 tests
   fixtures/
     sample.xlsx   # hand-rolled valid XLSX
 
-docs/              # 9 doc files — see README.md "Documentation" table
+docs/              # active user/developer/maintainer docs plus development audits
 scripts/
   verify.sh       # post-install sanity check
 
@@ -110,15 +110,15 @@ change `verified: human:pending` to `verified: human:reviewed`.
 
 ## Adding a new format
 
-See `docs/CONTRIBUTING.md` → "Adding a new file format" for the full
+See `docs/developer/tool-and-engine-development.md` → "Adding a new file format" for the full
 walk-through. TL;DR:
 
 1. Drop a module in `src/headcleaner/engines/<format>.py`
 2. Implement `Adapter` (one `extract()` method + `name` + `extensions`)
 3. Register it in `src/headcleaner/router.py:_ADAPTERS`
-4. Add a row to `docs/FORMAT_MATRIX.md`
+4. Update `docs/reference/engine-directory.md`
 5. Add a fixture in `tests/fixtures/` and a round-trip test
-6. Add an entry to `docs/CHANGELOG.md`
+6. Update `DEVELOPMENT_HISTORY.md` and complete the current phase documentation audit
 
 ## Color discipline
 
@@ -132,3 +132,24 @@ is **neon cyan + neon pink + neon purple** only. Status colors map as:
 - skipped / muted → grey
 
 See `src/headcleaner/theme.py` for the constants.
+
+## Development documentation gate (NON-NEGOTIABLE)
+
+Before any multi-step implementation, create or update an ignored local plan under
+`.plans/`. During work, keep the root development records current:
+`BACKLOG.md`, `ISSUES.md`, `MEMORY.md`, `DEVELOPMENT_HISTORY.md`,
+`DEPENDENCIES.md`, and `PINS.md`.
+
+Every phase must audit **every active document** (root `README.md` plus `docs/**/*.md`,
+excluding `docs/_archive/`) in `docs/development/phase-audits/<phase>.json`. A document
+must be marked `updated`, `reviewed`, or `not-applicable` with concrete evidence; no
+phase may be called complete until this passes:
+
+```bash
+uv run --no-sync --python 3.13 python scripts/verify_docs.py --phase <phase>
+```
+
+Install the versioned hook once with `sh scripts/install-git-hooks.sh`. Before **every
+commit**, stage an update to `DEVELOPMENT_HISTORY.md` and the active phase audit. The
+hook rejects incomplete audits and broken local links/heading anchors. Full policy:
+`docs/development/DOCUMENTATION_GOVERNANCE.md`.

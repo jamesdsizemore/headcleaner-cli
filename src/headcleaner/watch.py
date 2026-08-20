@@ -17,14 +17,30 @@ from __future__ import annotations
 
 import signal
 import threading
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
 
 from .run import RunOptions
 
 
 class WatchfilesMissingError(RuntimeError):
     """Raised when the watchfiles Rust extension isn't available."""
+
+
+def collect_watch_changes(changes: set[tuple[int, str]], *, output_root: Path) -> set[Path]:
+    """Normalize a watchfiles batch without dropping deleted-source events."""
+    pending: set[Path] = set()
+    resolved_output = output_root.resolve()
+    for event, path in changes:
+        candidate = Path(path)
+        try:
+            candidate.relative_to(resolved_output)
+            continue
+        except ValueError:
+            pass
+        if event == 3 or candidate.is_file():
+            pending.add(candidate)
+    return pending
 
 
 def watch_directory(
@@ -51,8 +67,10 @@ def watch_directory(
     """
     try:
         from watchfiles import watch as wf_watch
+
         from . import __version__
         from .run import run_pipeline
+        from .sync import plan_sync
     except ImportError as e:
         raise WatchfilesMissingError(
             "watchfiles (with Rust extension) is required for `headcleaner watch`. "
@@ -78,17 +96,7 @@ def watch_directory(
     pending: set[Path] = set()
 
     for changes in wf_watch(str(input_root), stop_event=stop_event, step=max(50, debounce_ms)):
-        for path, _event in changes:
-            p = Path(path)
-            if not p.is_file():
-                continue
-            # Skip files in the output dir (which is inside input_root when nested)
-            try:
-                p.relative_to(opts.output_root.resolve())
-                continue
-            except ValueError:
-                pass
-            pending.add(p)
+        pending.update(collect_watch_changes(changes, output_root=opts.output_root))
 
         if not pending:
             continue
@@ -114,6 +122,12 @@ def watch_directory(
         n_ok = sum(1 for r in record.results if r.status == "ok")
         n_failed = sum(1 for r in record.results if r.status == "failed")
         print(f"  ✓ {n_ok} ok · {n_failed} failed · {len(pending)} change(s)")
+        try:
+            sync_plan = plan_sync(input_root, opts.output_root)
+        except ValueError as error:
+            print(f"  sync planning failed: {error}")
+        else:
+            print(f"  sync dry-run: {len(sync_plan)} action(s)")
         if on_run_complete:
             try:
                 on_run_complete(record)

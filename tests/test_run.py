@@ -44,9 +44,101 @@ def test_run_pipeline_emits_md_and_okf(mixed_dir: Path, tmp_path: Path) -> None:
     # Conversion report: emitted automatically after every non-dry conversion.
     report = (out / "REPORT.md").read_text(encoding="utf-8")
     assert "headcleaner conversion report" in report
+    assert "Duplicate and version candidates" in report
+    assert "Evidence graph" in report
     assert "Per-engine breakdown" in report
     assert "Avg time" in report
     assert "Error rate" in report
+
+
+def test_run_pipeline_emits_cited_chunk_derivative(mixed_dir: Path, tmp_path: Path) -> None:
+    out = tmp_path / "out"
+    record = run_pipeline(RunOptions(input_root=mixed_dir, output_root=out, fmt="okf"))
+
+    chunks_path = out / "okf" / "chunks.jsonl"
+    assert chunks_path.exists()
+    assert record.options["chunks"]["path"] == "okf/chunks.jsonl"
+    graph_path = out / "okf" / "graph.jsonl"
+    assert graph_path.exists()
+    assert record.options["graph"]["path"] == "okf/graph.jsonl"
+    assert record.options["graph"]["node_count"] > 0
+    chunks = [json.loads(line) for line in chunks_path.read_text(encoding="utf-8").splitlines()]
+    assert chunks
+    assert all(chunk["citation"]["source_sha256"] for chunk in chunks)
+
+
+def test_run_pipeline_persists_source_and_generated_output_sync_ownership(
+    mixed_dir: Path, tmp_path: Path
+) -> None:
+    from headcleaner.sync import load_state
+
+    out = tmp_path / "out"
+    record = run_pipeline(RunOptions(input_root=mixed_dir, output_root=out, fmt="both"))
+    state = load_state(out)
+
+    successful = [result for result in record.results if result.status == "ok"]
+    assert len(state) == len(successful)
+    assert all(item.source_sha256 and item.current_relpath for item in state)
+    assert all(item.generated_paths and item.output_hashes for item in state)
+    assert all((out / path).exists() for item in state for path in item.generated_paths)
+
+
+def test_run_pipeline_emits_non_destructive_duplicate_family_derivative(
+    mixed_dir: Path, tmp_path: Path
+) -> None:
+    out = tmp_path / "out"
+    record = run_pipeline(
+        RunOptions(input_root=mixed_dir, output_root=out, fmt="okf", dedupe_threshold=0.9)
+    )
+
+    path = out / "okf" / "duplicate-families.json"
+    payload = json.loads(path.read_text(encoding="utf-8"))
+
+    assert payload["algorithm_version"] == "1"
+    assert payload["parameters"]["threshold"] == 0.9
+    assert isinstance(payload["families"], list)
+    assert record.options["dedupe"]["path"] == "okf/duplicate-families.json"
+    assert record.options["dedupe"]["threshold"] == 0.9
+
+
+def test_run_pipeline_emits_bounded_claim_review_derivative(
+    mixed_dir: Path, tmp_path: Path
+) -> None:
+    out = tmp_path / "out"
+    record = run_pipeline(RunOptions(input_root=mixed_dir, output_root=out, fmt="okf"))
+
+    path = out / "okf" / "claim-review.json"
+    payload = json.loads(path.read_text(encoding="utf-8"))
+
+    assert isinstance(payload["claims"], list)
+    assert isinstance(payload["findings"], list)
+    assert record.options["claims"]["path"] == "okf/claim-review.json"
+
+
+def test_run_pipeline_passes_claim_policy_controls_to_canonical_analysis(
+    mixed_dir: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from headcleaner import claims
+
+    observed: dict[str, object] = {}
+    original = claims.analyze_claims
+
+    def capture(*args: object, **kwargs: object):
+        observed.update(kwargs)
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(claims, "analyze_claims", capture)
+    run_pipeline(
+        RunOptions(
+            input_root=mixed_dir,
+            output_root=tmp_path / "out",
+            fmt="okf",
+            claim_suppressions={"owner": "policy/test"},
+            claim_scope="source",
+        )
+    )
+
+    assert observed == {"suppressions": {"owner": "policy/test"}, "scope": "source"}
 
 
 def test_run_pipeline_md_only(mixed_dir: Path, tmp_path: Path) -> None:

@@ -1,341 +1,115 @@
 # headcleaner
 
-> Walk a folder, convert every document to **Markdown** (with frontmatter), **OKF v0.2** (with frontmatter), or both — with an omp-style animated TUI.
+> Walk a folder of mixed documents, get back clean Markdown you can search, cite, and trust.
+
+headcleaner is a Python command-line tool that reads a folder of documents — Word, Excel, PowerPoint, PDF, HTML, plain text, email — and turns each one into a Markdown file with a citation back to its original source. The output is portable, searchable, and ready for indexing, archiving, or handing to an AI coding assistant. Headcleaner never silently rewrites your files, never claims the output has been human-reviewed when it has not, and never talks to a network service unless you explicitly tell it to.
+
+## Why headcleaner exists
+
+Most teams sit on folders full of `.docx`, `.xlsx`, `.pdf`, `.html`, and `.eml` files that are useful but hard to search, hard to cite, and hard to feed to modern AI tooling. Headcleaner is the missing layer between those folders and the systems that want to consume them: a local-first converter that produces a durable, citation-aware Markdown output you can rebuild, audit, and trust.
+
+The core promise is small enough to fit on a sticky note: **read once, write Markdown with a source citation, and never lie about whether a human has reviewed it.**
+
+## What headcleaner does
+
+Headcleaner converts a folder of mixed documents into a clean output folder you control. The same input folder produces the same output bytes every time, and every output file carries the SHA-256 hash of the source it came from.
+
+The conversion pipeline reads source files, normalizes them through format-specific adapters, and writes either plain Markdown, an OKF v0.2 knowledge bundle, or both side by side. On top of that, headcleaner can build a local SQLite search index, generate a knowledge graph of how your documents relate to each other, and surface cited chunks to compatible AI assistants through the Model Context Protocol.
+
+## What headcleaner does not do
+
+This list is short on purpose. Every item is a design choice, not an oversight.
+
+- It does **not** silently rewrite your source files. Source files are read-only inputs to headcleaner; output goes to a directory you name.
+- It does **not** claim that auto-converted output has been human-reviewed. Every emitted file starts in an explicit "human has not read this" state; changing that requires an explicit review action.
+- It does **not** install tools you did not ask for. Optional converters like OfficeCLI, LibreOffice, and Tesseract are checked for at runtime; headcleaner tells you when one is missing instead of trying to install it.
+- It does **not** talk to a network service by default. Embedding providers, remote vector databases, and MCP integration all require an explicit configuration step.
+- It does **not** rewrite your git history, publish packages, or push to a remote. Version-control operations require explicit invocation.
+
+## Three-step quick start
+
+This is the smallest path from "I just installed headcleaner" to "I see something useful."
+
+### Step 1 — Convert a folder
+
+Pick any folder that contains documents headcleaner can read. For a first run, a folder with one PDF, one Word file, and one HTML file is ideal.
 
 ```bash
-headcleaner convert ~/Documents/inbox --format both --output ~/Documents/inbox.clean
+uv run --no-sync --python 3.13 headcleaner convert ./my-folder ./my-folder.clean
 ```
 
-`headcleaner` is a Python CLI that scans a directory you provide, identifies each document by extension, runs the appropriate extraction engine (OfficeCLI for Office formats, pdfplumber for PDFs, BeautifulSoup for HTML, etc.), and emits clean normalized output — either side-by-side Markdown and OKF, or just one.
+The `convert` command reads `./my-folder`, normalizes every supported document it finds, and writes the results to `./my-folder.clean`. By default you get both plain Markdown and an OKF v0.2 bundle side by side.
 
-- **Output formats:** `--format md` (Markdown), `--format okf` (OKF v0.2 bundle), `--format both` (default)
-- **Engine coverage:** 7 formats out of the box (XLSX, DOCX, PPTX, PDF, HTML, HTM, TXT) — see [docs/FORMAT_MATRIX.md](docs/FORMAT_MATRIX.md) for the 16-format v1.0 roadmap
-- **TUI:** omp-inspired animated terminal (box-drawing panels, neon palette, powerline separators)
-- **Linter:** `headcleaner lint` reviews the converted Markdown / OKF for formatting issues
-- **Localization:** gettext catalogs for English, Spanish (`--lang es`), and Simplified Chinese (`--lang zh-CN`) across CLI/TUI runtime status
-- **Legacy Office:** `.doc`, `.xls`, and `.ppt` convert through LibreOffice headless, then follow the normal Office extraction pipeline
-- **PST:** per-message concepts with full bodies and attachments through `readpst`, including MSYS2-aware Windows discovery
-- **Heuristic cleanup:** `headcleaner convert --clean` runs a 12-stage any2md-inspired cleanup pipeline
-- **all2md fallback:** Auto-handles 38 extra formats (Jupyter, LaTeX, reST, sourcecode, etc.) when all2md is installed
-- **`headcleaner mcp`:** Run headcleaner as an MCP server exposing 14 `okf_*` tools to any MCP agent host (Claude Code, Cursor, etc.) — install with `uv pip install "headcleaner[mcp]"`
-- **Diagnostics:** `headcleaner doctor` checks Python, PATH, OfficeCLI, output permissions, and the `@slug` registry, then prints a GO/NO-GO verdict
-- **Quality and fidelity:** `headcleaner benchmark` measures attributed fixtures; `headcleaner verify-render` compares existing source/output artifacts without rewriting them
-- **Structured output:** typed elements and table sidecars preserve usable document structure alongside readable Markdown
-- **Explicit OCR and attachment safety:** choose a named OCR profile/languages and use bounded, provenance-linked email/archive child conversion
-- **Adapter plugins:** Third-party packages register formats through the `headcleaner_plugin` entry-point group
-- **zsv CSV:** World's-fastest SIMD CSV parser (~10-100x stdlib) when `zsv` is on PATH
-- **Trust attestation:** `headcleaner attest` builds a Merkle root + ed25519 signature; `verify` checks it
-- **Local browse:** `headcleaner serve <bundle>` exposes a FastAPI UI for browsing + search
-- **Honest defaults:** OKF trust fields filled with `unverified` / `human:pending`, never invented
+### Step 2 — Look at what was produced
 
-## Install
+Open `./my-folder.clean` in your file browser. You will see three things: a `manifest.json` that summarizes the run, an `_md/` folder containing one Markdown file per source, and an `okf/` folder containing the OKF v0.2 bundle with an `index.md` and one concept file per source.
 
-```bash
-# 1. The Office engine — single binary, no Office install needed
-npm install -g @officecli/officecli
-
-# 2. The CLI itself (Python ≥3.12, uv-managed)
-uv tool install headcleaner
-
-# Or for development:
-git clone <this repo>
-cd headcleaner-cli
-uv sync
-uv run headcleaner --help
-```
-
-For other install methods (curl | bash, pip, brew, Windows PowerShell), see [docs/INSTALL.md](docs/INSTALL.md).
-
-## Quick start
-
-```bash
-headcleaner ~/Documents/inbox --format both --output ./clean
-```
-
-This produces:
-
-```
-clean/
-├── manifest.json                  # run summary: per-file status, engine, sha256
-├── REPORT.md                      # count, average time, and error rate by engine
-├── _md/                           # plain Markdown (one file per source)
+```text
+./my-folder.clean/
+├── manifest.json          # run summary: what was processed, how, with what status
+├── REPORT.md              # human-readable run report
+├── _md/                   # plain Markdown, one file per source
 │   ├── notes.docx.md
-│   ├── q3.pdf.md
-│   └── ...
-└── okf/                           # OKF v0.2 bundle (one concept per source)
-    ├── index.md                   # auto-generated directory index
-    ├── notes.md                   # OKF concept: type=Document
-    ├── q3.pdf.md
-    └── ...
+│   ├── report.pdf.md
+│   └── page.html.md
+└── okf/                   # OKF v0.2 bundle, one concept per source
+    ├── index.md           # auto-generated directory index
+    ├── notes.docx.md
+    ├── report.pdf.md
+    └── page.html.md
 ```
 
-## CLI reference
+Each generated file starts with a YAML block that names the source it came from, the SHA-256 hash of that source, the date the source was generated, and the trust state. That block is how headcleaner keeps its promise that you can always answer "where did this text come from."
 
-```bash
-headcleaner convert <INPUT_DIR> [OPTIONS]
+### Step 3 — Open the report and the manifest
 
-Options:
-  -f, --format {md,okf,both}   Output format(s) [default: both]
-  -o, --output DIR             Output directory [default: ./out]
-  --ocr                        Enable Tesseract OCR for scanned PDFs
-  --ocr-profile NAME           Choose fast, balanced, archival, or handwriting_experimental OCR behavior
-  --ocr-lang CODE[,CODE...]    Require installed Tesseract language packs
-  --attachment-max-depth N     Maximum nested attachment/archive depth
-  --attachment-max-members N   Maximum attachment/archive members per run
-  --attachment-max-member-bytes N
-                                Maximum extracted bytes for one member
-  --attachment-max-total-bytes N
-                                Maximum extracted bytes across descendants
-  --engine NAME                Select one extraction engine explicitly
-  --no-fallback / --allow-fallback
-                                Disable / permit declared typed-failure fallback
-  --allow-network              Permit only engines explicitly marked as networked
-  --officecli-timeout <secs>   Timeout per OfficeCLI subprocess call (default: 60)
-  --include, -i GLOB           Include glob (may be repeated)
-  --exclude, -e GLOB           Exclude glob (may be repeated)
-  --jobs, -j N                Parallel worker processes (default: 1 = sequential)
-  --no-cache                  Re-convert every file (skip the SHA-256 cache)
-  --no-continue-on-error       Stop on the first failure
-  --obsidian-compat            Add Obsidian-friendly flat fields to OKF frontmatter
-  --clean                       Run the 12-stage heuristic cleanup pipeline (any2md-inspired) on each body
-  --tui / --no-tui             Force / disable the animated TUI (default: auto-detect TTY)
-  --no-okf-index               Skip OKF directory index.md generation
-```
+`./my-folder.clean/REPORT.md` is a short Markdown file you can read in any editor. It tells you how many files were processed, which engine handled each one, and whether anything failed or was skipped. `./my-folder.clean/manifest.json` is the same information in a structured form that other tools can consume.
 
-Other commands:
-  headcleaner doctor [--output-dir DIR]  Run install and permission diagnostics
-  headcleaner benchmark FIXTURES [--json]  Measure attributed conversion quality
-  headcleaner verify-render INPUT OUTPUT [--output-dir DIR] [--json]
-                              Compare existing render structure; does not reconvert or rewrite canonical output
-  headcleaner templates        List supported formats
-  headcleaner agents           Show engine install status
-  headcleaner watch IN [--webhook-url URL]   Re-convert on file changes (Ctrl+C to stop)
-  headcleaner lint <DIR>       Review converted Markdown / OKF for formatting issues
-  headcleaner lint <DIR> --fix  Auto-repair safe issues to <DIR>.fixed/
-  headcleaner serve <DIR>        Local HTTP browser for the OKF bundle
-  headcleaner notion-import <EXPORT.zip> <OUT>  Reverse a Notion workspace export
-  headcleaner attest <DIR>       Compute Merkle root + optional ed25519 signature
-  headcleaner verify <DIR>       Verify an attestation against the bundle
-```
+**What this means:** if your input folder had twelve documents and your run produced twelve Markdown files plus an OKF bundle plus a manifest, the conversion is healthy. If the report shows files in the `skipped` or `failed` state, jump to the [Troubleshooting guide](docs/user-guide/troubleshooting.md) — those states almost always mean an optional tool is missing, not that your project is broken.
 
-## Languages
+## A simple visual
 
-HeadCleaner uses standard-library gettext catalogs at runtime. English is the
-fallback; Spanish and Simplified Chinese are available for conversion and TUI
-runtime status:
+The flow is small enough to draw:
 
-```bash
-headcleaner --lang es convert ./inbox --output ./out --no-tui
-headcleaner --lang zh-CN convert ./inbox --output ./out
+![headcleaner overview: source folder in, canonical output out, with derivatives and search index below](docs/diagrams/overview.svg)
 
-# Equivalent process default (the CLI option takes precedence)
-HEADCLEANER_LANG=es headcleaner convert ./inbox --output ./out
-```
+Source folder on the left, the headcleaner pipeline in the middle, output folder on the right. The four purple cards underneath are the rebuildable derivatives that fall out of the pipeline. The cyan card at the bottom is the local SQLite search index, built from the cited chunks.
 
-Catalog sources live under `src/headcleaner/locales/`; they are compiled with
-Babel during development and shipped in the wheel. Add new source strings to
-the `.po` catalogs, compile them with `uv run pybabel compile -d
-src/headcleaner/locales -D headcleaner`, and test each supported locale.
-## Why OKF?
+## What to read next
 
-OKF (Open Knowledge Format, v0.2) is just **markdown + YAML frontmatter in a directory hierarchy**. That means:
+Pick the path that matches what you came here to do.
 
-- Every concept is a single `.md` file you can `cat`, `grep`, edit in any text editor
-- Bundles live in git — pull requests, diffs, blame all work
-- Obsidian, Notion, MkDocs, Hugo, Jekyll all consume OKF natively
-- Required frontmatter key is just `type` — anything beyond that is producer freedom
+- **I have never used headcleaner and want to install it.** Start with the [Installation guide](docs/getting-started/installation.md), then walk through the [First run guide](docs/getting-started/first-run.md). Both are written for someone who has never run a Python CLI tool before.
+- **I want to understand what each command does.** Go to the [CLI reference](docs/reference/cli-reference.md), organized by what you are trying to accomplish.
+- **I want to use headcleaner with an AI coding assistant.** Read [Working with AI assistants](docs/user-guide/working-with-ai-agents.md) and then [MCP client setup](docs/integrations/mcp-client-setup.md).
+- **I want to add headcleaner to a CI pipeline.** Start with [CI integration](docs/integrations/ci-overview.md) and the [tutorial on CI integration](docs/tutorials/ci-integration.md).
+- **I want to extend headcleaner with a new file format or tool.** Go to the [Contributor onboarding](docs/developer/contributor-onboarding.md) and then the [Tool and engine development guide](docs/developer/tool-and-engine-development.md).
+- **I am developing or committing a change.** Follow the [development workflow](DEVELOPMENT.md) and the [documentation governance](docs/development/DOCUMENTATION_GOVERNANCE.md).
+- **I want to understand the safety and trust model before I commit to using headcleaner.** Read the [Safety overview](docs/safety/safety-overview.md).
 
-See [docs/OKF_NOTES.md](docs/OKF_NOTES.md) for the OKF v0.2 specifics this CLI emits.
+## Documentation map by reader goal
 
-## Trust stance (honest defaults)
+The complete documentation is organized by reader, not by source module. Each path below is a coherent walk that answers a specific question.
 
-We never auto-claim review. Every emitted OKF concept gets:
-
-- `status: unverified`
-- `verified: human:pending`
-- `generated: human:<user>@<host>` (OKF §7 actor convention)
-- `stale_after: <today + 180d>`
-- `sources: [{uri: file://..., sha256: ...}]`
-
-A human can grep `human:pending` later to find concepts needing review. See [docs/OKF_NOTES.md](docs/OKF_NOTES.md) for the full contract.
-
-## Safe contained content
-
-Email (`.eml`, `.msg`, `.pst`) and declared ZIP attachments are converted as
-logical children when their type is supported. Each child keeps an
-`attachment:` source URI and parent/child hash lineage in the manifest; output
-names use hashes and ordinals rather than an attachment filename. The default
-limits bound nesting, member count, individual bytes, and total extracted
-bytes. Path traversal, symlinks, encrypted ZIP members, duplicate ZIP members,
-and unsafe XML are quarantined with `ATTACHMENT_QUARANTINED` diagnostics while
-unrelated siblings continue. HeadCleaner never prompts for or logs passwords.
-
-Use the `--attachment-max-*` options only when a reviewed workload needs a
-different bound. Temporary staging data is removed at the end of the run.
-
-## Supported formats
-
-See [docs/FORMAT_MATRIX.md](docs/FORMAT_MATRIX.md) for the full engine × library table. At a glance:
-
-| Format | Engine | Library |
-|---|---|---|
-| `.docx`, `.xlsx`, `.pptx` | OfficeCLI binary | (native DOM) |
-| `.pdf` | pdfplumber (text-layer), pytesseract if `--ocr` | pdfplumber / pytesseract |
-| `.html`, `.htm` | BeautifulSoup | beautifulsoup4 |
-| `.txt` | chardet + read | chardet |
-| `.md`, `.markdown` | pass-through + frontmatter inject | stdlib |
-| `.csv`, `.tsv` | Sniffer dialect + GFM table (zsv SIMD when installed) | stdlib `csv` (or `zsv` binary) |
-| `.json` | pretty-print + fenced block | stdlib `json` |
-| `.eml` | headers + text/html body + attachments | stdlib `email` |
-| `.epub` | per-chapter HTML → MD | ebooklib (+ bs4 fallback) |
-| `.rtf` | control-word stripping | striprtf (+ regex fallback) |
-| `.odt`, `.ods`, `.odp` | paragraph/row extraction + GFM tables | odfpy (+ raw-XML fallback) |
-| `.msg` | Outlook headers + body + attachments | extract-msg |
-| `.pst` | **per-message** (one OKF concept per email) | readpst (libpst) + libpff-python fallback |
-| `.docx`, `.xlsx`, `.pptx` | **office_oxide** (primary, ~100x faster), OfficeCLI binary (fallback) | office_oxide 0.1.8 (PyO3) |
-| `.ipynb`, `.latex`, `.rst`, sourcecode, `.enex`, `.chm`, etc. (38 formats) | all2md (when installed) | all2md 1.12 |
-| `.doc`, `.xls`, `.ppt` | LibreOffice headless → office_oxide / OfficeCLI | LibreOffice + modern Office engine |
-
-## Live mode
-
-```bash
-headcleaner watch ~/inbox --output ~/out --webhook-url https://hooks.slack.com/...
-```
-
-Re-runs the conversion automatically when files change under `~/inbox`.
-Each re-run POSTs the manifest to the webhook URL (optional). Press
-Ctrl+C to stop.
-
-## Obsidian vault sync
-
-```bash
-headcleaner convert ~/inbox --format okf \
-    --output ~/Documents/MyVault/Concepts \
-    --obsidian-compat
-```
-
-Adds Obsidian-friendly flat fields (`source`, `sha256`, `generated_by`,
-`verified_by`, `stale_on`) to the OKF frontmatter so the concept shows
-up correctly in Obsidian's property panel. Original OKF fields stay
-intact for round-tripping.
-
-## Review (human sign-off)
-
-Auto-conversion sets `verified: human:pending`. The `headcleaner review`
-TUI walks every pending concept in a bundle and lets a human flip each
-to:
-
-- **approved** → `verified: human:reviewed`, `status: verified`,
-  `reviewed_at`, `reviewed_by`, `reviewed_via`
-- **rejected** → `verified: human:rejected`, `status: rejected`,
-  optional `rejection_reasons[]`
-- **skipped** → leaves the concept as `pending`
-
-```bash
-headcleaner review ./out/okf
-# Textual TUI: a=approve, r=reject, s=skip, n=next, p=prev, q=quit
-```
-
-If Textual isn't available (e.g. headless CI), a plain-mode REPL falls
-back automatically.
-
-## Distribution
-
-- **PyPI**: `pip install headcleaner` (built via uv, published via OIDC trusted publishing on tag push)
-- **Homebrew**: `brew install headcleaner` (formula in `packaging/homebrew/`)
-- **Docker**: `docker pull ghcr.io/jamesdsizemore/headcleaner-cli` (multi-stage image with Tesseract and `readpst`)
-- **Windows**: `winget install headcleaner`, `scoop install headcleaner`, `choco install headcleaner`
-- **Static binary**: `pip install pyinstaller && pyinstaller packaging/pyinstaller/headcleaner.spec`
-
-Full release checklist in [RELEASE.md](RELEASE.md).
-
-## CLI surface
-
-`headcleaner view <bundle>` (add `--tui` to browse in the terminal) renders an OKF bundle as a single self-contained HTML graph (no backend, opens in any browser). See `docs/VIEWER.md` for full options.
-
-
-```bash
-headcleaner convert         IN_DIR [flags]    # walk + convert
-headcleaner watch           IN_DIR [flags]    # live mode + webhooks
-headcleaner review          BUNDLE            # human sign-off TUI/REPL
-headcleaner attest          BUNDLE [--private-key PEM]   # Merkle root + optional ed25519 sig
-headcleaner verify          BUNDLE [--public-key PEM]    # verify an attestation
-headcleaner serve           BUNDLE [--host] [--port]    # local HTTP browser for the bundle
-headcleaner glob            DIR               # interactive include REPL (Textual)
-headcleaner notion-import   EXPORT.zip OUT    # reverse a Notion workspace export
-headcleaner lint            DIR [--fix]       # OKF + MD rule checks
-headcleaner doctor          [--output-dir]    # dependency and permission preflight
-headcleaner agents          [stdout]          # emit AGENTS.md
-headcleaner templates                        # list supported formats
-```
-
-## Documentation
-
-| Document | Purpose |
+| If you want to… | Read |
 |---|---|
-| [README.md](README.md) | this file — install, quick start, CLI reference |
-| [docs/INSTALL.md](docs/INSTALL.md) | all install paths (curl, pip, brew, PowerShell, uv, Docker) |
-| [docs/USAGE.md](docs/USAGE.md) | detailed usage guide with worked examples |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | how the pipeline fits together, where to extend |
-| [docs/FORMAT_MATRIX.md](docs/FORMAT_MATRIX.md) | every supported format × engine × library |
-| [docs/OKF_NOTES.md](docs/OKF_NOTES.md) | OKF v0.2 contract this CLI emits + trust policy |
-| [docs/SCHEMA.md](docs/SCHEMA.md) | OKF frontmatter JSON Schema and editor/CI integration |
-| [docs/PLUGINS.md](docs/PLUGINS.md) | third-party adapter entry-point protocol |
-| [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | common errors and fixes |
-| [docs/FAQ.md](docs/FAQ.md) | frequently asked questions |
-| [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) | how to add a new format / engine / emitter |
-| [docs/CHANGELOG.md](docs/CHANGELOG.md) | release history |
-| [docs/ENHANCEMENTS.md](docs/ENHANCEMENTS.md) | 44+ shipped enhancements + future ideas |
-| [vscode-extension/README.md](vscode-extension/README.md) | HeadCleaner VS Code extension (Concept Explorer + Trust Inspector) |
-
-## Troubleshooting
-
-**`officecli not found`** — install with `npm install -g @officecli/officecli`. Run `headcleaner agents` to verify.
-
-**PDF with no extractable text** — your PDF is image-only. Re-run with `--ocr` (requires `pytesseract` + Tesseract binary on PATH).
-
-**Hidden files skipped** — intentional. Files starting with `.` are dropped by the walker.
-
-**OKF index.md missing for root** — auto-generated when the bundle has ≥1 concept. Use `--no-okf-index` to opt out.
-
-**More** — see [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md).
-
-## Development
-
-```bash
-git clone <this repo>
-cd headcleaner-cli
-uv sync
-uv run pytest                # 314 tests, ~14s
-uv run headcleaner convert ./tests/fixtures --format both --output ./out
-```
-
-## Architecture
-
-```
-src/headcleaner/
-├── walk.py         # recursive folder walker
-├── router.py       # extension → engine dispatch
-├── normalize.py    # CanonicalDoc + OKF/MD frontmatter builders
-├── lint.py         # post-conversion linter (OKF + Markdown)
-├── run.py          # pipeline orchestrator
-├── cli.py          # Click CLI (headcleaner command)
-├── tui.py          # Textual TUI (omp-style)
-├── engines/
-│   ├── base.py     # Adapter ABC
-│   ├── officecli.py
-│   ├── pdf.py
-│   ├── html.py
-│   └── txt.py
-└── emit/
-    ├── markdown.py
-    ├── okf.py
-    ├── okf_index.py
-    └── manifest.py
-```
-
-Adding a new format: drop a module in `engines/`, register the adapter in `router.py`, add a row to [docs/FORMAT_MATRIX.md](docs/FORMAT_MATRIX.md). See [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) for the full extension guide.
+| Install headcleaner on Windows, macOS, or Linux | [docs/getting-started/installation.md](docs/getting-started/installation.md) |
+| Run your first conversion and understand the output | [docs/getting-started/first-run.md](docs/getting-started/first-run.md) |
+| Understand the terms OKF, citation, FTS5, and trust | [docs/getting-started/glossary.md](docs/getting-started/glossary.md) |
+| Build the everyday workflow that fits how I actually work | [docs/user-guide/everyday-workflow.md](docs/user-guide/everyday-workflow.md) |
+| Read the output files and the report | [docs/user-guide/checking-converted-output.md](docs/user-guide/checking-converted-output.md) |
+| Know whether the output is trustworthy | [docs/user-guide/citations-and-trust.md](docs/user-guide/citations-and-trust.md) |
+| Set up local search and graph over the output | [docs/user-guide/search-and-context.md](docs/user-guide/search-and-context.md) |
+| Use headcleaner with a coding assistant | [docs/user-guide/working-with-ai-agents.md](docs/user-guide/working-with-ai-agents.md) |
+| Debug a skipped check, missing tool, or wrong exit code | [docs/user-guide/troubleshooting.md](docs/user-guide/troubleshooting.md) |
+| Look up a specific command, flag, or behavior | [docs/reference/cli-reference.md](docs/reference/cli-reference.md) |
+| Understand a specific engine, install hint, or skip behavior | [docs/reference/engine-directory.md](docs/reference/engine-directory.md) |
+| Configure headcleaner with a project settings file | [docs/reference/configuration-reference.md](docs/reference/configuration-reference.md) |
+| Add a new adapter, engine, or configuration field | [docs/developer/contributor-onboarding.md](docs/developer/contributor-onboarding.md) |
+| Read the architecture and the canonical data model | [docs/developer/architecture.md](docs/developer/architecture.md) |
+| Understand the trust and safety guarantees | [docs/safety/safety-overview.md](docs/safety/safety-overview.md) |
+| Plan, implement, audit docs, and prepare a commit | [DEVELOPMENT.md](DEVELOPMENT.md) |
 
 ## License
 
-Apache-2.0
+Apache-2.0. See [LICENSE](LICENSE).

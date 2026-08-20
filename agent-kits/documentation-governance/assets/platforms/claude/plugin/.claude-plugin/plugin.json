@@ -1,0 +1,6 @@
+{
+  "name": "documentation-governance",
+  "version": "1.0.0",
+  "description": "Exhaustive documentation audit and Git enforcement workflow",
+  "author": {"name": "Documentation Governance Kit"}
+}

@@ -178,6 +178,13 @@ def cli() -> None:
     help="Eng #35: load a trust policy TOML and fail the run if any concept violates it.",
 )
 @click.option(
+    "--dedupe-threshold",
+    default=0.8,
+    type=click.FloatRange(0, 1),
+    show_default=True,
+    help="Contract 2.5: retain near-duplicate candidates only above this score.",
+)
+@click.option(
     "--git-commit",
     "git_commit_flag",
     is_flag=True,
@@ -267,6 +274,7 @@ def convert(
     theme: str,
     crossref: bool,
     policy: Path | None,
+    dedupe_threshold: float,
     git_commit_flag: bool,
     git_commit_message: str,
     git_commit_verify: bool,
@@ -319,6 +327,12 @@ def convert(
         if isinstance(a, OfficeCLIAdapter):
             a.timeout = officecli_timeout
 
+    claim_policy = None
+    if policy is not None:
+        from .policy import Policy
+
+        claim_policy = Policy.load(policy)
+
     opts = RunOptions(
         input_root=input_dir,
         output_root=output,
@@ -339,6 +353,9 @@ def convert(
         write_bundle_manifest=write_bundle_manifest,
         dry_run=dry_run,
         json_output=json_output,
+        dedupe_threshold=dedupe_threshold,
+        claim_suppressions=claim_policy.claim_suppressions if claim_policy else {},
+        claim_scope=claim_policy.claim_scope if claim_policy else "bundle",
         requested_engine=requested_engine,
         allow_fallback=allow_fallback,
         allow_network=allow_network,
@@ -357,7 +374,7 @@ def convert(
     if policy is not None and not dry_run and opts.fmt in {"okf", "both"}:
         from .policy import Policy, evaluate
 
-        pol = Policy.load(policy)
+        pol = claim_policy or Policy.load(policy)
         findings = evaluate(pol, opts.output_root / "okf")
         if findings:
             for f in findings:
@@ -712,6 +729,372 @@ def lint_cmd(
     raise SystemExit(lint_main(argv))
 
 
+@cli.command(name="chunks")
+@click.argument("bundle", type=click.Path(exists=True, file_okay=False, path_type=Path))
+@click.option("--rebuild", is_flag=True, default=False)
+@click.option("--json", "json_output", is_flag=True, default=False)
+def chunks_cmd(bundle: Path, rebuild: bool, json_output: bool) -> None:
+    """Write or inspect deterministic cited chunks for BUNDLE."""
+    from .chunking import read_chunks, rebuild_chunks
+
+    chunks = rebuild_chunks(bundle) if rebuild else read_chunks(bundle)
+    payload = [chunk.to_dict() for chunk in chunks]
+    click.echo(
+        json.dumps(payload, ensure_ascii=False, sort_keys=True)
+        if json_output
+        else f"{len(payload)} chunks"
+    )
+
+
+@cli.group(name="index")
+def index_cmd() -> None:
+    """Build the rebuildable local search index."""
+
+
+@index_cmd.command(name="rebuild")
+@click.argument("bundle", type=click.Path(exists=True, file_okay=False, path_type=Path))
+def index_rebuild_cmd(bundle: Path) -> None:
+    from .index import rebuild_index
+
+    click.echo(rebuild_index(bundle))
+
+
+@index_cmd.command(name="update")
+@click.argument("bundle", type=click.Path(exists=True, file_okay=False, path_type=Path))
+def index_update_cmd(bundle: Path) -> None:
+    """Atomically refresh the cited local index from current bundle derivatives."""
+    from .index import update_index
+
+    click.echo(update_index(bundle))
+
+
+@index_cmd.command(name="embed")
+@click.argument("bundle", type=click.Path(exists=True, file_okay=False, path_type=Path))
+@click.option(
+    "--provider",
+    type=str,
+    required=True,
+)
+@click.option("--model", required=True)
+@click.option("--endpoint")
+@click.option("--qdrant-endpoint")
+@click.option("--qdrant-collection", default="headcleaner")
+@click.option("--recreate-qdrant-collection", is_flag=True, default=False)
+@click.option("--allow-network", is_flag=True, default=False)
+@click.option("--timeout", default=30.0, type=float)
+def index_embed_cmd(
+    bundle: Path,
+    provider: str,
+    model: str,
+    endpoint: str | None,
+    qdrant_endpoint: str | None,
+    qdrant_collection: str,
+    recreate_qdrant_collection: bool,
+    allow_network: bool,
+    timeout: float,
+) -> None:
+    """Explicitly cache vectors for chunk text; no provider is selected implicitly."""
+    from .chunking import read_chunks
+    from .embeddings import (
+        HttpEmbeddingProvider,
+        LocalSentenceTransformerProvider,
+        QdrantVectorStore,
+        VectorCache,
+    )
+
+    if provider == "openai_compatible_http":
+        embedding_provider = HttpEmbeddingProvider(endpoint or "", model, timeout=timeout)
+    elif provider == "local_sentence_transformer":
+        embedding_provider = LocalSentenceTransformerProvider(Path(model), model)
+    else:
+        from .plugins import load_embedding_providers
+
+        embedding_provider = load_embedding_providers()[0].get(provider)
+        if embedding_provider is None:
+            raise click.BadParameter(
+                f"unknown embedding provider: {provider}", param_hint="--provider"
+            )
+
+    if qdrant_endpoint and not allow_network:
+        raise click.UsageError("Qdrant requires --allow-network")
+
+    chunks = read_chunks(bundle)
+    vectors = embedding_provider.embed(
+        [chunk.text for chunk in chunks], allow_network=allow_network
+    )
+    cache = VectorCache(bundle)
+    qdrant = None
+    if qdrant_endpoint:
+        qdrant = QdrantVectorStore(qdrant_endpoint, qdrant_collection)
+        if vectors:
+            qdrant.ensure_compatible(
+                dimension=len(vectors[0]),
+                model_id=embedding_provider.model_id,
+                recreate=recreate_qdrant_collection,
+            )
+    for chunk, vector in zip(chunks, vectors, strict=True):
+        cache.put(
+            chunk.text,
+            chunk_id=chunk.id,
+            provider=embedding_provider.name,
+            model_id=embedding_provider.model_id,
+            dimension=len(vector),
+            version=embedding_provider.version,
+            vector=vector,
+        )
+        if qdrant:
+            qdrant.upsert(
+                chunk_id=chunk.id,
+                vector=vector,
+                metadata={
+                    "concept_id": chunk.concept_id,
+                    "source_sha256": chunk.source_sha256,
+                    "citation": chunk.citation,
+                },
+                model_id=embedding_provider.model_id,
+            )
+    pruned = cache.prune_orphans({chunk.id for chunk in chunks})
+    qdrant_pruned = qdrant.prune_orphans({chunk.id for chunk in chunks}) if qdrant else 0
+    click.echo(
+        f"cached {len(vectors)} vectors; pruned {pruned} local and {qdrant_pruned} Qdrant orphans"
+    )
+
+
+@cli.command(name="search")
+@click.argument("query")
+@click.option(
+    "--bundle", required=True, type=click.Path(exists=True, file_okay=False, path_type=Path)
+)
+@click.option("--tag")
+@click.option("--type", "concept_type")
+@click.option("--status")
+@click.option("--path", "path_prefix")
+@click.option("--source-sha")
+@click.option("--limit", default=20, type=int)
+@click.option("--json", "json_output", is_flag=True, default=False)
+def search_cmd(
+    query: str,
+    bundle: Path,
+    tag: str | None,
+    concept_type: str | None,
+    status: str | None,
+    path_prefix: str | None,
+    source_sha: str | None,
+    limit: int,
+    json_output: bool,
+) -> None:
+    """Search local chunks with deterministic FTS5 ranking and filters."""
+    from .search import SearchQueryError, search
+
+    try:
+        hits = search(
+            bundle,
+            query,
+            tag=tag,
+            type=concept_type,
+            status=status,
+            path=path_prefix,
+            source_sha=source_sha,
+            limit=limit,
+        )
+    except (SearchQueryError, ValueError) as exc:
+        raise click.ClickException(str(exc)) from exc
+    rows = [hit.__dict__ for hit in hits]
+    click.echo(
+        json.dumps(rows, ensure_ascii=False, sort_keys=True)
+        if json_output
+        else "\n".join(f"{row['concept_path']}: {row['excerpt']}" for row in rows)
+    )
+
+
+@cli.command(name="graph")
+@click.argument("bundle", type=click.Path(exists=True, file_okay=False, path_type=Path))
+@click.option("--node")
+@click.option("--depth", default=1, type=int)
+@click.option(
+    "--kind",
+    type=click.Choice(
+        [
+            "contains",
+            "cites",
+            "mentions",
+            "related_to",
+            "duplicate_candidate",
+            "conflicts_candidate",
+        ]
+    ),
+    default=None,
+)
+@click.option("--policy", type=click.Path(exists=True, dir_okay=False, path_type=Path))
+@click.option("--json", "json_output", is_flag=True, default=False)
+def graph_cmd(
+    bundle: Path,
+    node: str | None,
+    depth: int,
+    kind: str | None,
+    policy: Path | None,
+    json_output: bool,
+) -> None:
+    """Build and query evidence-linked graph data for BUNDLE."""
+    from .graph import build_graph, filter_graph, query_graph, write_graph
+    from .policy import Policy
+
+    graph = build_graph(bundle)
+    if policy:
+        graph = filter_graph(graph, Policy.load(policy).graph_excluded_edge_kinds)
+    write_graph(bundle, graph)
+    if node:
+        payload = query_graph(graph, node, depth=depth, kind=kind)
+    else:
+        payload = {
+            "nodes": [item.__dict__ for item in graph.nodes],
+            "edges": [item.__dict__ for item in graph.edges],
+        }
+    click.echo(
+        json.dumps(payload, default=list, sort_keys=True)
+        if json_output
+        else f"{len(payload['nodes'])} nodes, {len(payload['edges'])} edges"
+    )
+
+
+@cli.command(name="claims")
+@click.argument("bundle", type=click.Path(exists=True, file_okay=False, path_type=Path))
+@click.option("--policy", type=click.Path(exists=True, dir_okay=False, path_type=Path))
+@click.option("--json", "json_output", is_flag=True, default=False)
+def claims_cmd(bundle: Path, policy: Path | None, json_output: bool) -> None:
+    """List deterministic stale and potential-conflict candidates for BUNDLE."""
+    from .chunking import read_chunks
+    from .claims import analyze_claims
+    from .policy import Policy
+
+    claim_policy = Policy.load(policy) if policy else Policy()
+    claims, findings = analyze_claims(
+        [chunk.to_dict() for chunk in read_chunks(bundle)],
+        suppressions=claim_policy.claim_suppressions,
+        scope=claim_policy.claim_scope,
+    )
+    payload = {
+        "claims": [claim.__dict__ for claim in claims],
+        "findings": [finding.__dict__ for finding in findings],
+    }
+    click.echo(
+        json.dumps(payload, default=list, sort_keys=True)
+        if json_output
+        else f"{len(findings)} findings"
+    )
+
+
+@cli.command(name="dedupe")
+@click.argument("bundle", type=click.Path(exists=True, file_okay=False, path_type=Path))
+@click.option("--threshold", default=0.8, type=float)
+@click.option("--json", "json_output", is_flag=True, default=False)
+def dedupe_cmd(bundle: Path, threshold: float, json_output: bool) -> None:
+    """List exact and near-duplicate candidate families without mutating sources."""
+    from .chunking import read_chunks
+    from .dedupe import analyze_documents
+
+    chunks = read_chunks(bundle)
+    by_concept: dict[str, list] = {}
+    for chunk in chunks:
+        by_concept.setdefault(chunk.concept_id, []).append(chunk)
+    families = analyze_documents(
+        (
+            {
+                "id": path,
+                "sha256": rows[0].source_sha256,
+                "title": path,
+                "text": "\n".join(row.text for row in rows),
+                "path": path,
+            }
+            for path, rows in sorted(by_concept.items())
+        ),
+        threshold=threshold,
+    )
+    payload = [family.__dict__ for family in families]
+    click.echo(
+        json.dumps(payload, default=list, sort_keys=True)
+        if json_output
+        else f"{len(payload)} families"
+    )
+
+
+@cli.command(name="diff")
+@click.argument("left", type=click.Path(exists=True, path_type=Path))
+@click.argument("right", type=click.Path(exists=True, path_type=Path))
+@click.option(
+    "--format", "output_format", type=click.Choice(["text", "json", "md"]), default="text"
+)
+@click.option("--include-unchanged", is_flag=True, default=False)
+def diff_cmd(left: Path, right: Path, output_format: str, include_unchanged: bool) -> None:
+    """Compare Markdown by typed blocks and canonical frontmatter/trust metadata."""
+    from .diff import diff_markdown, render_markdown_report
+
+    result = diff_markdown(
+        left.read_text(encoding="utf-8"),
+        right.read_text(encoding="utf-8"),
+        left_ref=str(left),
+        right_ref=str(right),
+        include_unchanged=include_unchanged,
+    )
+    payload = {
+        "left_ref": result.left_ref,
+        "right_ref": result.right_ref,
+        "summary": result.summary,
+        "changes": [change.__dict__ for change in result.changes],
+        "algorithm_version": result.algorithm_version,
+    }
+    if output_format == "json":
+        click.echo(json.dumps(payload, default=list, sort_keys=True))
+    elif output_format == "md":
+        click.echo(render_markdown_report(result), nl=False)
+    else:
+        click.echo(json.dumps(payload["summary"], sort_keys=True))
+
+
+@cli.command(name="sync")
+@click.argument("input_root", type=click.Path(exists=True, file_okay=False, path_type=Path))
+@click.argument("output", type=click.Path(file_okay=False, path_type=Path))
+@click.option("--dry-run", is_flag=True, default=True)
+@click.option("--apply", "apply_changes", is_flag=True, default=False)
+@click.option("--prune-generated", is_flag=True, default=False)
+@click.option("--json", "json_output", is_flag=True, default=False)
+def sync_cmd(
+    input_root: Path,
+    output: Path,
+    dry_run: bool,
+    apply_changes: bool,
+    prune_generated: bool,
+    json_output: bool,
+) -> None:
+    """Preview rename/deletion-safe bundle synchronization; apply is explicit."""
+    from .sync import load_state, plan_sync, reconcile
+    from .walk import sha256_of, walk
+
+    sources = {
+        source.relpath.as_posix(): source.sha256 or sha256_of(source.path)
+        for source in walk(input_root)
+    }
+    try:
+        if dry_run and not apply_changes and not prune_generated:
+            plan = plan_sync(input_root, output)
+        else:
+            plan = reconcile(
+                load_state(output),
+                sources,
+                output,
+                dry_run=dry_run,
+                apply=apply_changes,
+                prune_generated=prune_generated,
+            )
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
+    click.echo(
+        json.dumps(plan, sort_keys=True)
+        if json_output
+        else "\n".join(f"{row['status']}: {row.get('path', row.get('from', ''))}" for row in plan)
+    )
+
+
 def main(args: list[str] | None = None) -> int:
     """Entry point used by `headcleaner` console script."""
     try:
@@ -894,9 +1277,10 @@ def mcp_cmd(bundles: tuple[Path, ...], named_bundles: tuple[str, ...]) -> None:
     the default target for tool calls. Use the ``name=path`` form (or
     positional --name) to give bundles explicit names.
 
-    Install with the ``mcp`` extra first::
+    The required ``mcp`` dependency installs with headcleaner. Restore a missing
+    locked environment with::
 
-        uv pip install "headcleaner[mcp]"
+        uv sync --locked
 
     Then register with an MCP client (e.g. Claude Code)::
 

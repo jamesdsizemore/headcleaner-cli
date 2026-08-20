@@ -32,6 +32,15 @@ from pathlib import Path
 
 import yaml
 
+_GRAPH_EDGE_KINDS = {
+    "contains",
+    "cites",
+    "mentions",
+    "related_to",
+    "duplicate_candidate",
+    "conflicts_candidate",
+}
+
 
 @dataclass
 class PolicyFinding:
@@ -65,17 +74,45 @@ class Policy:
     require_verified: list[str] = field(default_factory=lambda: ["*"])
     require_sources: bool = False
     require_sha256: bool = False
+    claim_suppressions: dict[str, str] = field(default_factory=dict)
+    claim_scope: str = "bundle"
+    graph_excluded_edge_kinds: set[str] = field(default_factory=set)
 
     @classmethod
     def load(cls, path: Path) -> Policy:
         data = tomllib.loads(path.read_text(encoding="utf-8"))
         pol = data.get("policy", {})
+        claims = data.get("claims", {})
+        graph = data.get("graph", {})
+        if not isinstance(claims, dict) or not isinstance(graph, dict):
+            raise ValueError("claims and graph policy sections must be TOML tables")
+        suppressions = claims.get("suppressions", {})
+        scope = claims.get("scope", "bundle")
+        excluded_edge_kinds = graph.get("exclude_edge_kinds", [])
+        if not isinstance(suppressions, dict) or any(
+            kind not in {"date", "amount", "owner", "status_label"}
+            or not isinstance(reason, str)
+            or not reason
+            for kind, reason in suppressions.items()
+        ):
+            raise ValueError(
+                "claims.suppressions must map supported claim kinds to non-empty reasons"
+            )
+        if scope not in {"bundle", "source"}:
+            raise ValueError("claims.scope must be bundle or source")
+        if not isinstance(excluded_edge_kinds, list) or any(
+            kind not in _GRAPH_EDGE_KINDS for kind in excluded_edge_kinds
+        ):
+            raise ValueError("graph.exclude_edge_kinds must contain supported graph edge kinds")
         return cls(
             require_type=pol.get("require_type", "*"),
             require_status=pol.get("require_status", ["*"]),
             require_verified=pol.get("require_verified", ["*"]),
             require_sources=bool(pol.get("require_sources", False)),
             require_sha256=bool(pol.get("require_sha256", False)),
+            claim_suppressions=dict(suppressions),
+            claim_scope=scope,
+            graph_excluded_edge_kinds=set(excluded_edge_kinds),
         )
 
 

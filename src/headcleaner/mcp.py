@@ -23,9 +23,8 @@ Tools exposed (10):
 - ``okf_refresh``       — re-ingest a bundle after changes
 - ``okf_sql``           — read-only SELECT over an in-memory catalog
 
-The server speaks MCP over stdio. Install headcleaner with the ``mcp``
-extra (``uv pip install 'headcleaner[mcp]'``) and run
-``headcleaner mcp <bundle-dir> [...]``.
+The server speaks MCP over stdio. The required ``mcp`` dependency is installed
+with headcleaner; run ``headcleaner mcp <bundle-dir> [...]``.
 """
 
 from __future__ import annotations
@@ -36,19 +35,22 @@ import re
 import sys
 import threading
 from pathlib import Path
-from typing import Optional
 
 from . import registry as _registry
 from .viewer import build_with_unresolved
 
 try:
-    from mcp.server.mcpserver import MCPServer
+    from mcp.server.fastmcp import FastMCP as MCPServer
+    from mcp.server.fastmcp.server import Settings as _FastMCPSettings
 except ImportError as e:
     raise ImportError(
-        "headcleaner.mcp requires the `mcp` package. Install with: "
-        "`uv pip install 'headcleaner[mcp]'`"
+        "headcleaner.mcp requires the `mcp` package. Restore the locked environment with "
+        "`uv sync --locked`."
     ) from e
 
+# FastMCP 1.29 defines Settings.lifespan before the generic FastMCP type exists.
+# Rebuild after importing the complete module so pydantic-settings sees the concrete type.
+_FastMCPSettings.model_rebuild()
 
 
 # ---------------------------------------------------------------------------
@@ -62,7 +64,7 @@ class BundleEntry:
     def __init__(self, name: str, path: Path) -> None:
         self.name = name
         self.path = path
-        self.loaded_at = _dt.datetime.now(_dt.timezone.utc).isoformat()
+        self.loaded_at = _dt.datetime.now(_dt.UTC).isoformat()
         self.nodes: list[dict] = []
         self.edges: list[dict] = []
         self.unresolved: list[dict] = []  # broken links captured at ingest
@@ -72,6 +74,7 @@ class BundleEntry:
         self.inb: dict[str, list[str]] = {}
         # file snapshot for okf_diff
         self.files: dict[str, str] = {}  # path -> sha256
+        self.file_texts: dict[str, str] = {}
         self._ingest()
 
     def _ingest(self) -> None:
@@ -83,12 +86,16 @@ class BundleEntry:
             self.out.setdefault(e["source"], []).append(e["target"])
             self.inb.setdefault(e["target"], []).append(e["source"])
         # Snapshot files for diff
+        self.files.clear()
+        self.file_texts.clear()
         for f in self.path.rglob("*.md"):
             if f.is_file():
                 try:
-                    h = hashlib.sha256(f.read_bytes()).hexdigest()
-                    self.files[str(f.relative_to(self.path)).replace("\\", "/")] = h
-                except OSError:
+                    data = f.read_bytes()
+                    relpath = str(f.relative_to(self.path)).replace("\\", "/")
+                    self.files[relpath] = hashlib.sha256(data).hexdigest()
+                    self.file_texts[relpath] = data.decode("utf-8")
+                except (OSError, UnicodeDecodeError):
                     pass
 
 
@@ -107,7 +114,7 @@ class BundleRegistry:
             self._bundles[name] = entry
             self._order.append(name)
 
-    def refresh(self, name: Optional[str]) -> dict:
+    def refresh(self, name: str | None) -> dict:
         with self.lock:
             if name is None and self._order:
                 name = self._order[0]
@@ -126,7 +133,7 @@ class BundleRegistry:
                 "links_after": after[1],
             }
 
-    def get(self, name: Optional[str]) -> BundleEntry | None:
+    def get(self, name: str | None) -> BundleEntry | None:
         with self.lock:
             if name:
                 return self._bundles.get(name)
@@ -157,7 +164,7 @@ def _resolve_slug(target: str) -> tuple[str | None, str]:
 
 
 def _resolve_concept_id(
-    reg: BundleRegistry, target: str, bundle_name: Optional[str]
+    reg: BundleRegistry, target: str, bundle_name: str | None
 ) -> tuple[str | None, list[str]]:
     """Resolve a wikilink-style name to a concept id. Returns (id, candidates).
 
@@ -224,7 +231,7 @@ def okf_list_bundles(reg: BundleRegistry) -> list[dict]:
 def okf_search(
     reg: BundleRegistry,
     term: str,
-    bundle_name: Optional[str],
+    bundle_name: str | None,
     limit: int,
     all_bundles: bool = False,
 ) -> list[dict]:
@@ -248,6 +255,34 @@ def okf_search(
     for bname, entry in entries:
         if entry is None:
             continue
+        from .index import index_path
+
+        if index_path(entry.path).exists():
+            from .search import SearchQueryError
+            from .search import search as indexed_search
+
+            try:
+                indexed_hits = indexed_search(entry.path, term, limit=limit)
+            except SearchQueryError:
+                indexed_hits = []
+            for indexed_hit in indexed_hits:
+                concept_id = indexed_hit.concept_path.removesuffix(".md")
+                node = entry.by_id.get(concept_id, {})
+                hit = {
+                    "id": concept_id,
+                    "type": node.get("type", ""),
+                    "title": node.get("title", indexed_hit.concept_path),
+                    "description": node.get("description", ""),
+                    "chunk_id": indexed_hit.chunk_id,
+                    "ordinal": indexed_hit.ordinal,
+                    "score": indexed_hit.rank,
+                    "excerpt": indexed_hit.excerpt,
+                    "citation": indexed_hit.citation,
+                }
+                if all_bundles:
+                    hit["bundle"] = bname
+                hits.append(hit)
+            continue
         for n in entry.nodes:
             if (
                 t in n.get("title", "").lower()
@@ -266,7 +301,7 @@ def okf_search(
     return hits[: max(1, limit)]
 
 
-def okf_get_concept(reg: BundleRegistry, target: str, bundle_name: Optional[str]) -> dict:
+def okf_get_concept(reg: BundleRegistry, target: str, bundle_name: str | None) -> dict:
     cid, cands = _resolve_concept_id(reg, target, bundle_name)
     if cid is None:
         if cands:
@@ -292,10 +327,10 @@ def okf_get_concept(reg: BundleRegistry, target: str, bundle_name: Optional[str]
 
 def okf_context(
     reg: BundleRegistry,
-    start: Optional[str],
+    start: str | None,
     depth: int,
     max_tokens: int,
-    bundle_name: Optional[str],
+    bundle_name: str | None,
 ) -> dict:
     entry = reg.get(bundle_name)
     if not entry:
@@ -341,9 +376,7 @@ def okf_context(
     }
 
 
-def okf_related(
-    reg: BundleRegistry, concept: str, k: int, bundle_name: Optional[str]
-) -> list[dict]:
+def okf_related(reg: BundleRegistry, concept: str, k: int, bundle_name: str | None) -> list[dict]:
     entry = reg.get(bundle_name)
     if not entry:
         return []
@@ -360,7 +393,7 @@ def okf_related(
     return [{"id": c, "score": s, "title": entry.by_id[c].get("title", c)} for c, s in ranked]
 
 
-def okf_impact(reg: BundleRegistry, concept: str, bundle_name: Optional[str]) -> dict:
+def okf_impact(reg: BundleRegistry, concept: str, bundle_name: str | None) -> dict:
     entry = reg.get(bundle_name)
     if not entry:
         return {"error": "no bundle loaded"}
@@ -378,20 +411,28 @@ def okf_impact(reg: BundleRegistry, concept: str, bundle_name: Optional[str]) ->
             continue
         seen.add(n)
         frontier.extend(entry.out.get(n, []))
-    return {
+    result = {
         "concept": cid,
         "title": entry.by_id[cid].get("title", cid),
         "outbound": outbound,
         "inbound": inbound,
         "transitive_outbound": sorted(seen),
     }
+    if (entry.path / "chunks.jsonl").is_file():
+        from .graph import build_graph, filter_graph_for_bundle_policy, query_graph
+
+        graph_node = f"concept:{cid if cid.endswith('.md') else f'{cid}.md'}"
+        result["graph_evidence"] = query_graph(
+            filter_graph_for_bundle_policy(build_graph(entry.path), entry.path), graph_node, depth=1
+        )
+    return result
 
 
 def okf_doctor(
     reg: BundleRegistry,
-    bundle_name: Optional[str],
-    stale_days: Optional[int],
-    now_iso: Optional[str],
+    bundle_name: str | None,
+    stale_days: int | None,
+    now_iso: str | None,
 ) -> dict:
     entry = reg.get(bundle_name)
     if not entry:
@@ -460,27 +501,52 @@ def okf_doctor(
     }
 
 
-def okf_diff(reg: BundleRegistry, bundle_name: Optional[str]) -> dict:
+def okf_diff(reg: BundleRegistry, bundle_name: str | None) -> dict:
     entry = reg.get(bundle_name)
     if not entry:
         return {"error": "no bundle loaded"}
     current_files: dict[str, str] = {}
+    current_texts: dict[str, str] = {}
     for f in entry.path.rglob("*.md"):
         if f.is_file():
             try:
-                h = hashlib.sha256(f.read_bytes()).hexdigest()
-                current_files[str(f.relative_to(entry.path)).replace("\\", "/")] = h
-            except OSError:
+                data = f.read_bytes()
+                relpath = str(f.relative_to(entry.path)).replace("\\", "/")
+                current_files[relpath] = hashlib.sha256(data).hexdigest()
+                current_texts[relpath] = data.decode("utf-8")
+            except (OSError, UnicodeDecodeError):
                 pass
     added = sorted(set(current_files) - set(entry.files))
     removed = sorted(set(entry.files) - set(current_files))
     changed = sorted(
         p for p in current_files if p in entry.files and current_files[p] != entry.files[p]
     )
-    return {"bundle": entry.name, "added": added, "removed": removed, "changed": changed}
+    semantic: dict[str, dict] = {}
+    if changed:
+        from .diff import diff_markdown
+
+        for path in changed:
+            result = diff_markdown(
+                entry.file_texts[path],
+                current_texts[path],
+                left_ref=f"{entry.name}:{path}@loaded",
+                right_ref=f"{entry.name}:{path}@current",
+            )
+            semantic[path] = {
+                "summary": result.summary,
+                "changes": [change.__dict__ for change in result.changes],
+                "algorithm_version": result.algorithm_version,
+            }
+    return {
+        "bundle": entry.name,
+        "added": added,
+        "removed": removed,
+        "changed": changed,
+        "semantic": semantic,
+    }
 
 
-def okf_sql(reg: BundleRegistry, query: str, bundle_name: Optional[str]) -> list[dict]:
+def okf_sql(reg: BundleRegistry, query: str, bundle_name: str | None) -> list[dict]:
     """A minimal read-only SQL-ish layer: parse simple SELECT-style queries
     over the in-memory node/edge lists.
 
@@ -563,7 +629,7 @@ def okf_list_bundles_tool() -> list[dict]:
 @mcp.tool()
 def okf_search_tool(
     term: str,
-    bundle: Optional[str] = None,
+    bundle: str | None = None,
     limit: int = 20,
     all_bundles: bool = False,
 ) -> list[dict]:
@@ -578,7 +644,7 @@ def okf_search_tool(
 
 
 @mcp.tool()
-def okf_get_concept_tool(target: str, bundle: Optional[str] = None) -> dict:
+def okf_get_concept_tool(target: str, bundle: str | None = None) -> dict:
     """Read one concept (frontmatter + body). Accepts id, title, or filename stem."""
     with reg.lock:
         return okf_get_concept(reg, target, bundle)
@@ -586,10 +652,10 @@ def okf_get_concept_tool(target: str, bundle: Optional[str] = None) -> dict:
 
 @mcp.tool()
 def okf_context_tool(
-    start: Optional[str] = None,
+    start: str | None = None,
     depth: int = 1,
     max_tokens: int = 8000,
-    bundle: Optional[str] = None,
+    bundle: str | None = None,
 ) -> dict:
     """Assemble a curated markdown blob: a concept + BFS neighborhood, capped by max_tokens."""
     with reg.lock:
@@ -597,51 +663,51 @@ def okf_context_tool(
 
 
 @mcp.tool()
-def okf_related_tool(concept: str, k: int = 10, bundle: Optional[str] = None) -> list[dict]:
+def okf_related_tool(concept: str, k: int = 10, bundle: str | None = None) -> list[dict]:
     """Top-k concepts by link degree (inbound + outbound count)."""
     with reg.lock:
         return okf_related(reg, concept, k, bundle)
 
 
 @mcp.tool()
-def okf_impact_tool(concept: str, bundle: Optional[str] = None) -> dict:
+def okf_impact_tool(concept: str, bundle: str | None = None) -> dict:
     """Report outbound / inbound / transitive links for a concept."""
     with reg.lock:
         return okf_impact(reg, concept, bundle)
 
 
 @mcp.tool()
-def okf_doctor_tool(bundle: Optional[str] = None, stale_days: Optional[int] = None) -> dict:
+def okf_doctor_tool(bundle: str | None = None, stale_days: int | None = None) -> dict:
     """Health report for a bundle (score, errors, warnings, per-rule findings)."""
     now_iso = None
     if stale_days is not None:
-        now_iso = _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        now_iso = _dt.datetime.now(_dt.UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     with reg.lock:
         return okf_doctor(reg, bundle, stale_days, now_iso)
 
 
 @mcp.tool()
-def okf_diff_tool(bundle: Optional[str] = None) -> dict:
+def okf_diff_tool(bundle: str | None = None) -> dict:
     """What changed on disk since the bundle was loaded."""
     with reg.lock:
         return okf_diff(reg, bundle)
 
 
 @mcp.tool()
-def okf_refresh_tool(bundle: Optional[str] = None) -> dict:
+def okf_refresh_tool(bundle: str | None = None) -> dict:
     """Re-ingest a bundle so the in-memory catalog reflects current files."""
     with reg.lock:
         return reg.refresh(bundle)
 
 
 @mcp.tool()
-def okf_sql_tool(query: str, bundle: Optional[str] = None) -> list[dict]:
+def okf_sql_tool(query: str, bundle: str | None = None) -> list[dict]:
     """Read-only SELECT over the in-memory catalog (concepts, links)."""
     with reg.lock:
         return okf_sql(reg, query, bundle)
 
 
-def main(argv: Optional[list[str]] = None) -> int:
+def main(argv: list[str] | None = None) -> int:
     args = sys.argv[1:] if argv is None else argv
     if not args or args[0] in ("-h", "--help"):
         print(__doc__)
@@ -664,8 +730,6 @@ def main(argv: Optional[list[str]] = None) -> int:
     except KeyboardInterrupt:
         return 0
     return 0
-
-
 
 
 @mcp.tool()
@@ -703,7 +767,7 @@ def okf_registry_resolve(target: str) -> dict:
     slug, bundle_path = _registry.resolve_slug(target)
     if bundle_path is None:
         return {"ok": False, "error": f"unknown slug {slug!r}" if slug else "not a slug"}
-    rest = target[len(f"@{slug}/"):] if target.startswith(f"@{slug}/") else ""
+    rest = target[len(f"@{slug}/") :] if target.startswith(f"@{slug}/") else ""
     return {
         "ok": True,
         "slug": slug,

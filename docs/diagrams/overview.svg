@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 480" role="img" aria-labelledby="title">
+  <title id="title">headcleaner overview: source folder in, citation-aware output out</title>
+  <defs>
+    <style>
+      .bg { fill: #0b0f1a; }
+      .stroke-cyan { stroke: #22D3EE; fill: none; stroke-width: 2; }
+      .stroke-pink { stroke: #EC4899; fill: none; stroke-width: 2; }
+      .stroke-purple { stroke: #A855F7; fill: none; stroke-width: 2; }
+      .stroke-muted { stroke: #64748b; fill: none; stroke-width: 1.5; }
+      .fill-cyan { fill: #22D3EE; }
+      .fill-pink { fill: #EC4899; }
+      .fill-purple { fill: #A855F7; }
+      .text-main { fill: #e2e8f0; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 14px; }
+      .text-strong { fill: #f8fafc; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 16px; font-weight: 600; }
+      .text-muted { fill: #94a3b8; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; }
+      .text-cyan { fill: #22D3EE; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 14px; font-weight: 600; }
+      .text-pink { fill: #EC4899; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 14px; font-weight: 600; }
+      .text-purple { fill: #A855F7; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 14px; font-weight: 600; }
+    </style>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="800" height="480" rx="8"/>
+
+  <!-- Source folder box -->
+  <g>
+    <rect class="stroke-cyan" x="40" y="60" width="200" height="100" rx="6"/>
+    <text class="text-cyan" x="60" y="90">SOURCE FOLDER</text>
+    <text class="text-muted" x="60" y="115">.docx .xlsx .pdf</text>
+    <text class="text-muted" x="60" y="135">.html .eml .txt</text>
+    <text class="text-muted" x="60" y="155">+ attachments</text>
+  </g>
+
+  <!-- Arrow 1 -->
+  <g>
+    <line class="stroke-pink" x1="240" y1="110" x2="350" y2="110"/>
+    <polygon class="fill-pink" points="350,110 340,104 340,116"/>
+    <text class="text-muted" x="248" y="100">convert</text>
+  </g>
+
+  <!-- headcleaner core box -->
+  <g>
+    <rect class="stroke-pink" x="350" y="40" width="220" height="140" rx="6"/>
+    <text class="text-pink" x="370" y="70">⚡ headcleaner</text>
+    <text class="text-main" x="370" y="95">pipeline</text>
+    <text class="text-main" x="370" y="115">walk → route →</text>
+    <text class="text-main" x="370" y="135">normalize → emit</text>
+    <text class="text-muted" x="370" y="160">local-first, deterministic</text>
+  </g>
+
+  <!-- Arrow 2 -->
+  <g>
+    <line class="stroke-cyan" x1="570" y1="110" x2="680" y2="110"/>
+    <polygon class="fill-cyan" points="680,110 670,104 670,116"/>
+    <text class="text-muted" x="580" y="100">emit</text>
+  </g>
+
+  <!-- Output folder box -->
+  <g>
+    <rect class="stroke-cyan" x="680" y="60" width="100" height="100" rx="6"/>
+    <text class="text-cyan" x="700" y="90">OUTPUT</text>
+    <text class="text-muted" x="700" y="115">manifest.json</text>
+    <text class="text-muted" x="700" y="135">_md/  okf/</text>
+    <text class="text-muted" x="700" y="155">REPORT.md</text>
+  </g>
+
+  <!-- Derivatives row -->
+  <g>
+    <rect class="stroke-purple" x="120" y="240" width="140" height="80" rx="6"/>
+    <text class="text-purple" x="140" y="270">chunks.jsonl</text>
+    <text class="text-muted" x="140" y="295">cited, deterministic</text>
+  </g>
+  <g>
+    <rect class="stroke-purple" x="280" y="240" width="140" height="80" rx="6"/>
+    <text class="text-purple" x="300" y="270">graph.jsonl</text>
+    <text class="text-muted" x="300" y="295">evidence-linked</text>
+  </g>
+  <g>
+    <rect class="stroke-purple" x="440" y="240" width="140" height="80" rx="6"/>
+    <text class="text-purple" x="460" y="270">claim-review.json</text>
+    <text class="text-muted" x="460" y="295">stale + conflicts</text>
+  </g>
+  <g>
+    <rect class="stroke-purple" x="600" y="240" width="140" height="80" rx="6"/>
+    <text class="text-purple" x="620" y="270">duplicate-families</text>
+    <text class="text-muted" x="620" y="295">non-destructive</text>
+  </g>
+
+  <!-- Arrows from core to derivatives -->
+  <line class="stroke-purple" x1="460" y1="180" x2="190" y2="240" stroke-dasharray="4 3"/>
+  <line class="stroke-purple" x1="460" y1="180" x2="350" y2="240" stroke-dasharray="4 3"/>
+  <line class="stroke-purple" x1="460" y1="180" x2="510" y2="240" stroke-dasharray="4 3"/>
+  <line class="stroke-purple" x1="460" y1="180" x2="670" y2="240" stroke-dasharray="4 3"/>
+
+  <!-- Search index below -->
+  <g>
+    <rect class="stroke-cyan" x="280" y="370" width="320" height="70" rx="6"/>
+    <text class="text-cyan" x="320" y="400">SQLite FTS5 search index</text>
+    <text class="text-muted" x="320" y="420">.headcleaner/index.sqlite3 — rebuildable</text>
+  </g>
+
+  <!-- Arrow from chunks to index -->
+  <line class="stroke-cyan" x1="190" y1="320" x2="350" y2="370" stroke-dasharray="4 3"/>
+
+  <!-- Footer -->
+  <text class="text-muted" x="40" y="465">⚡ headcleaner · local-first · citation-aware · human:pending</text>
+</svg>

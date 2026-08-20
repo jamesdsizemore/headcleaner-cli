@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 460" role="img" aria-labelledby="title">
+  <title id="title">Headcleaner safety guarantees: source immutable, network explicit, verified human:pending</title>
+  <defs>
+    <style>
+      .bg { fill: #0b0f1a; }
+      .stroke-cyan { stroke: #22D3EE; fill: none; stroke-width: 2; }
+      .stroke-pink { stroke: #EC4899; fill: none; stroke-width: 2; }
+      .stroke-purple { stroke: #A855F7; fill: none; stroke-width: 2; }
+      .stroke-muted { stroke: #64748b; fill: none; stroke-width: 1.5; }
+      .fill-cyan { fill: #22D3EE; }
+      .fill-pink { fill: #EC4899; }
+      .text-main { fill: #e2e8f0; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 14px; }
+      .text-muted { fill: #94a3b8; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; }
+      .text-cyan { fill: #22D3EE; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 16px; font-weight: 700; }
+      .text-pink { fill: #EC4899; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 16px; font-weight: 700; }
+      .text-purple { fill: #A855F7; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 16px; font-weight: 700; }
+    </style>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="800" height="460" rx="8"/>
+
+  <text class="text-cyan" x="40" y="35">Five guarantees, not configurable</text>
+  <text class="text-muted" x="40" y="55">enforced by code, tested, documented in the safety overview</text>
+
+  <!-- Card 1 -->
+  <g>
+    <rect class="stroke-cyan" x="40" y="90" width="350" height="100" rx="8"/>
+    <text class="text-cyan" x="60" y="120">1 · source files are read-only</text>
+    <text class="text-main" x="60" y="145">headcleaner writes only to the</text>
+    <text class="text-main" x="60" y="165">output directory you name.</text>
+    <text class="text-muted" x="60" y="185">no source-folder mutation, ever</text>
+  </g>
+
+  <!-- Card 2 -->
+  <g>
+    <rect class="stroke-pink" x="410" y="90" width="350" height="100" rx="8"/>
+    <text class="text-pink" x="430" y="120">2 · verified: human:pending</text>
+    <text class="text-main" x="430" y="145">auto-converted files start</text>
+    <text class="text-main" x="430" y="165">unverified; promotion needs</text>
+    <text class="text-muted" x="430" y="185">a human, not a flag</text>
+  </g>
+
+  <!-- Card 3 -->
+  <g>
+    <rect class="stroke-purple" x="40" y="210" width="350" height="100" rx="8"/>
+    <text class="text-purple" x="60" y="240">3 · network is opt-in</text>
+    <text class="text-main" x="60" y="265">embedding providers, Qdrant,</text>
+    <text class="text-main" x="60" y="285">remote engines: each requires</text>
+    <text class="text-muted" x="60" y="305">--allow-network + explicit config</text>
+  </g>
+
+  <!-- Card 4 -->
+  <g>
+    <rect class="stroke-cyan" x="410" y="210" width="350" height="100" rx="8"/>
+    <text class="text-cyan" x="430" y="240">4 · no implicit installs</text>
+    <text class="text-main" x="430" y="265">OfficeCLI, LibreOffice,</text>
+    <text class="text-main" x="430" y="285">Tesseract, readpst: missing?</text>
+    <text class="text-muted" x="430" y="305">headcleaner tells you, never installs</text>
+  </g>
+
+  <!-- Card 5 -->
+  <g>
+    <rect class="stroke-pink" x="40" y="330" width="720" height="80" rx="8"/>
+    <text class="text-pink" x="60" y="360">5 · no publishing, no version rewriting</text>
+    <text class="text-main" x="60" y="385">no tags pushed, no commits rewritten, no packages published without explicit invocation.</text>
+    <text class="text-muted" x="60" y="405">version-control operations are deliberate acts, not background behavior</text>
+  </g>
+
+  <text class="text-muted" x="40" y="445">⚡ headcleaner · safety is a design choice, not a feature flag</text>
+</svg>

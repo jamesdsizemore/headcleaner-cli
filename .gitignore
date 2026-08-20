@@ -38,3 +38,9 @@ tests/fixtures/_generated/
 # Node (we only use npm globally; no node_modules in-repo)
 node_modules/
 test.csv
+
+# graft's local graph cache — regenerable, not committed (run `graft build`).
+.hermes/graft/
+
+# Local development plans. Plans are durable working context, never release artifacts.
+.plans/

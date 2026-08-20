@@ -1,0 +1,1 @@
+{"$schema":"https://json-schema.org/draft/2020-12/schema","title":"headcleaner graph v1","type":"object","required":["record","id"],"properties":{"record":{"enum":["node","edge"]},"id":{"type":"string"},"status":{"enum":["explicit","unverified"]}}}

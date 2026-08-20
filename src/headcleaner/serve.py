@@ -28,7 +28,6 @@ from typing import Any
 
 import yaml
 
-
 _FRONTMATTER_RE = re.compile(r"\A---\s*\n(.*?)\n---\s*\n", re.DOTALL)
 
 
@@ -240,6 +239,38 @@ def build_app(bundle: Bundle):
                 for c in bundle.concepts
             ],
         }
+
+    @app.get("/api/search", response_class=JSONResponse)
+    async def api_search(
+        q: str = Query("", min_length=1),
+        limit: int = Query(20, ge=1, le=100),
+        tag: str | None = None,
+        type_: str | None = Query(None, alias="type"),
+        status: str | None = None,
+        path: str | None = None,
+        source_sha: str | None = None,
+    ) -> dict[str, Any]:
+        """Search the read-only bundle-local FTS index with cited results."""
+        from .index import index_path
+        from .search import SearchQueryError
+        from .search import search as indexed_search
+
+        if not index_path(bundle.root).exists():
+            raise HTTPException(status_code=404, detail="search index is not built")
+        try:
+            hits = indexed_search(
+                bundle.root,
+                q,
+                limit=limit,
+                tag=tag,
+                type=type_,
+                status=status,
+                path=path,
+                source_sha=source_sha,
+            )
+        except SearchQueryError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return {"bundle": str(bundle.root), "hits": [hit.__dict__ for hit in hits]}
 
     @app.get("/api/concept/{relpath:path}", response_class=JSONResponse)
     async def api_concept(relpath: str) -> dict[str, Any]:

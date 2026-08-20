@@ -1,0 +1,5 @@
+=== document AI extraction ===
+=== ingestion and retrieval ===
+=== knowledge and collaboration ===
+=== enterprise governance ===
+=== agent tools ===

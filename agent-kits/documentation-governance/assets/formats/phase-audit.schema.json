@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Documentation governance phase audit",
+  "type": "object",
+  "required": ["schema_version", "phase", "status", "documents"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "phase": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$"},
+    "status": {"enum": ["in_progress", "complete"]},
+    "documents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "disposition", "evidence"],
+        "properties": {
+          "path": {"type": "string", "minLength": 1},
+          "disposition": {"enum": ["pending", "updated", "reviewed", "not-applicable"]},
+          "evidence": {"type": "string"}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

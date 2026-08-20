@@ -1,4 +1,5 @@
 """Tests for the conversion report emitter."""
+
 from __future__ import annotations
 
 import datetime as _dt
@@ -53,6 +54,34 @@ def test_build_report_includes_summary():
     assert "**2**" in text  # 2 OK
     assert "Failed" in text
     assert "./inbox" in text
+
+
+def test_build_report_includes_cited_claim_review_summary():
+    text = build_report(
+        [],
+        started_at=NOW,
+        finished_at=LATER,
+        bundle_root="bundle",
+        claim_review={"path": "okf/claim-review.json", "count": 2, "finding_count": 1},
+    )
+
+    assert "## Claim review candidates" in text
+    assert "Cited candidates | 2" in text
+    assert "Potential findings | 1" in text
+
+
+def test_build_report_includes_non_destructive_duplicate_family_summary():
+    text = build_report(
+        [],
+        started_at=NOW,
+        finished_at=LATER,
+        bundle_root="bundle",
+        dedupe={"path": "okf/duplicate-families.json", "count": 2, "threshold": 0.8},
+    )
+
+    assert "## Duplicate and version candidates" in text
+    assert "Families | 2" in text
+    assert "Threshold | 0.80" in text
 
 
 def test_build_report_per_engine_breakdown():

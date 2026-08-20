@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 520" role="img" aria-labelledby="title">
+  <title id="title">headcleaner conversion pipeline: walk, route, normalize, emit</title>
+  <defs>
+    <style>
+      .bg { fill: #0b0f1a; }
+      .stroke-cyan { stroke: #22D3EE; fill: none; stroke-width: 2; }
+      .stroke-pink { stroke: #EC4899; fill: none; stroke-width: 2; }
+      .stroke-purple { stroke: #A855F7; fill: none; stroke-width: 2; }
+      .stroke-muted { stroke: #64748b; fill: none; stroke-width: 1.5; }
+      .fill-cyan { fill: #22D3EE; }
+      .fill-pink { fill: #EC4899; }
+      .fill-purple { fill: #A855F7; }
+      .text-main { fill: #e2e8f0; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 14px; }
+      .text-muted { fill: #94a3b8; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; }
+      .text-cyan { fill: #22D3EE; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 14px; font-weight: 600; }
+      .text-pink { fill: #EC4899; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 14px; font-weight: 600; }
+      .text-purple { fill: #A855F7; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 14px; font-weight: 600; }
+      .text-stage { fill: #f8fafc; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 16px; font-weight: 700; }
+    </style>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="800" height="520" rx="8"/>
+
+  <!-- Title -->
+  <text class="text-stage" x="40" y="35">Conversion pipeline</text>
+  <text class="text-muted" x="40" y="55">walk → route → normalize → emit → derivatives</text>
+
+  <!-- Stage 1: walk -->
+  <g>
+    <rect class="stroke-cyan" x="40" y="90" width="140" height="100" rx="6"/>
+    <text class="text-cyan" x="60" y="115">1 · walk</text>
+    <text class="text-main" x="60" y="140">enumerate files</text>
+    <text class="text-muted" x="60" y="160">compute sha256</text>
+    <text class="text-muted" x="60" y="180">resolve source URI</text>
+  </g>
+
+  <!-- Stage 2: route -->
+  <g>
+    <rect class="stroke-pink" x="220" y="90" width="140" height="100" rx="6"/>
+    <text class="text-pink" x="240" y="115">2 · route</text>
+    <text class="text-main" x="240" y="140">ext → adapter</text>
+    <text class="text-muted" x="240" y="160">build engine plan</text>
+    <text class="text-muted" x="240" y="180">fallback allowed?</text>
+  </g>
+
+  <!-- Stage 3: normalize -->
+  <g>
+    <rect class="stroke-purple" x="400" y="90" width="160" height="100" rx="6"/>
+    <text class="text-purple" x="420" y="115">3 · normalize</text>
+    <text class="text-main" x="420" y="140">adapter → CanonicalDoc</text>
+    <text class="text-muted" x="420" y="160">typed elements</text>
+    <text class="text-muted" x="420" y="180">trust defaults set</text>
+  </g>
+
+  <!-- Stage 4: emit -->
+  <g>
+    <rect class="stroke-cyan" x="600" y="90" width="160" height="100" rx="6"/>
+    <text class="text-cyan" x="620" y="115">4 · emit</text>
+    <text class="text-main" x="620" y="140">_md/ + okf/</text>
+    <text class="text-muted" x="620" y="160">manifest.json</text>
+    <text class="text-muted" x="620" y="180">REPORT.md</text>
+  </g>
+
+  <!-- Arrows -->
+  <line class="stroke-cyan" x1="180" y1="140" x2="220" y2="140"/>
+  <polygon class="fill-pink" points="220,140 210,134 210,146"/>
+  <line class="stroke-pink" x1="360" y1="140" x2="400" y2="140"/>
+  <polygon class="fill-purple" points="400,140 390,134 390,146"/>
+  <line class="stroke-purple" x1="560" y1="140" x2="600" y2="140"/>
+  <polygon class="fill-cyan" points="600,140 590,134 590,146"/>
+
+  <!-- Trust invariant banner -->
+  <g>
+    <rect class="stroke-muted" x="40" y="220" width="720" height="50" rx="6" stroke-dasharray="4 3"/>
+    <text class="text-cyan" x="60" y="245">trust invariant</text>
+    <text class="text-main" x="180" y="245">verified: human:pending · sources: [sha256] · stale_after: today + 180d</text>
+  </g>
+
+  <!-- Derivatives row -->
+  <text class="text-stage" x="40" y="310">Derivatives (rebuildable)</text>
+  <g>
+    <rect class="stroke-purple" x="40" y="325" width="170" height="80" rx="6"/>
+    <text class="text-purple" x="60" y="350">chunks.jsonl</text>
+    <text class="text-muted" x="60" y="370">deterministic cited</text>
+    <text class="text-muted" x="60" y="390">chunking_version: 1</text>
+  </g>
+  <g>
+    <rect class="stroke-purple" x="230" y="325" width="170" height="80" rx="6"/>
+    <text class="text-purple" x="250" y="350">graph.jsonl</text>
+    <text class="text-muted" x="250" y="370">bounded vocabulary</text>
+    <text class="text-muted" x="250" y="390">evidence on every edge</text>
+  </g>
+  <g>
+    <rect class="stroke-purple" x="420" y="325" width="170" height="80" rx="6"/>
+    <text class="text-purple" x="440" y="350">claim-review.json</text>
+    <text class="text-muted" x="440" y="370">stale + potential_conflict</text>
+    <text class="text-muted" x="440" y="390">CAP = 5000 claims</text>
+  </g>
+  <g>
+    <rect class="stroke-purple" x="610" y="325" width="150" height="80" rx="6"/>
+    <text class="text-purple" x="630" y="350">dedupe + sync</text>
+    <text class="text-muted" x="630" y="370">non-destructive</text>
+    <text class="text-muted" x="630" y="390">rename-safe</text>
+  </g>
+
+  <!-- Footer note -->
+  <text class="text-muted" x="40" y="445">Canonical output (_md/, okf/) is never modified by derivatives.</text>
+  <text class="text-muted" x="40" y="465">Derivatives can be deleted and rebuilt byte-identically from canonical output.</text>
+  <text class="text-muted" x="40" y="495">⚡ headcleaner · the four stages + derivatives</text>
+</svg>

@@ -1,0 +1,4 @@
+#!/usr/bin/env sh
+set -eu
+
+exec uv run --no-sync --python 3.13 python scripts/verify_docs.py --staged

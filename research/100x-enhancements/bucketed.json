@@ -1,0 +1,1024 @@
+{
+  "conversion": [
+    {
+      "description": "pdf-converter, document-conversion, markdown-to-pdf, docx-to-pdf, mermaid-diagrams, questpdf, dotnet, csharp, cli-tool",
+      "fullName": "rolandwardenaar/DocToPdf",
+      "language": "C#",
+      "stargazersCount": 1,
+      "url": "https://github.com/rolandwardenaar/DocToPdf"
+    },
+    {
+      "description": "High volume deployment of Azure Document Intelligence extraction followed by Azure AI Search Indexing",
+      "fullName": "mmckechney/DocumentIntelAndAISearchIndexing",
+      "language": "C#",
+      "stargazersCount": 9,
+      "url": "https://github.com/mmckechney/DocumentIntelAndAISearchIndexing"
+    },
+    {
+      "description": "Turn messy financial PDFs & scanned documents into clean, schema-validated data \u2014 sourcing \u2192 OCR \u2192 LLM+RAG extraction \u2192 validation with human review. Portfolio project (LSEG).",
+      "fullName": "dsridhar2110/document-intelligence-extraction",
+      "language": "HTML",
+      "stargazersCount": 0,
+      "url": "https://github.com/dsridhar2110/document-intelligence-extraction"
+    },
+    {
+      "description": "",
+      "fullName": "chaudharyhem199/Document_intelligence_extraction",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/chaudharyhem199/Document_intelligence_extraction"
+    },
+    {
+      "description": "Local-first document AI extraction, schema validation, confidence scoring, and human-review audit workflows.",
+      "fullName": "saneeshmorais16/document-intelligence-extraction-api",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/saneeshmorais16/document-intelligence-extraction-api"
+    },
+    {
+      "description": "High-performance Retrieval-Augmented Generation (RAG) platform enabling intelligent document retrieval, semantic search, vector database integration, and contextual AI responses for enterprise applications.",
+      "fullName": "ali7832/document-intelligence-extraction-system",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/ali7832/document-intelligence-extraction-system"
+    },
+    {
+      "description": "AI - powered document processing system that extracts key inforamation from invoices,contracts,forms,and reports ,classifies documents,validates extracted data, and generates structured JSON output",
+      "fullName": "udayabatte-tech/AI-Document-Intelligence-Extraction-Pipeline",
+      "language": "",
+      "stargazersCount": 0,
+      "url": "https://github.com/udayabatte-tech/AI-Document-Intelligence-Extraction-Pipeline"
+    },
+    {
+      "description": "",
+      "fullName": "reddy-d1/AI-Document-intelligence-extraction-pipeline-Final",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/reddy-d1/AI-Document-intelligence-extraction-pipeline-Final"
+    },
+    {
+      "description": "ML-based document classification + real Azure AI Document Intelligence extraction pipeline",
+      "fullName": "krishnajha0007-sudo/ai-document-processing-pipeline",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/krishnajha0007-sudo/ai-document-processing-pipeline"
+    },
+    {
+      "description": "KPMG GenAI technical assignment \u2013 document intelligence extraction and a stateless RAG-based medical services chatbot using Azure OpenAI, FastAPI and Streamlit.",
+      "fullName": "noyuzan/kpmg-genai-assignment",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/noyuzan/kpmg-genai-assignment"
+    },
+    {
+      "description": "RAG pipeline for invoice Q&A \u2014 Azure Document Intelligence extraction, hybrid Azure AI Search indexing, and GPT-4o answers with source citations.",
+      "fullName": "ariz-ahmad/msft-doc-intelligence",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/ariz-ahmad/msft-doc-intelligence"
+    },
+    {
+      "description": "This Guidance demonstrates how to automate unstructured document processing and subsequent auditing and analysis using AWS AI/ML and generative AI Services.",
+      "fullName": "aws-solutions-library-samples/guidance-for-sap-intelligent-document-processing-and-insights-using-generative-ai-on-aws",
+      "language": "ABAP",
+      "stargazersCount": 1,
+      "url": "https://github.com/aws-solutions-library-samples/guidance-for-sap-intelligent-document-processing-and-insights-using-generative-ai-on-aws"
+    },
+    {
+      "description": "Healthy Diet AI Agent is a Bun + TypeScript backend for nutrition chat, food-image analysis, RAG document ingestion, and knowledge-grounded diet guidance.",
+      "fullName": "archie0732/healthy-diet-ai-agent",
+      "language": "TypeScript",
+      "stargazersCount": 747,
+      "url": "https://github.com/archie0732/healthy-diet-ai-agent"
+    },
+    {
+      "description": "Quality assurance tool for RAG document ingestion",
+      "fullName": "augforce/document-rag-readiness-grader",
+      "language": "",
+      "stargazersCount": 0,
+      "url": "https://github.com/augforce/document-rag-readiness-grader"
+    },
+    {
+      "description": "AgentX RAG \u2014 Document ingestion, embeddings, and semantic search",
+      "fullName": "WindriderQc/agentx-rag",
+      "language": "JavaScript",
+      "stargazersCount": 0,
+      "url": "https://github.com/WindriderQc/agentx-rag"
+    },
+    {
+      "description": "FinWise Chat - Volume 1 Chapter 5: RAG & Document Ingestion",
+      "fullName": "sawankarn/finwise-chat-v01c05",
+      "language": "Java",
+      "stargazersCount": 0,
+      "url": "https://github.com/sawankarn/finwise-chat-v01c05"
+    },
+    {
+      "description": "RAG document ingestion pipeline: PDF/TXT/MD \u2192 Chroma vector store",
+      "fullName": "netanel-systems/rag-pipeline",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/netanel-systems/rag-pipeline"
+    },
+    {
+      "description": "Simple RAG document ingestion and retrieval pipeline using LangChain + Chroma.",
+      "fullName": "Ishan007-bot/Ingestion-Retrieval-Pipeline",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/Ishan007-bot/Ingestion-Retrieval-Pipeline"
+    },
+    {
+      "description": "Built an Event-Driven RAG Document Ingestion Pipeline with Vector Database",
+      "fullName": "kesavakantipudi/An-Event-Driven-RAG-Document-Ingestion-Pipeline-with-Vector-Database",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/kesavakantipudi/An-Event-Driven-RAG-Document-Ingestion-Pipeline-with-Vector-Database"
+    },
+    {
+      "description": "feat: module 1 \u2014 RAG document ingestion pipeline with Supabase and OpenAI",
+      "fullName": "HalisonBruno/Rag-module1",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/HalisonBruno/Rag-module1"
+    },
+    {
+      "description": "",
+      "fullName": "osaimahesh21/rag-document-ingestion",
+      "language": "Jupyter Notebook",
+      "stargazersCount": 0,
+      "url": "https://github.com/osaimahesh21/rag-document-ingestion"
+    },
+    {
+      "description": "an n8n automation creating rag system",
+      "fullName": "muhammadhusnainali04-maker/RAG---Document-Ingestion",
+      "language": "",
+      "stargazersCount": 0,
+      "url": "https://github.com/muhammadhusnainali04-maker/RAG---Document-Ingestion"
+    },
+    {
+      "description": "",
+      "fullName": "Saransh-Agarwal/rag-document-ingestion",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/Saransh-Agarwal/rag-document-ingestion"
+    },
+    {
+      "description": "",
+      "fullName": "remyfather/rag-document-ingestion",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/remyfather/rag-document-ingestion"
+    },
+    {
+      "description": "",
+      "fullName": "ricmed/rag-document-ingestion",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/ricmed/rag-document-ingestion"
+    },
+    {
+      "description": "Modular RAG document ingestion system with pluggable architecture for multi-agent systems",
+      "fullName": "gyasis/knowledge-ingestor",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/gyasis/knowledge-ingestor"
+    },
+    {
+      "description": "FastAPI-based document ingestion service for RAG, including DOCX parsing, semantic chunking, and a high-level architecture for unified healthcare search.",
+      "fullName": "mehta1997/lens-rag-document-ingestion",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/mehta1997/lens-rag-document-ingestion"
+    },
+    {
+      "description": "Interactive document OCR & layout analysis powered by Mistral OCR 4 \u2014 run locally with your own API key.",
+      "fullName": "Btr4k/mistral-ocr-lab",
+      "language": "TypeScript",
+      "stargazersCount": 7,
+      "url": "https://github.com/Btr4k/mistral-ocr-lab"
+    },
+    {
+      "description": "Document OCR & Layout Analysis tool built with OpenCV and pytesseract. Detects text blocks, extracts text, and stores results in SQLite \u2014 with a Tkinter GUI.",
+      "fullName": "efilsaylam19/Document-Image-OCR-and-Layout-Analysis",
+      "language": "Python",
+      "stargazersCount": 1,
+      "url": "https://github.com/efilsaylam19/Document-Image-OCR-and-Layout-Analysis"
+    },
+    {
+      "description": "Versioned, local-first knowledge graph. Markdown + YAML nodes, JSONL edges, git-versioned, Cypher-lite query. Obsidian-compatible.",
+      "fullName": "clarkelucianot2-eng/knowledge-graph-cli",
+      "language": "Python",
+      "stargazersCount": 1,
+      "url": "https://github.com/clarkelucianot2-eng/knowledge-graph-cli"
+    },
+    {
+      "description": "Embedded C++17 toolkit for AI-agent memory: RAG, hybrid BM25/vector search, knowledge graphs, Markdown ingestion, and pluggable embeddings.",
+      "fullName": "LimiNode/agent-memory-cpp",
+      "language": "C++",
+      "stargazersCount": 1,
+      "url": "https://github.com/LimiNode/agent-memory-cpp"
+    },
+    {
+      "description": "Interactive onboarding wiki for Lumi \u2014 cross-repo knowledge graph, markdown wiki, and Gemini-powered chat",
+      "fullName": "Panos-ReachIndustries/lumi-codebase-wiki",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/Panos-ReachIndustries/lumi-codebase-wiki"
+    },
+    {
+      "description": "Local-first digital brain and personal knowledge graph: Markdown source of truth, SQLite graph queries, deterministic importers, and optional AI-assisted ingestion.",
+      "fullName": "ranakun/Digital-Synapse",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/ranakun/Digital-Synapse"
+    },
+    {
+      "description": "Built by Goldie, an autonomous AI agent. An AST-based codebase analyzer that generates condensed, LLM-friendly structural knowledge graphs (Markdown) of Python repositories. Enables autonomous agents to rapidly understand code architecture, dependencies, and APIs without exceeding context window limits.",
+      "fullName": "Cheesecaster/RepoCortex",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/Cheesecaster/RepoCortex"
+    },
+    {
+      "description": "AI-powered personal knowledge base - search thousands of books, code, and documents",
+      "fullName": "Vincent1949/scholars-terminal",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/Vincent1949/scholars-terminal"
+    },
+    {
+      "description": "MCP Documentation Server - Bridge the AI Knowledge Gap.  \u2728 Features: Document management \u2022 Gemini integration \u2022 AI-powered semantic search \u2022 File uploads \u2022 Smart chunking \u2022 Multilingual support \u2022 Zero-setup  \ud83c\udfaf Perfect for: New frameworks \u2022 API docs \u2022 Internal guides ",
+      "fullName": "andrea9293/mcp-documentation-server",
+      "language": "TypeScript",
+      "stargazersCount": 342,
+      "url": "https://github.com/andrea9293/mcp-documentation-server"
+    },
+    {
+      "description": "MCP Documentation Server with AI Learning Capabilities",
+      "fullName": "mahawi1992/mcp-documentation-server",
+      "language": "TypeScript",
+      "stargazersCount": 10,
+      "url": "https://github.com/mahawi1992/mcp-documentation-server"
+    },
+    {
+      "description": "",
+      "fullName": "kirantraj/mcp-document-server",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/kirantraj/mcp-document-server"
+    },
+    {
+      "description": "",
+      "fullName": "xxfmin/mcp-documentation-server",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/xxfmin/mcp-documentation-server"
+    },
+    {
+      "description": "MCP server for document analysis \u2014 parsing, chunking, semantic search, and summarization via Model Context Protocol",
+      "fullName": "BabyChrist666/mcp-document-server",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/BabyChrist666/mcp-document-server"
+    },
+    {
+      "description": "",
+      "fullName": "hermancortez/mcp-document-server",
+      "language": "TypeScript",
+      "stargazersCount": 0,
+      "url": "https://github.com/hermancortez/mcp-document-server"
+    },
+    {
+      "description": "MCP Document Server for reducing app development errors by providing version-specific documentation",
+      "fullName": "WebAppAI0410/mcp-document-server",
+      "language": "TypeScript",
+      "stargazersCount": 0,
+      "url": "https://github.com/WebAppAI0410/mcp-document-server"
+    },
+    {
+      "description": "\ud83d\ude80 Document storage and retrieval system for MCP \u2013 fast, secure, and reliable.",
+      "fullName": "GhosTHaise/mcp-document-server",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/GhosTHaise/mcp-document-server"
+    },
+    {
+      "description": "",
+      "fullName": "hemanthchowdary9/mcp-document-server",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/hemanthchowdary9/mcp-document-server"
+    },
+    {
+      "description": "Spring AI / MCP implementation of document server use cases",
+      "fullName": "tzolov/mcp-document-server",
+      "language": "Java",
+      "stargazersCount": 0,
+      "url": "https://github.com/tzolov/mcp-document-server"
+    },
+    {
+      "description": "A local server that lets any AI chatbot (Claude, ChatGPT, or local model through Ollama) search through PDF files.",
+      "fullName": "pk-verma/mcp-document-server",
+      "language": "",
+      "stargazersCount": 0,
+      "url": "https://github.com/pk-verma/mcp-document-server"
+    },
+    {
+      "description": "MCP server providing Claude AI with secure, read-only access to local documents",
+      "fullName": "watsona4/mcp-document-server",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/watsona4/mcp-document-server"
+    },
+    {
+      "description": "MCP server for interacting with document collections",
+      "fullName": "danielitus/mcp-document-server",
+      "language": "JavaScript",
+      "stargazersCount": 0,
+      "url": "https://github.com/danielitus/mcp-document-server"
+    },
+    {
+      "description": "Mirror of https://github.com/mahawi1992/mcp-documentation-server",
+      "fullName": "mcpflow/mahawi1992_mcp-documentation-server",
+      "language": "",
+      "stargazersCount": 0,
+      "url": "https://github.com/mcpflow/mahawi1992_mcp-documentation-server"
+    },
+    {
+      "description": "A Python CLI chat assistant that uses an MCP document server to read and work with local documents.",
+      "fullName": "shivamyadav79/mcp-document-assistant",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/shivamyadav79/mcp-document-assistant"
+    }
+  ],
+  "extraction_ocr": [
+    {
+      "description": "High volume deployment of Azure Document Intelligence extraction followed by Azure AI Search Indexing",
+      "fullName": "mmckechney/DocumentIntelAndAISearchIndexing",
+      "language": "C#",
+      "stargazersCount": 9,
+      "url": "https://github.com/mmckechney/DocumentIntelAndAISearchIndexing"
+    },
+    {
+      "description": "Turn messy financial PDFs & scanned documents into clean, schema-validated data \u2014 sourcing \u2192 OCR \u2192 LLM+RAG extraction \u2192 validation with human review. Portfolio project (LSEG).",
+      "fullName": "dsridhar2110/document-intelligence-extraction",
+      "language": "HTML",
+      "stargazersCount": 0,
+      "url": "https://github.com/dsridhar2110/document-intelligence-extraction"
+    },
+    {
+      "description": "",
+      "fullName": "chaudharyhem199/Document_intelligence_extraction",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/chaudharyhem199/Document_intelligence_extraction"
+    },
+    {
+      "description": "Local-first document AI extraction, schema validation, confidence scoring, and human-review audit workflows.",
+      "fullName": "saneeshmorais16/document-intelligence-extraction-api",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/saneeshmorais16/document-intelligence-extraction-api"
+    },
+    {
+      "description": "High-performance Retrieval-Augmented Generation (RAG) platform enabling intelligent document retrieval, semantic search, vector database integration, and contextual AI responses for enterprise applications.",
+      "fullName": "ali7832/document-intelligence-extraction-system",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/ali7832/document-intelligence-extraction-system"
+    },
+    {
+      "description": "AI - powered document processing system that extracts key inforamation from invoices,contracts,forms,and reports ,classifies documents,validates extracted data, and generates structured JSON output",
+      "fullName": "udayabatte-tech/AI-Document-Intelligence-Extraction-Pipeline",
+      "language": "",
+      "stargazersCount": 0,
+      "url": "https://github.com/udayabatte-tech/AI-Document-Intelligence-Extraction-Pipeline"
+    },
+    {
+      "description": "",
+      "fullName": "reddy-d1/AI-Document-intelligence-extraction-pipeline-Final",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/reddy-d1/AI-Document-intelligence-extraction-pipeline-Final"
+    },
+    {
+      "description": "ML-based document classification + real Azure AI Document Intelligence extraction pipeline",
+      "fullName": "krishnajha0007-sudo/ai-document-processing-pipeline",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/krishnajha0007-sudo/ai-document-processing-pipeline"
+    },
+    {
+      "description": "KPMG GenAI technical assignment \u2013 document intelligence extraction and a stateless RAG-based medical services chatbot using Azure OpenAI, FastAPI and Streamlit.",
+      "fullName": "noyuzan/kpmg-genai-assignment",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/noyuzan/kpmg-genai-assignment"
+    },
+    {
+      "description": "RAG pipeline for invoice Q&A \u2014 Azure Document Intelligence extraction, hybrid Azure AI Search indexing, and GPT-4o answers with source citations.",
+      "fullName": "ariz-ahmad/msft-doc-intelligence",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/ariz-ahmad/msft-doc-intelligence"
+    },
+    {
+      "description": "Interactive document OCR & layout analysis powered by Mistral OCR 4 \u2014 run locally with your own API key.",
+      "fullName": "Btr4k/mistral-ocr-lab",
+      "language": "TypeScript",
+      "stargazersCount": 7,
+      "url": "https://github.com/Btr4k/mistral-ocr-lab"
+    },
+    {
+      "description": "Document OCR & Layout Analysis tool built with OpenCV and pytesseract. Detects text blocks, extracts text, and stores results in SQLite \u2014 with a Tkinter GUI.",
+      "fullName": "efilsaylam19/Document-Image-OCR-and-Layout-Analysis",
+      "language": "Python",
+      "stargazersCount": 1,
+      "url": "https://github.com/efilsaylam19/Document-Image-OCR-and-Layout-Analysis"
+    }
+  ],
+  "ingestion_retrieval": [
+    {
+      "description": "High volume deployment of Azure Document Intelligence extraction followed by Azure AI Search Indexing",
+      "fullName": "mmckechney/DocumentIntelAndAISearchIndexing",
+      "language": "C#",
+      "stargazersCount": 9,
+      "url": "https://github.com/mmckechney/DocumentIntelAndAISearchIndexing"
+    },
+    {
+      "description": "Turn messy financial PDFs & scanned documents into clean, schema-validated data \u2014 sourcing \u2192 OCR \u2192 LLM+RAG extraction \u2192 validation with human review. Portfolio project (LSEG).",
+      "fullName": "dsridhar2110/document-intelligence-extraction",
+      "language": "HTML",
+      "stargazersCount": 0,
+      "url": "https://github.com/dsridhar2110/document-intelligence-extraction"
+    },
+    {
+      "description": "High-performance Retrieval-Augmented Generation (RAG) platform enabling intelligent document retrieval, semantic search, vector database integration, and contextual AI responses for enterprise applications.",
+      "fullName": "ali7832/document-intelligence-extraction-system",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/ali7832/document-intelligence-extraction-system"
+    },
+    {
+      "description": "KPMG GenAI technical assignment \u2013 document intelligence extraction and a stateless RAG-based medical services chatbot using Azure OpenAI, FastAPI and Streamlit.",
+      "fullName": "noyuzan/kpmg-genai-assignment",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/noyuzan/kpmg-genai-assignment"
+    },
+    {
+      "description": "RAG pipeline for invoice Q&A \u2014 Azure Document Intelligence extraction, hybrid Azure AI Search indexing, and GPT-4o answers with source citations.",
+      "fullName": "ariz-ahmad/msft-doc-intelligence",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/ariz-ahmad/msft-doc-intelligence"
+    },
+    {
+      "description": "Healthy Diet AI Agent is a Bun + TypeScript backend for nutrition chat, food-image analysis, RAG document ingestion, and knowledge-grounded diet guidance.",
+      "fullName": "archie0732/healthy-diet-ai-agent",
+      "language": "TypeScript",
+      "stargazersCount": 747,
+      "url": "https://github.com/archie0732/healthy-diet-ai-agent"
+    },
+    {
+      "description": "Quality assurance tool for RAG document ingestion",
+      "fullName": "augforce/document-rag-readiness-grader",
+      "language": "",
+      "stargazersCount": 0,
+      "url": "https://github.com/augforce/document-rag-readiness-grader"
+    },
+    {
+      "description": "AgentX RAG \u2014 Document ingestion, embeddings, and semantic search",
+      "fullName": "WindriderQc/agentx-rag",
+      "language": "JavaScript",
+      "stargazersCount": 0,
+      "url": "https://github.com/WindriderQc/agentx-rag"
+    },
+    {
+      "description": "FinWise Chat - Volume 1 Chapter 5: RAG & Document Ingestion",
+      "fullName": "sawankarn/finwise-chat-v01c05",
+      "language": "Java",
+      "stargazersCount": 0,
+      "url": "https://github.com/sawankarn/finwise-chat-v01c05"
+    },
+    {
+      "description": "RAG document ingestion pipeline: PDF/TXT/MD \u2192 Chroma vector store",
+      "fullName": "netanel-systems/rag-pipeline",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/netanel-systems/rag-pipeline"
+    },
+    {
+      "description": "Simple RAG document ingestion and retrieval pipeline using LangChain + Chroma.",
+      "fullName": "Ishan007-bot/Ingestion-Retrieval-Pipeline",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/Ishan007-bot/Ingestion-Retrieval-Pipeline"
+    },
+    {
+      "description": "Built an Event-Driven RAG Document Ingestion Pipeline with Vector Database",
+      "fullName": "kesavakantipudi/An-Event-Driven-RAG-Document-Ingestion-Pipeline-with-Vector-Database",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/kesavakantipudi/An-Event-Driven-RAG-Document-Ingestion-Pipeline-with-Vector-Database"
+    },
+    {
+      "description": "feat: module 1 \u2014 RAG document ingestion pipeline with Supabase and OpenAI",
+      "fullName": "HalisonBruno/Rag-module1",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/HalisonBruno/Rag-module1"
+    },
+    {
+      "description": "",
+      "fullName": "osaimahesh21/rag-document-ingestion",
+      "language": "Jupyter Notebook",
+      "stargazersCount": 0,
+      "url": "https://github.com/osaimahesh21/rag-document-ingestion"
+    },
+    {
+      "description": "an n8n automation creating rag system",
+      "fullName": "muhammadhusnainali04-maker/RAG---Document-Ingestion",
+      "language": "",
+      "stargazersCount": 0,
+      "url": "https://github.com/muhammadhusnainali04-maker/RAG---Document-Ingestion"
+    },
+    {
+      "description": "",
+      "fullName": "Saransh-Agarwal/rag-document-ingestion",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/Saransh-Agarwal/rag-document-ingestion"
+    },
+    {
+      "description": "",
+      "fullName": "remyfather/rag-document-ingestion",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/remyfather/rag-document-ingestion"
+    },
+    {
+      "description": "",
+      "fullName": "ricmed/rag-document-ingestion",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/ricmed/rag-document-ingestion"
+    },
+    {
+      "description": "Modular RAG document ingestion system with pluggable architecture for multi-agent systems",
+      "fullName": "gyasis/knowledge-ingestor",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/gyasis/knowledge-ingestor"
+    },
+    {
+      "description": "FastAPI-based document ingestion service for RAG, including DOCX parsing, semantic chunking, and a high-level architecture for unified healthcare search.",
+      "fullName": "mehta1997/lens-rag-document-ingestion",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/mehta1997/lens-rag-document-ingestion"
+    },
+    {
+      "description": "Embedded C++17 toolkit for AI-agent memory: RAG, hybrid BM25/vector search, knowledge graphs, Markdown ingestion, and pluggable embeddings.",
+      "fullName": "LimiNode/agent-memory-cpp",
+      "language": "C++",
+      "stargazersCount": 1,
+      "url": "https://github.com/LimiNode/agent-memory-cpp"
+    },
+    {
+      "description": "Local-first digital brain and personal knowledge graph: Markdown source of truth, SQLite graph queries, deterministic importers, and optional AI-assisted ingestion.",
+      "fullName": "ranakun/Digital-Synapse",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/ranakun/Digital-Synapse"
+    },
+    {
+      "description": "Learning assistant extension for DeepSeek Harness (dsh): brings DeepTutor tutoring to your agent \u2014 deep explanations, self-test questions, learning paths, personal knowledge-base search (RAG), and note archiving. | \u9762\u5411 DeepSeek Harness \u7684\u5b66\u4e60\u8f85\u52a9\u6269\u5c55:\u4e3a agent \u63a5\u5165 DeepTutor \u8f85\u5bfc\u80fd\u529b \u2014\u2014 \u6df1\u5ea6\u8bb2\u89e3\u3001\u81ea\u6d4b\u9898\u3001\u5b66\u4e60\u8def\u5f84\u89c4\u5212\u3001\u4e2a\u4eba\u77e5\u8bc6\u5e93\u68c0\u7d22(RAG)\u4e0e\u7b14\u8bb0\u5f52\u6863\u3002",
+      "fullName": "TecFancy/dsh-deeptutor",
+      "language": "TypeScript",
+      "stargazersCount": 2,
+      "url": "https://github.com/TecFancy/dsh-deeptutor"
+    },
+    {
+      "description": "",
+      "fullName": "Aishsong/ai_personal_knowledge_base_search_engine",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/Aishsong/ai_personal_knowledge_base_search_engine"
+    },
+    {
+      "description": "Personal Knowledge Base Search",
+      "fullName": "Shirshakk-P/Retain3r",
+      "language": "JavaScript",
+      "stargazersCount": 0,
+      "url": "https://github.com/Shirshakk-P/Retain3r"
+    },
+    {
+      "description": "Simple, personal knowledge base search system using Elasticsearch and Qdrant",
+      "fullName": "nleroy917/pkb",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/nleroy917/pkb"
+    },
+    {
+      "description": "AI-powered personal knowledge base - search thousands of books, code, and documents",
+      "fullName": "Vincent1949/scholars-terminal",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/Vincent1949/scholars-terminal"
+    },
+    {
+      "description": "Recall \u2014 a personal knowledge base: search everything you've already figured out, in your own words. Flask + Gemini + Chroma.",
+      "fullName": "MetaAffinity/recall-knowledge-base",
+      "language": "HTML",
+      "stargazersCount": 0,
+      "url": "https://github.com/MetaAffinity/recall-knowledge-base"
+    },
+    {
+      "description": "\ud83e\udde0 Mimir: Your Go-Powered Personal Knowledge Base & Search Engine. Capture content, find info instantly with hybrid search (semantic + keyword). Features AI categorization & RAG answers. Built with Go, PostgreSQL/pgvector, Redis. CLI + REST API.",
+      "fullName": "avary/mimir",
+      "language": "",
+      "stargazersCount": 0,
+      "url": "https://github.com/avary/mimir"
+    },
+    {
+      "description": "MCP Documentation Server - Bridge the AI Knowledge Gap.  \u2728 Features: Document management \u2022 Gemini integration \u2022 AI-powered semantic search \u2022 File uploads \u2022 Smart chunking \u2022 Multilingual support \u2022 Zero-setup  \ud83c\udfaf Perfect for: New frameworks \u2022 API docs \u2022 Internal guides ",
+      "fullName": "andrea9293/mcp-documentation-server",
+      "language": "TypeScript",
+      "stargazersCount": 342,
+      "url": "https://github.com/andrea9293/mcp-documentation-server"
+    },
+    {
+      "description": "MCP server for document analysis \u2014 parsing, chunking, semantic search, and summarization via Model Context Protocol",
+      "fullName": "BabyChrist666/mcp-document-server",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/BabyChrist666/mcp-document-server"
+    },
+    {
+      "description": "\ud83d\ude80 Document storage and retrieval system for MCP \u2013 fast, secure, and reliable.",
+      "fullName": "GhosTHaise/mcp-document-server",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/GhosTHaise/mcp-document-server"
+    },
+    {
+      "description": "A local server that lets any AI chatbot (Claude, ChatGPT, or local model through Ollama) search through PDF files.",
+      "fullName": "pk-verma/mcp-document-server",
+      "language": "",
+      "stargazersCount": 0,
+      "url": "https://github.com/pk-verma/mcp-document-server"
+    }
+  ],
+  "provenance_security": [
+    {
+      "description": "Local-first document AI extraction, schema validation, confidence scoring, and human-review audit workflows.",
+      "fullName": "saneeshmorais16/document-intelligence-extraction-api",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/saneeshmorais16/document-intelligence-extraction-api"
+    },
+    {
+      "description": "This Guidance demonstrates how to automate unstructured document processing and subsequent auditing and analysis using AWS AI/ML and generative AI Services.",
+      "fullName": "aws-solutions-library-samples/guidance-for-sap-intelligent-document-processing-and-insights-using-generative-ai-on-aws",
+      "language": "ABAP",
+      "stargazersCount": 1,
+      "url": "https://github.com/aws-solutions-library-samples/guidance-for-sap-intelligent-document-processing-and-insights-using-generative-ai-on-aws"
+    }
+  ],
+  "automation_sync": [
+    {
+      "description": "Local-first document AI extraction, schema validation, confidence scoring, and human-review audit workflows.",
+      "fullName": "saneeshmorais16/document-intelligence-extraction-api",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/saneeshmorais16/document-intelligence-extraction-api"
+    },
+    {
+      "description": "AI - powered document processing system that extracts key inforamation from invoices,contracts,forms,and reports ,classifies documents,validates extracted data, and generates structured JSON output",
+      "fullName": "udayabatte-tech/AI-Document-Intelligence-Extraction-Pipeline",
+      "language": "",
+      "stargazersCount": 0,
+      "url": "https://github.com/udayabatte-tech/AI-Document-Intelligence-Extraction-Pipeline"
+    },
+    {
+      "description": "",
+      "fullName": "reddy-d1/AI-Document-intelligence-extraction-pipeline-Final",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/reddy-d1/AI-Document-intelligence-extraction-pipeline-Final"
+    },
+    {
+      "description": "ML-based document classification + real Azure AI Document Intelligence extraction pipeline",
+      "fullName": "krishnajha0007-sudo/ai-document-processing-pipeline",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/krishnajha0007-sudo/ai-document-processing-pipeline"
+    },
+    {
+      "description": "RAG pipeline for invoice Q&A \u2014 Azure Document Intelligence extraction, hybrid Azure AI Search indexing, and GPT-4o answers with source citations.",
+      "fullName": "ariz-ahmad/msft-doc-intelligence",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/ariz-ahmad/msft-doc-intelligence"
+    },
+    {
+      "description": "RAG document ingestion pipeline: PDF/TXT/MD \u2192 Chroma vector store",
+      "fullName": "netanel-systems/rag-pipeline",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/netanel-systems/rag-pipeline"
+    },
+    {
+      "description": "Simple RAG document ingestion and retrieval pipeline using LangChain + Chroma.",
+      "fullName": "Ishan007-bot/Ingestion-Retrieval-Pipeline",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/Ishan007-bot/Ingestion-Retrieval-Pipeline"
+    },
+    {
+      "description": "Built an Event-Driven RAG Document Ingestion Pipeline with Vector Database",
+      "fullName": "kesavakantipudi/An-Event-Driven-RAG-Document-Ingestion-Pipeline-with-Vector-Database",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/kesavakantipudi/An-Event-Driven-RAG-Document-Ingestion-Pipeline-with-Vector-Database"
+    },
+    {
+      "description": "feat: module 1 \u2014 RAG document ingestion pipeline with Supabase and OpenAI",
+      "fullName": "HalisonBruno/Rag-module1",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/HalisonBruno/Rag-module1"
+    },
+    {
+      "description": "an n8n automation creating rag system",
+      "fullName": "muhammadhusnainali04-maker/RAG---Document-Ingestion",
+      "language": "",
+      "stargazersCount": 0,
+      "url": "https://github.com/muhammadhusnainali04-maker/RAG---Document-Ingestion"
+    }
+  ],
+  "knowledge_graph": [
+    {
+      "description": "High-performance Retrieval-Augmented Generation (RAG) platform enabling intelligent document retrieval, semantic search, vector database integration, and contextual AI responses for enterprise applications.",
+      "fullName": "ali7832/document-intelligence-extraction-system",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/ali7832/document-intelligence-extraction-system"
+    },
+    {
+      "description": "AgentX RAG \u2014 Document ingestion, embeddings, and semantic search",
+      "fullName": "WindriderQc/agentx-rag",
+      "language": "JavaScript",
+      "stargazersCount": 0,
+      "url": "https://github.com/WindriderQc/agentx-rag"
+    },
+    {
+      "description": "FastAPI-based document ingestion service for RAG, including DOCX parsing, semantic chunking, and a high-level architecture for unified healthcare search.",
+      "fullName": "mehta1997/lens-rag-document-ingestion",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/mehta1997/lens-rag-document-ingestion"
+    },
+    {
+      "description": "Versioned, local-first knowledge graph. Markdown + YAML nodes, JSONL edges, git-versioned, Cypher-lite query. Obsidian-compatible.",
+      "fullName": "clarkelucianot2-eng/knowledge-graph-cli",
+      "language": "Python",
+      "stargazersCount": 1,
+      "url": "https://github.com/clarkelucianot2-eng/knowledge-graph-cli"
+    },
+    {
+      "description": "Embedded C++17 toolkit for AI-agent memory: RAG, hybrid BM25/vector search, knowledge graphs, Markdown ingestion, and pluggable embeddings.",
+      "fullName": "LimiNode/agent-memory-cpp",
+      "language": "C++",
+      "stargazersCount": 1,
+      "url": "https://github.com/LimiNode/agent-memory-cpp"
+    },
+    {
+      "description": "Interactive onboarding wiki for Lumi \u2014 cross-repo knowledge graph, markdown wiki, and Gemini-powered chat",
+      "fullName": "Panos-ReachIndustries/lumi-codebase-wiki",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/Panos-ReachIndustries/lumi-codebase-wiki"
+    },
+    {
+      "description": "Local-first digital brain and personal knowledge graph: Markdown source of truth, SQLite graph queries, deterministic importers, and optional AI-assisted ingestion.",
+      "fullName": "ranakun/Digital-Synapse",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/ranakun/Digital-Synapse"
+    },
+    {
+      "description": "Built by Goldie, an autonomous AI agent. An AST-based codebase analyzer that generates condensed, LLM-friendly structural knowledge graphs (Markdown) of Python repositories. Enables autonomous agents to rapidly understand code architecture, dependencies, and APIs without exceeding context window limits.",
+      "fullName": "Cheesecaster/RepoCortex",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/Cheesecaster/RepoCortex"
+    },
+    {
+      "description": "Learning assistant extension for DeepSeek Harness (dsh): brings DeepTutor tutoring to your agent \u2014 deep explanations, self-test questions, learning paths, personal knowledge-base search (RAG), and note archiving. | \u9762\u5411 DeepSeek Harness \u7684\u5b66\u4e60\u8f85\u52a9\u6269\u5c55:\u4e3a agent \u63a5\u5165 DeepTutor \u8f85\u5bfc\u80fd\u529b \u2014\u2014 \u6df1\u5ea6\u8bb2\u89e3\u3001\u81ea\u6d4b\u9898\u3001\u5b66\u4e60\u8def\u5f84\u89c4\u5212\u3001\u4e2a\u4eba\u77e5\u8bc6\u5e93\u68c0\u7d22(RAG)\u4e0e\u7b14\u8bb0\u5f52\u6863\u3002",
+      "fullName": "TecFancy/dsh-deeptutor",
+      "language": "TypeScript",
+      "stargazersCount": 2,
+      "url": "https://github.com/TecFancy/dsh-deeptutor"
+    },
+    {
+      "description": "Personal Knowledge Base Search",
+      "fullName": "Shirshakk-P/Retain3r",
+      "language": "JavaScript",
+      "stargazersCount": 0,
+      "url": "https://github.com/Shirshakk-P/Retain3r"
+    },
+    {
+      "description": "Simple, personal knowledge base search system using Elasticsearch and Qdrant",
+      "fullName": "nleroy917/pkb",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/nleroy917/pkb"
+    },
+    {
+      "description": "AI-powered personal knowledge base - search thousands of books, code, and documents",
+      "fullName": "Vincent1949/scholars-terminal",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/Vincent1949/scholars-terminal"
+    },
+    {
+      "description": "Recall \u2014 a personal knowledge base: search everything you've already figured out, in your own words. Flask + Gemini + Chroma.",
+      "fullName": "MetaAffinity/recall-knowledge-base",
+      "language": "HTML",
+      "stargazersCount": 0,
+      "url": "https://github.com/MetaAffinity/recall-knowledge-base"
+    },
+    {
+      "description": "\ud83e\udde0 Mimir: Your Go-Powered Personal Knowledge Base & Search Engine. Capture content, find info instantly with hybrid search (semantic + keyword). Features AI categorization & RAG answers. Built with Go, PostgreSQL/pgvector, Redis. CLI + REST API.",
+      "fullName": "avary/mimir",
+      "language": "",
+      "stargazersCount": 0,
+      "url": "https://github.com/avary/mimir"
+    },
+    {
+      "description": "MCP Documentation Server - Bridge the AI Knowledge Gap.  \u2728 Features: Document management \u2022 Gemini integration \u2022 AI-powered semantic search \u2022 File uploads \u2022 Smart chunking \u2022 Multilingual support \u2022 Zero-setup  \ud83c\udfaf Perfect for: New frameworks \u2022 API docs \u2022 Internal guides ",
+      "fullName": "andrea9293/mcp-documentation-server",
+      "language": "TypeScript",
+      "stargazersCount": 342,
+      "url": "https://github.com/andrea9293/mcp-documentation-server"
+    },
+    {
+      "description": "MCP server for document analysis \u2014 parsing, chunking, semantic search, and summarization via Model Context Protocol",
+      "fullName": "BabyChrist666/mcp-document-server",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/BabyChrist666/mcp-document-server"
+    }
+  ],
+  "agents_mcp": [
+    {
+      "description": "Healthy Diet AI Agent is a Bun + TypeScript backend for nutrition chat, food-image analysis, RAG document ingestion, and knowledge-grounded diet guidance.",
+      "fullName": "archie0732/healthy-diet-ai-agent",
+      "language": "TypeScript",
+      "stargazersCount": 747,
+      "url": "https://github.com/archie0732/healthy-diet-ai-agent"
+    },
+    {
+      "description": "AgentX RAG \u2014 Document ingestion, embeddings, and semantic search",
+      "fullName": "WindriderQc/agentx-rag",
+      "language": "JavaScript",
+      "stargazersCount": 0,
+      "url": "https://github.com/WindriderQc/agentx-rag"
+    },
+    {
+      "description": "Modular RAG document ingestion system with pluggable architecture for multi-agent systems",
+      "fullName": "gyasis/knowledge-ingestor",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/gyasis/knowledge-ingestor"
+    },
+    {
+      "description": "Embedded C++17 toolkit for AI-agent memory: RAG, hybrid BM25/vector search, knowledge graphs, Markdown ingestion, and pluggable embeddings.",
+      "fullName": "LimiNode/agent-memory-cpp",
+      "language": "C++",
+      "stargazersCount": 1,
+      "url": "https://github.com/LimiNode/agent-memory-cpp"
+    },
+    {
+      "description": "Built by Goldie, an autonomous AI agent. An AST-based codebase analyzer that generates condensed, LLM-friendly structural knowledge graphs (Markdown) of Python repositories. Enables autonomous agents to rapidly understand code architecture, dependencies, and APIs without exceeding context window limits.",
+      "fullName": "Cheesecaster/RepoCortex",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/Cheesecaster/RepoCortex"
+    },
+    {
+      "description": "Learning assistant extension for DeepSeek Harness (dsh): brings DeepTutor tutoring to your agent \u2014 deep explanations, self-test questions, learning paths, personal knowledge-base search (RAG), and note archiving. | \u9762\u5411 DeepSeek Harness \u7684\u5b66\u4e60\u8f85\u52a9\u6269\u5c55:\u4e3a agent \u63a5\u5165 DeepTutor \u8f85\u5bfc\u80fd\u529b \u2014\u2014 \u6df1\u5ea6\u8bb2\u89e3\u3001\u81ea\u6d4b\u9898\u3001\u5b66\u4e60\u8def\u5f84\u89c4\u5212\u3001\u4e2a\u4eba\u77e5\u8bc6\u5e93\u68c0\u7d22(RAG)\u4e0e\u7b14\u8bb0\u5f52\u6863\u3002",
+      "fullName": "TecFancy/dsh-deeptutor",
+      "language": "TypeScript",
+      "stargazersCount": 2,
+      "url": "https://github.com/TecFancy/dsh-deeptutor"
+    },
+    {
+      "description": "MCP Documentation Server - Bridge the AI Knowledge Gap.  \u2728 Features: Document management \u2022 Gemini integration \u2022 AI-powered semantic search \u2022 File uploads \u2022 Smart chunking \u2022 Multilingual support \u2022 Zero-setup  \ud83c\udfaf Perfect for: New frameworks \u2022 API docs \u2022 Internal guides ",
+      "fullName": "andrea9293/mcp-documentation-server",
+      "language": "TypeScript",
+      "stargazersCount": 342,
+      "url": "https://github.com/andrea9293/mcp-documentation-server"
+    },
+    {
+      "description": "MCP Documentation Server with AI Learning Capabilities",
+      "fullName": "mahawi1992/mcp-documentation-server",
+      "language": "TypeScript",
+      "stargazersCount": 10,
+      "url": "https://github.com/mahawi1992/mcp-documentation-server"
+    },
+    {
+      "description": "",
+      "fullName": "kirantraj/mcp-document-server",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/kirantraj/mcp-document-server"
+    },
+    {
+      "description": "",
+      "fullName": "xxfmin/mcp-documentation-server",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/xxfmin/mcp-documentation-server"
+    },
+    {
+      "description": "MCP server for document analysis \u2014 parsing, chunking, semantic search, and summarization via Model Context Protocol",
+      "fullName": "BabyChrist666/mcp-document-server",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/BabyChrist666/mcp-document-server"
+    },
+    {
+      "description": "",
+      "fullName": "hermancortez/mcp-document-server",
+      "language": "TypeScript",
+      "stargazersCount": 0,
+      "url": "https://github.com/hermancortez/mcp-document-server"
+    },
+    {
+      "description": "MCP Document Server for reducing app development errors by providing version-specific documentation",
+      "fullName": "WebAppAI0410/mcp-document-server",
+      "language": "TypeScript",
+      "stargazersCount": 0,
+      "url": "https://github.com/WebAppAI0410/mcp-document-server"
+    },
+    {
+      "description": "\ud83d\ude80 Document storage and retrieval system for MCP \u2013 fast, secure, and reliable.",
+      "fullName": "GhosTHaise/mcp-document-server",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/GhosTHaise/mcp-document-server"
+    },
+    {
+      "description": "",
+      "fullName": "hemanthchowdary9/mcp-document-server",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/hemanthchowdary9/mcp-document-server"
+    },
+    {
+      "description": "Spring AI / MCP implementation of document server use cases",
+      "fullName": "tzolov/mcp-document-server",
+      "language": "Java",
+      "stargazersCount": 0,
+      "url": "https://github.com/tzolov/mcp-document-server"
+    },
+    {
+      "description": "A local server that lets any AI chatbot (Claude, ChatGPT, or local model through Ollama) search through PDF files.",
+      "fullName": "pk-verma/mcp-document-server",
+      "language": "",
+      "stargazersCount": 0,
+      "url": "https://github.com/pk-verma/mcp-document-server"
+    },
+    {
+      "description": "MCP server providing Claude AI with secure, read-only access to local documents",
+      "fullName": "watsona4/mcp-document-server",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/watsona4/mcp-document-server"
+    },
+    {
+      "description": "MCP server for interacting with document collections",
+      "fullName": "danielitus/mcp-document-server",
+      "language": "JavaScript",
+      "stargazersCount": 0,
+      "url": "https://github.com/danielitus/mcp-document-server"
+    },
+    {
+      "description": "Mirror of https://github.com/mahawi1992/mcp-documentation-server",
+      "fullName": "mcpflow/mahawi1992_mcp-documentation-server",
+      "language": "",
+      "stargazersCount": 0,
+      "url": "https://github.com/mcpflow/mahawi1992_mcp-documentation-server"
+    },
+    {
+      "description": "A Python CLI chat assistant that uses an MCP document server to read and work with local documents.",
+      "fullName": "shivamyadav79/mcp-document-assistant",
+      "language": "Python",
+      "stargazersCount": 0,
+      "url": "https://github.com/shivamyadav79/mcp-document-assistant"
+    }
+  ]
+}

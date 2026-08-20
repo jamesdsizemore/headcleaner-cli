@@ -31,6 +31,9 @@ def build_report(
     started_at: _dt.datetime,
     finished_at: _dt.datetime,
     bundle_root: Path | str,
+    claim_review: dict[str, object] | None = None,
+    dedupe: dict[str, object] | None = None,
+    graph: dict[str, object] | None = None,
 ) -> str:
     """Render a Markdown conversion report from run records.
 
@@ -107,6 +110,36 @@ def build_report(
                 lines.append(f"  - `{code}`: {count}")
         lines.append("")
 
+    if claim_review is not None:
+        lines.append("## Claim review candidates")
+        lines.append("")
+        lines.append("| Metric | Value |")
+        lines.append("|---|---|")
+        lines.append(f"| Cited candidates | {int(claim_review.get('count', 0))} |")
+        lines.append(f"| Potential findings | {int(claim_review.get('finding_count', 0))} |")
+        lines.append(f"| Derivative | `{claim_review.get('path', 'okf/claim-review.json')}` |")
+        lines.append("")
+
+    if dedupe is not None:
+        lines.append("## Duplicate and version candidates")
+        lines.append("")
+        lines.append("| Metric | Value |")
+        lines.append("|---|---|")
+        lines.append(f"| Families | {int(dedupe.get('count', 0))} |")
+        lines.append(f"| Threshold | {float(dedupe.get('threshold', 0.8)):.2f} |")
+        lines.append(f"| Derivative | `{dedupe.get('path', 'okf/duplicate-families.json')}` |")
+        lines.append("")
+
+    if graph is not None:
+        lines.append("## Evidence graph")
+        lines.append("")
+        lines.append("| Metric | Value |")
+        lines.append("|---|---|")
+        lines.append(f"| Nodes | {int(graph.get('node_count', 0))} |")
+        lines.append(f"| Edges | {int(graph.get('edge_count', 0))} |")
+        lines.append(f"| Derivative | `{graph.get('path', 'okf/graph.jsonl')}` |")
+        lines.append("")
+
     # Errors (top 10)
     err_rows = [r for r in rows if r.get("status") == "failed" and r.get("error")]
     if err_rows:
@@ -137,6 +170,9 @@ def write_report(
     started_at: _dt.datetime,
     finished_at: _dt.datetime,
     bundle_root: Path | str,
+    claim_review: dict[str, object] | None = None,
+    dedupe: dict[str, object] | None = None,
+    graph: dict[str, object] | None = None,
 ) -> Path:
     """Build the report and write it to `path`. Returns the path."""
     text = build_report(
@@ -144,6 +180,9 @@ def write_report(
         started_at=started_at,
         finished_at=finished_at,
         bundle_root=bundle_root,
+        claim_review=claim_review,
+        dedupe=dedupe,
+        graph=graph,
     )
     path.write_text(text, encoding="utf-8")
     return path

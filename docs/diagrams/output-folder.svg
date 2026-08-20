@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 460" role="img" aria-labelledby="title">
+  <title id="title">Output folder layout: manifest, report, _md, okf, .headcleaner</title>
+  <defs>
+    <style>
+      .bg { fill: #0b0f1a; }
+      .stroke-cyan { stroke: #22D3EE; fill: none; stroke-width: 2; }
+      .stroke-pink { stroke: #EC4899; fill: none; stroke-width: 2; }
+      .stroke-purple { stroke: #A855F7; fill: none; stroke-width: 2; }
+      .stroke-muted { stroke: #64748b; fill: none; stroke-width: 1.5; }
+      .fill-cyan { fill: #22D3EE; }
+      .text-main { fill: #e2e8f0; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 14px; }
+      .text-muted { fill: #94a3b8; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; }
+      .text-cyan { fill: #22D3EE; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 14px; font-weight: 600; }
+      .text-pink { fill: #EC4899; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 14px; font-weight: 600; }
+      .text-purple { fill: #A855F7; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 14px; font-weight: 600; }
+    </style>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="800" height="460" rx="8"/>
+
+  <text class="text-cyan" x="40" y="35">my-folder.clean/</text>
+  <text class="text-muted" x="40" y="55">output of `headcleaner convert ./my-folder ./my-folder.clean`</text>
+
+  <!-- manifest.json -->
+  <g>
+    <rect class="stroke-cyan" x="40" y="80" width="180" height="50" rx="4"/>
+    <text class="text-cyan" x="60" y="105">manifest.json</text>
+    <text class="text-muted" x="60" y="122">structured per-file record</text>
+  </g>
+
+  <!-- REPORT.md -->
+  <g>
+    <rect class="stroke-cyan" x="40" y="140" width="180" height="50" rx="4"/>
+    <text class="text-cyan" x="60" y="165">REPORT.md</text>
+    <text class="text-muted" x="60" y="182">human-readable summary</text>
+  </g>
+
+  <!-- _md/ -->
+  <g>
+    <rect class="stroke-pink" x="240" y="80" width="200" height="50" rx="4"/>
+    <text class="text-pink" x="260" y="105">_md/</text>
+    <text class="text-muted" x="260" y="122">plain Markdown, one per source</text>
+  </g>
+  <g>
+    <rect class="stroke-muted" x="260" y="140" width="160" height="22" rx="3"/>
+    <text class="text-muted" x="275" y="156">notes.docx.md</text>
+  </g>
+  <g>
+    <rect class="stroke-muted" x="260" y="167" width="160" height="22" rx="3"/>
+    <text class="text-muted" x="275" y="183">q3-report.pdf.md</text>
+  </g>
+  <g>
+    <rect class="stroke-muted" x="260" y="194" width="160" height="22" rx="3"/>
+    <text class="text-muted" x="275" y="210">page.html.md</text>
+  </g>
+
+  <!-- okf/ -->
+  <g>
+    <rect class="stroke-pink" x="460" y="80" width="300" height="50" rx="4"/>
+    <text class="text-pink" x="480" y="105">okf/</text>
+    <text class="text-muted" x="480" y="122">OKF v0.2 bundle, one concept per source</text>
+  </g>
+  <g>
+    <rect class="stroke-muted" x="480" y="140" width="260" height="22" rx="3"/>
+    <text class="text-muted" x="495" y="156">index.md  ← auto-generated directory index</text>
+  </g>
+  <g>
+    <rect class="stroke-muted" x="480" y="167" width="260" height="22" rx="3"/>
+    <text class="text-muted" x="495" y="183">notes.docx.md, q3-report.pdf.md, ...</text>
+  </g>
+  <g>
+    <rect class="stroke-muted" x="480" y="194" width="260" height="22" rx="3"/>
+    <text class="text-muted" x="495" y="210">chunks.jsonl · graph.jsonl · claim-review.json</text>
+  </g>
+
+  <!-- .headcleaner/ -->
+  <g>
+    <rect class="stroke-purple" x="40" y="240" width="720" height="60" rx="6"/>
+    <text class="text-purple" x="60" y="270">.headcleaner/  (hidden, rebuildable state)</text>
+    <text class="text-muted" x="60" y="295">index.sqlite3 (search) · sync.json (rename/deletion state) · policies/ (TOML overrides)</text>
+  </g>
+
+  <!-- Arrows -->
+  <line class="stroke-cyan" x1="220" y1="165" x2="240" y2="105"/>
+  <line class="stroke-cyan" x1="440" y1="105" x2="460" y2="105"/>
+
+  <!-- Trust annotation -->
+  <g>
+    <rect class="stroke-muted" x="40" y="330" width="720" height="60" rx="6" stroke-dasharray="4 3"/>
+    <text class="text-cyan" x="60" y="355">every _md/ and okf/ file starts with</text>
+    <text class="text-main" x="60" y="378">type · status · generated · verified: human:pending · sources: [{uri, sha256}]</text>
+  </g>
+
+  <text class="text-muted" x="40" y="430">⚡ headcleaner · what lives where in your output folder</text>
+</svg>

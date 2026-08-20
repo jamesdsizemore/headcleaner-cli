@@ -41,6 +41,10 @@ dependencies = [
   "fastapi>=0.115",
   "uvicorn>=0.32",
   "jinja2>=3.1",
+  "rapidfuzz==3.14.5",
+  "sentence-transformers==6.0.0",
+  "qdrant-client==1.19.0",
+  "mcp==1.29.0",
 ]
 
 [project.optional-dependencies]
@@ -48,8 +52,7 @@ ocr = ["pytesseract>=0.3.10", "Pillow>=10.0"]
 pst = ["libpff-python>=20231205"]  # binary wheels: Windows + macOS arm64; see FORMAT_MATRIX.md
 odf = ["odfpy>=1.4"]
 epub = ["ebooklib>=0.18"]
-mcp = ["mcp>=1.0"]
-all = ["headcleaner[ocr,pst,odf,epub,mcp]"]
+all = ["headcleaner[ocr,pst,odf,epub]"]
 
 [project.scripts]
 headcleaner = "headcleaner.cli:main"
@@ -98,6 +101,7 @@ select = ["E", "F", "W", "I", "B", "UP"]
 dev = [
     "all2md>=1.12.0",
     "babel>=2.17",
+    "httpx>=0.28",
     "jsonschema>=4.23",
     "office-oxide>=0.1.8",
     "pytest>=9.1.1",

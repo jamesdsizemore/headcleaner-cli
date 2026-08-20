@@ -72,6 +72,9 @@ class RunOptions:
     write_bundle_manifest: bool = False  # aggregate across runs into bundle.manifest.json (Eng #39)
     dry_run: bool = False  # Eng #42 — emit what would convert without writing
     json_output: bool = False  # Eng #43 — emit one JSON line per event on stdout
+    dedupe_threshold: float = 0.8  # Contract 2.5 — near-duplicate candidate threshold
+    claim_suppressions: dict[str, str] = field(default_factory=dict)
+    claim_scope: str = "bundle"
 
     # Contract 1.3: deterministic engine-selection policy (execution wiring follows).
     requested_engine: str | None = None
@@ -936,6 +939,8 @@ def _finish_result(opts: RunOptions, record: RunRecord, result: FileResult) -> N
 
 def run_pipeline(opts: RunOptions) -> RunRecord:
     """Walk input, route, normalize, emit. Returns the RunRecord."""
+    if not 0 <= opts.dedupe_threshold <= 1:
+        raise ValueError("dedupe threshold must be in [0, 1]")
     record = RunRecord(
         started_at=manifest_emit._utc_now_iso(),
         input_root=str(opts.input_root.resolve()),
@@ -995,8 +1000,110 @@ def run_pipeline(opts: RunOptions) -> RunRecord:
             record=record,
         )
 
+    if opts.fmt in {"okf", "both"} and not opts.dry_run:
+        from .chunking import rebuild_chunks
+        from .claims import analyze_claims
+        from .dedupe import analyze_documents
+        from .graph import build_graph, write_graph
+
+        okf_root = opts.output_root / "okf"
+        chunks = rebuild_chunks(okf_root)
+        record.options["chunks"] = {
+            "path": "okf/chunks.jsonl",
+            "count": len(chunks),
+            "chunking_version": "1",
+        }
+        documents: list[dict[str, str]] = []
+        for result in record.results:
+            if result.status != "ok" or not result.okf_path or not result.sha256:
+                continue
+            concept_path = Path(result.okf_path)
+            if not concept_path.is_absolute():
+                concept_path = opts.output_root / concept_path
+            documents.append(
+                {
+                    "id": result.relpath,
+                    "sha256": result.sha256,
+                    "title": Path(result.relpath).stem,
+                    "text": concept_path.read_text(encoding="utf-8"),
+                    "path": result.relpath,
+                }
+            )
+        dedupe_threshold = opts.dedupe_threshold
+        families = analyze_documents(documents, threshold=dedupe_threshold)
+        family_path = okf_root / "duplicate-families.json"
+        staged_family_path = family_path.with_suffix(".json.tmp")
+        staged_family_path.write_text(
+            json.dumps(
+                {
+                    "algorithm_version": "1",
+                    "parameters": {"threshold": dedupe_threshold},
+                    "families": [family.__dict__ for family in families],
+                },
+                ensure_ascii=False,
+                indent=2,
+                sort_keys=True,
+            ),
+            encoding="utf-8",
+        )
+        staged_family_path.replace(family_path)
+        record.options["dedupe"] = {
+            "path": "okf/duplicate-families.json",
+            "count": len(families),
+            "threshold": dedupe_threshold,
+            "algorithm_version": "1",
+        }
+        claims, findings = analyze_claims(
+            [chunk.to_dict() for chunk in chunks],
+            suppressions=opts.claim_suppressions,
+            scope=opts.claim_scope,
+        )
+        claims_path = okf_root / "claim-review.json"
+        staged_claims_path = claims_path.with_suffix(".json.tmp")
+        staged_claims_path.write_text(
+            json.dumps(
+                {
+                    "algorithm_version": "1",
+                    "claims": [claim.__dict__ for claim in claims],
+                    "findings": [finding.__dict__ for finding in findings],
+                },
+                ensure_ascii=False,
+                indent=2,
+                sort_keys=True,
+            ),
+            encoding="utf-8",
+        )
+        staged_claims_path.replace(claims_path)
+        record.options["claims"] = {
+            "path": "okf/claim-review.json",
+            "count": len(claims),
+            "finding_count": len(findings),
+            "algorithm_version": "1",
+        }
+        graph = build_graph(okf_root)
+        write_graph(okf_root, graph)
+        record.options["graph"] = {
+            "path": "okf/graph.jsonl",
+            "node_count": len(graph.nodes),
+            "edge_count": len(graph.edges),
+            "algorithm_version": "1",
+        }
+
     record.finish()
     if not opts.dry_run:
+        from .sync import load_state, records_from_results, save_state, state_path
+
+        sync_records = records_from_results(
+            record.results,
+            opts.output_root,
+            previous=load_state(opts.output_root),
+            seen_at=record.finished_at,
+        )
+        save_state(opts.output_root, sync_records)
+        record.options["sync"] = {
+            "path": str(state_path(opts.output_root).relative_to(opts.output_root)),
+            "record_count": len(sync_records),
+        }
         manifest_emit.write(record, opts.output_root)
         if opts.write_bundle_manifest:
             from .bundle_manifest import write_bundle_manifest
@@ -1027,6 +1134,9 @@ def run_pipeline(opts: RunOptions) -> RunRecord:
             started_at=started,
             finished_at=finished,
             bundle_root=opts.input_root,
+            claim_review=record.options.get("claims"),
+            dedupe=record.options.get("dedupe"),
+            graph=record.options.get("graph"),
         )
 
     if opts.json_output:
