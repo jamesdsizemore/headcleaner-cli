@@ -7,11 +7,14 @@ A practical guide to the `headcleaner convert` command, with worked examples.
 1. [The basics](#1-the-basics)
 2. [Format selection (`--format`)](#2-format-selection---format)
 3. [Glob filters (`--include` / `--exclude`)](#3-glob-filters---include---exclude)
-4. [OCR for scanned PDFs (`--ocr`)](#4-ocr-for-scanned-pdfs---ocr)
-5. [Output layout](#5-output-layout)
-6. [TUI vs plain mode](#6-tui-vs-plain-mode)
-7. [Linting the output](#7-linting-the-output)
-8. [Common recipes](#8-common-recipes)
+4. [OCR profiles and languages](#4-ocr-profiles-and-languages)
+5. [Engine selection and fallbacks](#5-engine-selection-and-fallbacks)
+6. [Contained attachments and archives](#6-contained-attachments-and-archives)
+7. [Output layout and structured sidecars](#7-output-layout-and-structured-sidecars)
+8. [Quality and render verification](#8-quality-and-render-verification)
+9. [TUI vs plain mode](#9-tui-vs-plain-mode)
+10. [Linting the output](#10-linting-the-output)
+11. [Common recipes](#11-common-recipes)
 
 ---
 
@@ -72,24 +75,63 @@ protect `*` from your shell.
 
 ---
 
-## 4. OCR for scanned PDFs (`--ocr`)
+## 4. OCR profiles and languages
 
 PDFs without a text layer (scans, image-only files) need OCR. Enable
 with `--ocr`:
 
 ```bash
-headcleaner inbox --include "*.pdf" --ocr --output out
+headcleaner inbox --include "*.pdf" --ocr --ocr-profile archival --ocr-lang eng --output out
 ```
 
 Requires:
 - `pytesseract` Python package (install via `uv tool install --with pytesseract headcleaner`)
 - Tesseract OCR binary on PATH (`brew install tesseract` / `choco install tesseract`)
 
-OCR is slow (~1 sec/page on commodity hardware) — keep it off by default.
+Profiles are `fast`, `balanced`, `archival`, and `handwriting_experimental`.
+`--ocr-lang` accepts comma-separated Tesseract pack codes and is checked before
+documents are processed. Run `headcleaner doctor` to see installed language
+packs. OCR is opt-in and does not change the output's `unverified` trust state.
 
 ---
 
-## 5. Output layout
+## 5. Engine selection and fallbacks
+
+Use `--engine NAME` when a workflow requires a particular local extractor.
+The named engine is the only attempted engine unless `--allow-fallback` is also
+supplied. `--no-fallback` explicitly disables alternates. Engines that declare
+a network requirement are never selected without `--allow-network`.
+
+```bash
+# Require the PDF adapter and retain its declared fallback policy only if needed
+headcleaner inbox --include "*.pdf" --engine pdf --allow-fallback --output out
+```
+
+The manifest records each attempted, unavailable, or skipped engine in
+diagnostics. An unavailable required tool is reported; it is never invoked.
+
+---
+
+## 6. Contained attachments and archives
+
+Supported email and declared ZIP attachments become logical child results when
+their extracted type has an adapter. Their source URI starts with `attachment:`
+and their emitted child path is hash/ordinal based, never derived from an
+untrusted filename. The defaults bound nesting depth, member count, individual
+member bytes, and total extracted bytes.
+
+```bash
+headcleaner inbox --attachment-max-depth 2 --attachment-max-members 100 --output out
+```
+
+Traversal names, symlinks, encrypted ZIP members, duplicate members, unsafe
+XML, and limit breaches become `ATTACHMENT_QUARANTINED` manifest diagnostics.
+Safe siblings continue. Password-protected content remains metadata-only;
+HeadCleaner does not request or log passwords.
+
+---
+
+## 7. Output layout and structured sidecars
 
 ```
 out/
@@ -112,7 +154,37 @@ Use `--no-okf-index` to skip the directory index generation.
 
 ---
 
-## 6. TUI vs plain mode
+For supported CSV, Office worksheet, and PDF table extraction, OKF output may
+also include deterministic CSV/JSON table sidecars. These preserve available
+headers, formulas, merged-range metadata, provenance, and PDF inference
+warnings; Markdown remains the readable projection.
+
+---
+
+## 8. Quality and render verification
+
+Run the benchmark against attributed fixtures to measure required text,
+heading, and table anchors. It fails on fixture metadata, source-hash, or
+baseline metric regressions and never rewrites the baseline without an explicit
+`--update-baseline` path.
+
+```bash
+headcleaner benchmark tests/quality/fixtures --json
+```
+
+Compare already-created source/output artifacts without converting them again:
+
+```bash
+headcleaner verify-render original.txt out/_md/original.txt.md --output-dir out --json
+```
+
+Reports are written under `_verification/<source-sha256>/report.json`. A
+mismatch is an advisory review finding by default; unavailable renderers are
+reported without mutating canonical Markdown or OKF output.
+
+---
+
+## 9. TUI vs plain mode
 
 `headcleaner` ships two run modes:
 
@@ -132,7 +204,7 @@ In CI / scripts, `--no-tui` is what you want.
 
 ---
 
-## 7. Linting the output
+## 10. Linting the output
 
 After conversion, run the linter to catch structural issues before you
 commit the bundle:
@@ -165,7 +237,7 @@ headcleaner lint okf/ || exit 1
 
 ---
 
-## 8. Common recipes
+## 11. Common recipes
 
 ### Inbox zero — convert everything in Downloads
 

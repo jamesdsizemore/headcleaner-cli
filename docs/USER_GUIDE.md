@@ -73,18 +73,18 @@ source URI, format, engine, sha256, generated_at).
 | Format | Engine | Notes |
 |---|---|---|
 | `.docx`, `.xlsx`, `.pptx` | OfficeCLI binary | requires `npm i -g @officecli/officecli` |
-| `.pdf` | pdfplumber | `--ocr` opt-in for scanned PDFs (pytesseract) |
+| `.pdf` | pdfplumber | `--ocr` with a named OCR profile/languages for scanned PDFs |
 | `.html`, `.htm` | BeautifulSoup + markdownify | strips scripts/nav/header/footer |
 | `.txt` | chardet | encoding auto-detected |
 | `.md`, `.markdown` | pass-through | strips frontmatter, uses H1 as title |
 | `.csv`, `.tsv` | stdlib `csv` + Sniffer | dialect auto-detected |
 | `.json` | stdlib `json` | pretty-printed fenced block + summary for flat objects |
-| `.eml` | stdlib `email` | headers + text body + attachments list |
+| `.eml` | stdlib `email` | headers + text body; safe supported attachments become logical child results |
 | `.epub` | ebooklib | one MD section per chapter, joined with `---` |
 | `.rtf` | striprtf | control words stripped, plain text body |
 | `.odt`, `.ods`, `.odp` | odfpy | text → paragraphs; spreadsheets → GFM tables; slides → per-slide text |
-| `.msg` | extract-msg | Outlook headers + body + attachments |
-| `.pst` | `readpst` (preferred) + libpff-python fallback | one concept per message with bodies/attachments; fallback is metadata-only |
+| `.msg` | extract-msg | Outlook headers + body; safe supported attachments become logical child results |
+| `.pst` | `readpst` (preferred) + libpff-python fallback | one concept per message with bounded attachment lineage; fallback is metadata-only |
 | `.doc`, `.xls`, `.ppt` | LibreOffice headless → modern Office adapter | install LibreOffice; HeadCleaner converts automatically |
 
 Run `headcleaner templates` to see the live list.
@@ -127,7 +127,7 @@ headcleaner inbox -i "*.pdf" -i "*.docx" -e "*old*" --output out
 
 Globs match against the **filename**, not the full path.
 
-## 6. OCR for scanned PDFs
+## 6. OCR profiles, languages, and missing packs
 
 PDFs without a text layer (scans, image-only exports) need OCR:
 
@@ -138,14 +138,32 @@ brew install tesseract              # macOS
 # or: sudo apt install tesseract-ocr # Debian/Ubuntu
 uv tool install --with pytesseract --with Pillow headcleaner
 
-# Then run
-headcleaner scan.pdf --ocr --output out
+# Then run a reproducible profile and language selection
+headcleaner convert ./scans --ocr --ocr-profile archival --ocr-lang eng --output out
 ```
 
-OCR is slow (~1 sec/page). Pages without a text layer are flagged in
-the body and listed in `metadata.image_only_pages`.
+Profiles are `fast`, `balanced`, `archival`, and `handwriting_experimental`.
+Requested language packs are checked before conversion; use `headcleaner doctor`
+when a pack is missing. OCR is opt-in and does not mark extracted content as
+reviewed or verified.
 
-## 7. TUI vs plain mode
+## 7. Safe attachments and archives
+
+Email and declared ZIP attachments can become child conversion results. Their
+manifest source URI begins with `attachment:` and their output name is derived
+from hashes and ordinals, not the attachment filename. This prevents a filename
+such as `../../invoice.pdf` from escaping the output structure.
+
+```bash
+headcleaner convert ./mail --attachment-max-depth 2 --attachment-max-members 100 --output out
+```
+
+HeadCleaner quarantines traversal paths, symlinks, encrypted ZIP members,
+duplicate members, unsafe XML, and limit breaches as `ATTACHMENT_QUARANTINED`
+diagnostics. Safe siblings still convert. It never prompts for or logs a
+password; password-protected content remains metadata-only.
+
+## 8. TUI vs plain mode
 
 headcleaner ships two run modes:
 

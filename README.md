@@ -19,6 +19,9 @@ headcleaner convert ~/Documents/inbox --format both --output ~/Documents/inbox.c
 - **all2md fallback:** Auto-handles 38 extra formats (Jupyter, LaTeX, reST, sourcecode, etc.) when all2md is installed
 - **`headcleaner mcp`:** Run headcleaner as an MCP server exposing 14 `okf_*` tools to any MCP agent host (Claude Code, Cursor, etc.) — install with `uv pip install "headcleaner[mcp]"`
 - **Diagnostics:** `headcleaner doctor` checks Python, PATH, OfficeCLI, output permissions, and the `@slug` registry, then prints a GO/NO-GO verdict
+- **Quality and fidelity:** `headcleaner benchmark` measures attributed fixtures; `headcleaner verify-render` compares existing source/output artifacts without rewriting them
+- **Structured output:** typed elements and table sidecars preserve usable document structure alongside readable Markdown
+- **Explicit OCR and attachment safety:** choose a named OCR profile/languages and use bounded, provenance-linked email/archive child conversion
 - **Adapter plugins:** Third-party packages register formats through the `headcleaner_plugin` entry-point group
 - **zsv CSV:** World's-fastest SIMD CSV parser (~10-100x stdlib) when `zsv` is on PATH
 - **Trust attestation:** `headcleaner attest` builds a Merkle root + ed25519 signature; `verify` checks it
@@ -75,6 +78,18 @@ Options:
   -f, --format {md,okf,both}   Output format(s) [default: both]
   -o, --output DIR             Output directory [default: ./out]
   --ocr                        Enable Tesseract OCR for scanned PDFs
+  --ocr-profile NAME           Choose fast, balanced, archival, or handwriting_experimental OCR behavior
+  --ocr-lang CODE[,CODE...]    Require installed Tesseract language packs
+  --attachment-max-depth N     Maximum nested attachment/archive depth
+  --attachment-max-members N   Maximum attachment/archive members per run
+  --attachment-max-member-bytes N
+                                Maximum extracted bytes for one member
+  --attachment-max-total-bytes N
+                                Maximum extracted bytes across descendants
+  --engine NAME                Select one extraction engine explicitly
+  --no-fallback / --allow-fallback
+                                Disable / permit declared typed-failure fallback
+  --allow-network              Permit only engines explicitly marked as networked
   --officecli-timeout <secs>   Timeout per OfficeCLI subprocess call (default: 60)
   --include, -i GLOB           Include glob (may be repeated)
   --exclude, -e GLOB           Exclude glob (may be repeated)
@@ -89,6 +104,9 @@ Options:
 
 Other commands:
   headcleaner doctor [--output-dir DIR]  Run install and permission diagnostics
+  headcleaner benchmark FIXTURES [--json]  Measure attributed conversion quality
+  headcleaner verify-render INPUT OUTPUT [--output-dir DIR] [--json]
+                              Compare existing render structure; does not reconvert or rewrite canonical output
   headcleaner templates        List supported formats
   headcleaner agents           Show engine install status
   headcleaner watch IN [--webhook-url URL]   Re-convert on file changes (Ctrl+C to stop)
@@ -140,6 +158,20 @@ We never auto-claim review. Every emitted OKF concept gets:
 - `sources: [{uri: file://..., sha256: ...}]`
 
 A human can grep `human:pending` later to find concepts needing review. See [docs/OKF_NOTES.md](docs/OKF_NOTES.md) for the full contract.
+
+## Safe contained content
+
+Email (`.eml`, `.msg`, `.pst`) and declared ZIP attachments are converted as
+logical children when their type is supported. Each child keeps an
+`attachment:` source URI and parent/child hash lineage in the manifest; output
+names use hashes and ordinals rather than an attachment filename. The default
+limits bound nesting, member count, individual bytes, and total extracted
+bytes. Path traversal, symlinks, encrypted ZIP members, duplicate ZIP members,
+and unsafe XML are quarantined with `ATTACHMENT_QUARANTINED` diagnostics while
+unrelated siblings continue. HeadCleaner never prompts for or logs passwords.
+
+Use the `--attachment-max-*` options only when a reviewed workload needs a
+different bound. Temporary staging data is removed at the end of the run.
 
 ## Supported formats
 

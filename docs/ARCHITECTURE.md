@@ -53,11 +53,16 @@ shared by every engine output and every emitter. Its fields:
 | `source_size_bytes` | File size, recorded in manifest |
 | `source_format` | Extension (`.docx`, `.pdf`, etc.) |
 | `engine` | Which adapter produced this |
-| `metadata` / `attachments` | Engine-specific extras (encoding, image-only pages, etc.) |
+| `elements` | Immutable typed structure (`heading`, `paragraph`, `list`, `table`, `image`, `code`, `quote`, `attachment_ref`, `page_break`) with deterministic IDs |
+| `tabular_assets` | CSV, worksheet, or PDF-table data plus provenance and deterministic sidecar metadata |
+| `metadata` / `attachments` | Engine extras and logical child provenance; attachment filenames never determine output paths |
 | `okf_*` | OKF v0.2 trust family pre-filled with honest defaults |
 
-Every adapter's `extract()` returns the same dict shape; `normalize()`
-turns that into `CanonicalDoc`. Emitters never see raw engine output.
+Every adapter's `extract()` returns the same compatible dict shape;
+`normalize()` validates optional `elements`/`tabular_assets` and synthesizes a
+legacy paragraph element when an adapter only returns `body_md`. Invalid
+elements fail only their source with an `INVALID_ELEMENT` diagnostic. Emitters
+render canonical elements and never see raw engine output.
 
 ## The Adapter contract
 
@@ -80,6 +85,8 @@ The dict returned by `extract()` has the shape:
     "body_md": str,
     "metadata": dict,
     "attachments": list[dict],
+    "elements": list[Element | dict],        # optional
+    "tabular_assets": list[TabularAsset | dict],  # optional
 }
 ```
 
@@ -102,6 +109,10 @@ Three emitters, one input (`CanonicalDoc`):
 - `emit/okf_index.py` — walks the OKF bundle and generates `index.md` per directory (OKF §8).
 - `emit/manifest.py` — writes run-level `manifest.json` with per-file results.
 
+OKF table sidecars are emitted only when structured source data is faithfully
+available. PDF inferred cells retain inference/confidence metadata rather than
+claiming exact source structure.
+
 Emitters are independent. You can swap or extend any one without touching
 the others.
 
@@ -119,6 +130,13 @@ the others.
    d. Per-file result is appended to the `RunRecord`.
 3. After all files, `okf_index.generate()` writes directory indices.
 4. `manifest.write()` writes the final `manifest.json`.
+
+`run.py` also applies the deterministic engine plan before extraction. A named
+engine is not silently replaced; unavailable requirements and typed fallback
+attempts are retained in diagnostics. After an email or declared ZIP extraction,
+the runner applies central `AttachmentLimits`, quarantines unsafe members, and
+recursively routes safe logical children through the same normalization/emission
+path. Child staging is temporary and is removed after the run.
 
 The progress hook (`opts.on_progress`) is called from inside step 2; the
 TUI uses it to drive its progress bar.

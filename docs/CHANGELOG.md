@@ -4,6 +4,25 @@ All notable changes to headcleaner are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- **Phase 1 conversion foundations** — attributed quality benchmarking,
+  deterministic extraction diagnostics/confidence, explicit engine planning,
+  advisory render verification, typed canonical elements, structured table
+  sidecars, named multilingual OCR profiles, and bounded recursive attachment
+  conversion with logical provenance.
+- **Safety controls** — attachment/archive depth, member, and byte limits;
+  quarantine diagnostics for unsafe ZIP members; no password prompts/logging;
+  explicit network-engine opt-in; and OCR language preflight via `doctor`.
+
+### Changed
+
+- Markdown and OKF emitters now render canonical elements while retaining
+  legacy `body_md` adapter compatibility. Structured table source data is kept
+  in deterministic sidecars where faithfully available.
+
 ## [0.14.0] - 2026-08-17
 
 ### Added

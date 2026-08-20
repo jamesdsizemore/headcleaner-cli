@@ -34,6 +34,13 @@ class MyFormatAdapter(Adapter):
             "body_md": source.read_text(encoding="utf-8"),
             "metadata": {},
             "attachments": [],
+            # Optional: typed canonical structure. Dicts are validated and
+            # assigned deterministic IDs when omitted.
+            "elements": [
+                {"kind": "paragraph", "ordinal": 0, "text": "Example"}
+            ],
+            # Optional structured data. Use only when faithfully available.
+            "tabular_assets": [],
         }
 ```
 
@@ -56,3 +63,18 @@ HeadCleaner from starting.
 Test the adapter directly, then install the package and verify that its extension appears
 in `headcleaner templates`. Plugin authors should cover `extract()` success and malformed
 input behavior with pytest.
+
+## Structured-output compatibility
+
+`body_md` remains supported: HeadCleaner creates a deterministic compatibility
+element for legacy plugins. New plugins may return `elements` using only the
+supported kinds: `heading`, `paragraph`, `list`, `table`, `image`, `code`,
+`quote`, `attachment_ref`, and `page_break`. Element attributes must be
+JSON-safe, source locations use nullable `page`/`start`/`end`, and a malformed
+element fails that source with `INVALID_ELEMENT` rather than corrupting another
+file's run.
+
+Plugins that expose structured tables should return `tabular_assets` only when
+the underlying cells/metadata are available faithfully. Do not invent formulas,
+merged ranges, or source locations. Attachment payloads must use logical source
+URIs and must not derive filesystem output paths from attachment filenames.

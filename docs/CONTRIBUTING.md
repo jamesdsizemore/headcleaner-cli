@@ -20,8 +20,9 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 # Sync deps
 uv sync
 
-# Run the test suite
-uv run pytest
+# Run the repository test suite
+unset PYTHONPATH
+uv run --no-sync --python 3.13 pytest
 ```
 
 You'll also need `officecli` for the Office-engine tests to run end-to-end:
@@ -32,6 +33,22 @@ npm install -g @officecli/officecli
 
 Tests that need it will `pytest.skip()` if the binary is missing, so the
 suite stays green on hosts without Node/npm.
+
+## Phase 1 quality gates
+
+Run these before changing Phase 1 conversion contracts:
+
+```bash
+unset PYTHONPATH
+uv run --no-sync --python 3.13 pytest tests/quality tests/test_diagnostics.py \
+  tests/test_engine_plan.py tests/test_render_verify.py tests/test_model.py \
+  tests/test_tabular.py tests/test_ocr_profiles.py tests/test_attachments.py -q
+uv run --no-sync --python 3.13 headcleaner benchmark tests/quality/fixtures --json
+```
+
+Quality fixtures are attributed originals plus `expectations.json`; never add
+derived output or private documents. Baseline updates require an explicit,
+reviewed path and must not be a side effect of normal benchmarking.
 
 ## Project layout
 
@@ -61,6 +78,15 @@ src/headcleaner/
 tests/                  # pytest, 43 tests
 docs/                   # INSTALL, USAGE, ARCHITECTURE, FORMAT_MATRIX, OKF_NOTES, FAQ, TROUBLESHOOTING, CONTRIBUTING, CHANGELOG, ENHANCEMENTS
 ```
+
+## Adapter compatibility contract
+
+`body_md` and `attachments` remain the baseline adapter contract. An adapter
+may additionally return validated typed `elements` and faithfully available
+`tabular_assets`; see [PLUGINS.md](PLUGINS.md). Do not generate random element
+IDs, infer unobserved table/formula metadata, or use attachment filenames as
+filesystem paths. Attachment children must retain logical `attachment:` source
+provenance and obey the run's `AttachmentLimits`.
 
 ## Adding a new file format
 
