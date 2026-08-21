@@ -1,0 +1,61 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/james/headcleaner-cli/schemas/readiness.schema.json",
+  "title": "HeadCleaner readiness report (Contract 3.7)",
+  "description": "Evidence-based readiness grade for an OKF concept. Grades are blocked|needs_review|conditional|ready. Deductions cite a rule, value, threshold, contribution, and finding reference. A readiness outcome is a suitability signal for a named profile — never a security certification and never a guarantee that content is factually correct.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "concept_ref",
+    "grade",
+    "score",
+    "deductions",
+    "requirements",
+    "schema_version"
+  ],
+  "properties": {
+    "concept_ref": {"type": "string", "minLength": 1},
+    "grade": {"enum": ["blocked", "needs_review", "conditional", "ready"]},
+    "score": {"type": "number", "minimum": 0, "maximum": 1},
+    "deductions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["rule_id", "value", "threshold", "contribution", "citation"],
+        "properties": {
+          "rule_id": {
+            "enum": [
+              "citation_completeness",
+              "chunk_integrity",
+              "ocr_table_diagnostics",
+              "redaction_state",
+              "freshness",
+              "policy",
+              "human_review"
+            ]
+          },
+          "value": {"type": "number"},
+          "threshold": {"type": "number"},
+          "contribution": {"type": "number"},
+          "citation": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "requirements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["rule_id", "value", "threshold", "citation"],
+        "properties": {
+          "rule_id": {"type": "string", "minLength": 1},
+          "value": {"type": "number"},
+          "threshold": {"type": "number"},
+          "citation": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "schema_version": {"type": "string", "minLength": 1}
+  }
+}

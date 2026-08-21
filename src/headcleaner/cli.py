@@ -732,6 +732,32 @@ def review_queue_cmd(
         )
 
 
+@cli.command(name="readiness")
+@click.argument("bundle", type=click.Path(exists=True, file_okay=False, path_type=Path))
+@click.option("--profile", default="default", help="Profile name (default|rag|publication).")
+@click.option("--json", "as_json", is_flag=True, default=False, help="Emit JSON.")
+def readiness_cmd(bundle: Path, profile: str, as_json: bool) -> None:
+    """Contract 3.7: evidence-based readiness grade per concept (read-only)."""
+    from . import readiness as rd
+
+    try:
+        reports = rd.build_report(Path(bundle), profile=profile)
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
+    if as_json:
+        click.echo(
+            json.dumps(
+                [rd.explain_report(r) for r in reports],
+                indent=2,
+                ensure_ascii=False,
+                sort_keys=True,
+            )
+        )
+        return
+    for r in reports:
+        click.echo(f"{r.concept_ref:<40}  grade={r.grade:<13}  score={r.score:.3f}")
+
+
 @cli.command(name="review-claim")
 @click.argument("bundle", type=click.Path(exists=True, file_okay=False, path_type=Path))
 @click.argument("concept_ref")
