@@ -39,8 +39,12 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
+import re
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+
+import yaml
 
 from . import __version__
 
@@ -244,6 +248,104 @@ def _concept_hashes(bundle_root: Path) -> dict[str, str]:
     return out
 
 
+_FRONTMATTER_RE = re.compile(r"\A---\s*\n(.*?)\n---\s*\n", re.DOTALL)
+_URI_SCHEME_RE = re.compile(r"^[a-zA-Z][a-zA-Z0-9+.-]*://")
+
+
+def _utc_now_iso() -> str:
+    return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _engine_records() -> list[dict[str, Any]]:
+    """Project the registered router adapters into schema-valid engine records."""
+    from .router import engine_capabilities
+
+    return [
+        {
+            "name": cap.name,
+            "version": __version__,
+            "capabilities": sorted({"ext:" + ext for ext in cap.extensions}),
+        }
+        for cap in engine_capabilities()
+    ]
+
+
+def _uri_to_bundle_relative(uri: str) -> str:
+    """Strip URI scheme + host from `uri` to yield a bundle-relative POSIX path.
+
+    `file://inbox/foo.txt` → `inbox/foo.txt`. URIs without a scheme are
+    returned with backslashes normalised to forward slashes. Empty/whitespace
+    inputs return `""`.
+    """
+    if not uri:
+        return ""
+    candidate = uri.strip()
+    if not candidate:
+        return ""
+    candidate = candidate.replace("\\", "/")
+    if _URI_SCHEME_RE.match(candidate):
+        # Strip scheme://host
+        without_scheme = _URI_SCHEME_RE.sub("", candidate, count=1)
+        # If there is a host component (e.g. file://host/path), drop the
+        # leading host segment.
+        if without_scheme.startswith("/"):
+            without_scheme = without_scheme.lstrip("/")
+        # Anything before the first slash is the host; drop it.
+        if "/" in without_scheme:
+            host, _, rest = without_scheme.partition("/")
+            if host and not rest:
+                return host  # whole thing was the host
+            return rest if rest else ""
+        return without_scheme
+    return candidate
+
+
+def _bundle_source_provenance(bundle_root: Path) -> dict[str, list[dict[str, str]]]:
+    """Read OKF concept frontmatter and return bundle-relative source entries.
+
+    The result maps each concept's bundle-relative path to a list of
+    `{path, sha256}` records derived from its OKF `sources[]` field. Each
+    `uri` is normalised to a bundle-relative POSIX path with the URI scheme
+    and any host component removed.
+    """
+    out: dict[str, list[dict[str, str]]] = {}
+    if not bundle_root.is_dir():
+        return out
+    for md_path in sorted(bundle_root.rglob("*.md")):
+        if md_path.name in {"index.md", "log.md"}:
+            continue
+        rel = str(md_path.relative_to(bundle_root)).replace("\\", "/")
+        try:
+            text = md_path.read_text(encoding="utf-8")
+        except OSError:
+            continue
+        m = _FRONTMATTER_RE.match(text)
+        if not m:
+            continue
+        try:
+            fm = yaml.safe_load(m.group(1)) or {}
+        except yaml.YAMLError:
+            continue
+        sources = fm.get("sources") or []
+        if not isinstance(sources, list):
+            continue
+        entries: list[dict[str, str]] = []
+        for src in sources:
+            if not isinstance(src, dict):
+                continue
+            uri = src.get("uri") or ""
+            sha = src.get("sha256") or ""
+            if not isinstance(sha, str) or len(sha) != 64:
+                continue
+            path = _uri_to_bundle_relative(uri)
+            if not path:
+                continue
+            entries.append({"path": path, "sha256": sha})
+        if entries:
+            out[rel] = entries
+    return out
+
+
 def build_attestation(
     bundle_root: Path,
     private_key_path: Path | None = None,
@@ -256,8 +358,11 @@ def build_attestation(
     """
     bundle_root = Path(bundle_root)
     concepts = _concept_hashes(bundle_root)
+    source_provenance = _bundle_source_provenance(bundle_root)
     leaf_hashes = list(concepts.values())
     root = merkle_root(leaf_hashes)
+
+    engines = _engine_records()
 
     payload: dict[str, Any] = {
         "tool": "headcleaner",
@@ -265,10 +370,14 @@ def build_attestation(
         "bundle_root": str(bundle_root.resolve()),
         "concept_count": len(concepts),
         "concepts": concepts,
+        "source_provenance": source_provenance,
         "merkle_root": root,
         "public_key": None,
         "signature": None,
         "proof": None,
+        "schema_version": "1",
+        "timestamp": _utc_now_iso(),
+        "engines": engines,
     }
 
     if private_key_path is not None:
@@ -298,9 +407,34 @@ def build_in_toto_statement(
     attestation: dict[str, Any],
     config: dict[str, Any] | None = None,
     lock_path: Path | None = None,
+    source_provenance: dict[str, list[dict[str, str]]] | None = None,
 ) -> dict[str, Any]:
-    """Project an integrity attestation into a deterministic in-toto statement."""
+    """Project an integrity attestation into a deterministic in-toto statement.
+
+    `source_provenance` is an optional bundle-relative map of concept path →
+    list of {path, sha256} entries (already bundle-relative). When omitted,
+    the statement falls back to `attestation["source_provenance"]` if it was
+    computed by `build_attestation`; otherwise the predicate emits an empty
+    sources list (caller may populate from OKF frontmatter).
+    """
     config_sha256 = hashlib.sha256(canonical_json_bytes(config or {})).hexdigest()
+    outputs = [
+        {"path": rel, "sha256": digest}
+        for rel, digest in sorted(attestation["concepts"].items())
+    ]
+    sources: list[dict[str, str]] = []
+    provenance = source_provenance if source_provenance is not None else attestation.get(
+        "source_provenance"
+    )
+    if provenance:
+        for concept_rel in sorted(provenance):
+            for entry in provenance[concept_rel]:
+                path = entry.get("path", "")
+                sha = entry.get("sha256", "")
+                if not path or not sha:
+                    continue
+                sources.append({"path": path, "sha256": sha})
+        sources.sort(key=lambda e: (e["path"], e["sha256"]))
     predicate: dict[str, Any] = {
         "schema_version": "1",
         "tool_version": attestation["version"],
@@ -308,6 +442,8 @@ def build_in_toto_statement(
         "concept_count": attestation["concept_count"],
         "concepts": attestation["concepts"],
         "merkle_root": attestation["merkle_root"],
+        "sources": sources,
+        "outputs": outputs,
     }
     if lock_path is not None:
         predicate["lock_sha256"] = hashlib.sha256(Path(lock_path).read_bytes()).hexdigest()
@@ -322,6 +458,46 @@ def build_in_toto_statement(
         "predicateType": "https://headcleaner.dev/attestation/v1",
         "predicate": predicate,
     }
+
+
+def build_in_toto_dsse_envelope(
+    statement: dict[str, Any],
+) -> Any:
+    """Wrap a Statement dict into a real in-toto DSSE Envelope.
+
+    The Statement envelope from `build_in_toto_statement` is the unsigned
+    predicate payload; this helper wraps it into the DSSE envelope that the
+    official `in-toto` library expects for signing, transport, and parsing.
+    Returns an `in_toto.models.metadata.Envelope`. The envelope's
+    `payload_type` is the DSSE media-type `application/vnd.in-toto+json`;
+    the Statement's own `_type` and `predicateType` live inside the
+    decoded payload, as the in-toto spec requires.
+    """
+    from in_toto.models.metadata import ENVELOPE_PAYLOAD_TYPE, Envelope
+
+    canonical = canonical_json_bytes(statement)
+    return Envelope(
+        payload=canonical,
+        payload_type=ENVELOPE_PAYLOAD_TYPE,
+        signatures={},
+    )
+
+
+def write_in_toto_statement(
+    statement: dict[str, Any],
+    path: Path,
+) -> Path:
+    """Write the Statement wrapped in a real in-toto DSSE envelope to disk.
+
+    This is the on-disk representation downstream consumers expect; the
+    unsigned Statement payload is base64-encoded inside a DSSE envelope per
+    the in-toto spec.
+    """
+    envelope = build_in_toto_dsse_envelope(statement)
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    envelope.dump(path)
+    return path
 
 
 def write_attestation(

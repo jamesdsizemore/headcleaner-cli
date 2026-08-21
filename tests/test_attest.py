@@ -21,17 +21,29 @@ from headcleaner import __version__
 
 @pytest.fixture
 def bundle_dir(tmp_path: Path) -> Path:
-    """Build a small bundle with 3 concepts."""
+    """Build a small bundle with 3 concepts, each carrying OKF sources provenance."""
     b = tmp_path / "bundle"
     b.mkdir()
     (b / "alpha.md").write_text(
-        "---\ntype: Document\ntitle: Alpha\n---\nHello world\n", encoding="utf-8"
+        "---\ntype: Document\ntitle: Alpha\n"
+        'sources:\n  - uri: file://inbox/alpha.txt\n    kind: file\n    sha256: "'
+        + "1" * 64
+        + '"\n---\nHello world\n',
+        encoding="utf-8",
     )
     (b / "beta.md").write_text(
-        "---\ntype: Document\ntitle: Beta\n---\nAnother concept\n", encoding="utf-8"
+        "---\ntype: Document\ntitle: Beta\n"
+        'sources:\n  - uri: file://inbox/beta.txt\n    kind: file\n    sha256: "'
+        + "2" * 64
+        + '"\n---\nAnother concept\n',
+        encoding="utf-8",
     )
     (b / "gamma.md").write_text(
-        "---\ntype: Document\ntitle: Gamma\n---\nThird concept\n", encoding="utf-8"
+        "---\ntype: Document\ntitle: Gamma\n"
+        'sources:\n  - uri: file://inbox/gamma.txt\n    kind: file\n    sha256: "'
+        + "3" * 64
+        + '"\n---\nThird concept\n',
+        encoding="utf-8",
     )
     (b / "index.md").write_text("# Index\n", encoding="utf-8")
     (b / "log.md").write_text("# Bundle history\n", encoding="utf-8")
@@ -324,3 +336,138 @@ def test_attestation_excludes_index_and_log(bundle_dir: Path) -> None:
     payload = build_attestation(bundle_dir)
     assert "index.md" not in payload["concepts"]
     assert "log.md" not in payload["concepts"]
+
+
+# ---------------------------------------------------------------------------
+# Contract 3.5 — bundle-relative source/output SHA sets in the in-toto predicate
+# ---------------------------------------------------------------------------
+
+
+def test_in_toto_predicate_includes_bundle_relative_source_sha_set(
+    bundle_dir: Path,
+) -> None:
+    """The predicate must list sources as sorted bundle-relative {path, sha256}.
+
+    Sources come from the OKF frontmatter `sources[].uri/sha256` of each
+    concept; the path must be bundle-relative and free of absolute hostnames
+    or user information.
+    """
+    statement = build_in_toto_statement(build_attestation(bundle_dir))
+
+    sources = statement["predicate"].get("sources")
+    assert isinstance(sources, list), "predicate.sources must be a list"
+    assert sources, "predicate.sources must not be empty when concepts exist"
+    for entry in sources:
+        assert set(entry.keys()) >= {"path", "sha256"}, entry
+        path = entry["path"]
+        assert not path.startswith("/"), f"source path must be relative, got {path!r}"
+        assert "\\" not in path, f"source path must use POSIX separators, got {path!r}"
+        assert not path.startswith(("file://", "http://", "https://")), path
+        assert len(entry["sha256"]) == 64
+        int(entry["sha256"], 16)  # hex
+
+
+def test_in_toto_predicate_includes_bundle_relative_output_sha_set(
+    bundle_dir: Path,
+) -> None:
+    """The predicate must list outputs as sorted bundle-relative concept entries."""
+    statement = build_in_toto_statement(build_attestation(bundle_dir))
+
+    outputs = statement["predicate"].get("outputs")
+    assert isinstance(outputs, list), "predicate.outputs must be a list"
+    assert outputs, "predicate.outputs must not be empty when concepts exist"
+    paths = [o["path"] for o in outputs]
+    assert paths == sorted(paths), "outputs must be sorted by bundle-relative path"
+    for entry in outputs:
+        assert set(entry.keys()) >= {"path", "sha256"}, entry
+        path = entry["path"]
+        assert not path.startswith("/"), path
+        assert "\\" not in path, path
+        assert not path.startswith(("file://", "http://", "https://")), path
+        assert path.endswith(".md"), path
+        assert len(entry["sha256"]) == 64
+
+
+def test_in_toto_predicate_source_sha_set_is_deterministic(bundle_dir: Path) -> None:
+    """Two consecutive builds must produce identical source/output sets."""
+    payload1 = build_attestation(bundle_dir)
+    payload2 = build_attestation(bundle_dir)
+    stmt1 = build_in_toto_statement(payload1)
+    stmt2 = build_in_toto_statement(payload2)
+
+    assert (
+        canonical_json_bytes(stmt1["predicate"]["sources"])
+        == canonical_json_bytes(stmt2["predicate"]["sources"])
+    )
+    assert (
+        canonical_json_bytes(stmt1["predicate"]["outputs"])
+        == canonical_json_bytes(stmt2["predicate"]["outputs"])
+    )
+
+
+def test_in_toto_predicate_source_sha_set_changes_when_concept_changes(
+    bundle_dir: Path,
+) -> None:
+    """Editing a concept's frontmatter sources[0].sha256 must move the SHA set."""
+    payload = build_attestation(bundle_dir)
+    target = bundle_dir / "alpha.md"
+    body = target.read_text(encoding="utf-8").split("---", 2)[-1]
+    new_sha = "0" * 64
+    target.write_text(
+        f'---\ntype: Document\ntitle: Alpha\n'
+        f'sources:\n  - uri: file://inbox/alpha.txt\n    kind: file\n    sha256: "{new_sha}"\n'
+        f'---\n{body}',
+        encoding="utf-8",
+    )
+    payload2 = build_attestation(bundle_dir)
+
+    stmt_old = build_in_toto_statement(payload)
+    stmt_new = build_in_toto_statement(payload2)
+    sha_old = {s["sha256"] for s in stmt_old["predicate"]["sources"]}
+    sha_new = {s["sha256"] for s in stmt_new["predicate"]["sources"]}
+    assert new_sha in sha_new
+    assert new_sha not in sha_old
+
+
+def test_in_toto_predicate_output_sha_set_matches_concept_canonical_hash(
+    bundle_dir: Path,
+) -> None:
+    """The output SHA set must equal the existing per-concept canonical hashes."""
+    payload = build_attestation(bundle_dir)
+    stmt = build_in_toto_statement(payload)
+
+    by_path = {o["path"]: o["sha256"] for o in stmt["predicate"]["outputs"]}
+    assert by_path == payload["concepts"]
+
+
+def test_in_toto_predicate_source_sha_set_uses_bundle_relative_paths(
+    tmp_path: Path,
+) -> None:
+    """Source paths must be relative even when the bundle lives under nested dirs."""
+    nested = tmp_path / "deep" / "nested" / "bundle"
+    nested.mkdir(parents=True)
+    (nested / "one.md").write_text(
+        "---\ntype: Document\ntitle: One\n"
+        'sources:\n  - uri: file://x/y.txt\n    kind: file\n    sha256: "'
+        + "a" * 64
+        + '"\n---\nbody\n',
+        encoding="utf-8",
+    )
+    (nested / "two.md").write_text(
+        "---\ntype: Document\ntitle: Two\n"
+        'sources:\n  - uri: file://x/y.txt\n    kind: file\n    sha256: "'
+        + "b" * 64
+        + '"\n---\nbody\n',
+        encoding="utf-8",
+    )
+
+    stmt = build_in_toto_statement(build_attestation(nested))
+    sources = stmt["predicate"]["sources"]
+    # All sources point at the same upstream file (x/y.txt) so the path is that
+    # bundle-relative path; if the implementation accidentally used absolute
+    # paths they would start with the temp dir.
+    paths = [s["path"] for s in sources]
+    assert paths == sorted(paths)
+    for p in paths:
+        assert not p.startswith("/"), p
+        assert str(tmp_path) not in p, f"absolute path leaked: {p}"

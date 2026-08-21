@@ -1,0 +1,88 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/james/headcleaner-cli/schemas/attestation.schema.json",
+  "title": "HeadCleaner attestation (Contract 3.5)",
+  "description": "Integrity attestation payload emitted by `headcleaner attest`. The signed subject is the Merkle root; the predicate carries tool_version, lock_sha256, normalized configuration SHA, source/output SHA sets, engine capability/version records, timestamp, and schema version. No absolute paths, hostnames, or usernames are emitted.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "tool",
+    "version",
+    "bundle_root",
+    "concept_count",
+    "concepts",
+    "source_provenance",
+    "merkle_root",
+    "schema_version",
+    "timestamp",
+    "engines"
+  ],
+  "properties": {
+    "tool": {"type": "string", "const": "headcleaner"},
+    "version": {"type": "string", "minLength": 1, "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+([+-].+)?$"},
+    "bundle_root": {"type": "string", "minLength": 1},
+    "concept_count": {"type": "integer", "minimum": 0},
+    "concepts": {
+      "type": "object",
+      "additionalProperties": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+    },
+    "source_provenance": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": ["path", "sha256"],
+          "additionalProperties": false,
+          "properties": {
+            "path": {"type": "string", "minLength": 1, "pattern": "^(?!/)[^\\\\]+$"},
+            "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+          }
+        }
+      }
+    },
+    "merkle_root": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "public_key": {
+      "oneOf": [
+        {"type": "null"},
+        {"type": "string", "pattern": "^ed25519:[A-Za-z0-9+/=]+$"}
+      ]
+    },
+    "signature": {
+      "oneOf": [
+        {"type": "null"},
+        {"type": "string", "pattern": "^[A-Za-z0-9+/=]+$"}
+      ]
+    },
+    "proof": {
+      "oneOf": [
+        {"type": "null"},
+        {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+          }
+        }
+      ]
+    },
+    "schema_version": {"type": "string", "minLength": 1},
+    "timestamp": {"type": "string", "format": "date-time"},
+    "engines": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "version", "capabilities"],
+        "additionalProperties": false,
+        "properties": {
+          "name": {"type": "string", "minLength": 1},
+          "version": {"type": "string", "minLength": 1},
+          "capabilities": {
+            "type": "array",
+            "items": {"type": "string"}
+          }
+        }
+      }
+    }
+  }
+}

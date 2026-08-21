@@ -545,12 +545,41 @@ def watch(
 
 
 @cli.command()
-@click.argument("directory", type=click.Path(exists=True, file_okay=False, path_type=Path))
+@click.argument("bundle", type=click.Path(exists=True, file_okay=False, path_type=Path))
 @click.option(
-    "--private-key",
+    "--key",
+    "private_key",
     type=click.Path(exists=True, dir_okay=False, path_type=Path),
     default=None,
-    help="PEM ed25519 key for signing the Merkle root.",
+    help="PEM ed25519 key for signing the Merkle root (Contract 3.5).",
+)
+@click.option(
+    "--private-key",
+    "private_key",
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+    default=None,
+    help="Deprecated alias for --key.",
+)
+@click.option(
+    "--in-toto",
+    "in_toto_path",
+    type=click.Path(dir_okay=False, path_type=Path),
+    default=None,
+    help="Also write a deterministic in-toto Statement to this path.",
+)
+@click.option(
+    "--verify",
+    "verify_only",
+    is_flag=True,
+    default=False,
+    help="No-write verification: re-compute the attestation and exit non-zero if it does not match the existing attestation.json on disk.",
+)
+@click.option(
+    "--public-key",
+    "public_key",
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+    default=None,
+    help="Optional PEM ed25519 public key used only with --verify.",
 )
 @click.option(
     "--output",
@@ -558,22 +587,59 @@ def watch(
     default=None,
     help="Output path for attestation.json (default: <bundle>/attestation.json).",
 )
-def attest(directory: Path, private_key: Path | None, output: Path | None) -> None:
-    """Eng #36: compute an Attested Computations payload for a bundle (Merkle root + optional ed25519 signature)."""  # noqa: E501
-    from .attest import write_attestation
+def attest(
+    bundle: Path,
+    private_key: Path | None,
+    in_toto_path: Path | None,
+    verify_only: bool,
+    public_key: Path | None,
+    output: Path | None,
+) -> None:
+    """Eng #36 / Contract 3.5: reproducible attestation + optional in-toto statement."""
+    from .attest import (
+        build_attestation,
+        build_in_toto_statement,
+        verify_attestation as _verify_attestation,
+        write_in_toto_statement,
+    )
 
-    out = write_attestation(directory, output=output, private_key_path=private_key)
-    payload = json.loads(out.read_text(encoding="utf-8"))
-    click.echo(f"Attestation written: {out}")
+    bundle_root = Path(bundle)
+    attestation_path = Path(output) if output else (bundle_root / "attestation.json")
+
+    if verify_only:
+        result = _verify_attestation(bundle_root, attestation_path, public_key_path=public_key)
+        sig = result.get("signature_valid")
+        if result.get("valid") and sig is not False:
+            click.echo(
+                f"OK: bundle matches attestation "
+                f"(merkle_valid={result['merkle_valid']}, signature_valid={sig})"
+            )
+            return
+        click.echo(f"FAIL: {result.get('errors')}")
+        raise SystemExit(1)
+
+    payload = build_attestation(bundle_root, private_key_path=private_key)
+    attestation_path.write_text(
+        json.dumps(payload, indent=2, ensure_ascii=False, sort_keys=True),
+        encoding="utf-8",
+    )
+    click.echo(f"Attestation written: {attestation_path}")
     click.echo(f"  concepts: {payload['concept_count']}")
     click.echo(f"  merkle_root: {payload['merkle_root']}")
+    click.echo(f"  schema_version: {payload.get('schema_version', '1')}")
+    click.echo(f"  timestamp: {payload.get('timestamp')}")
     if payload.get("signature"):
         click.echo(f"  signature: {payload['signature'][:32]}...")
         click.echo(f"  public_key: {payload['public_key']}")
 
+    if in_toto_path is not None:
+        statement = build_in_toto_statement(payload)
+        write_in_toto_statement(statement, in_toto_path)
+        click.echo(f"In-toto statement written: {in_toto_path}")
 
-@cli.command()
-@click.argument("directory", type=click.Path(exists=True, file_okay=False, path_type=Path))
+
+@cli.command(name="verify")
+@click.argument("bundle", type=click.Path(exists=True, file_okay=False, path_type=Path))
 @click.option(
     "--public-key",
     type=click.Path(exists=True, dir_okay=False, path_type=Path),
@@ -586,20 +652,22 @@ def attest(directory: Path, private_key: Path | None, output: Path | None) -> No
     default=None,
     help="Path to attestation.json (default: <bundle>/attestation.json).",
 )
-def verify(directory: Path, public_key: Path | None, attestation: Path | None) -> None:
-    """Eng #36: verify an attestation against the bundle contents."""
+def verify_cmd(
+    bundle: Path, public_key: Path | None, attestation: Path | None
+) -> None:
+    """Verify an attestation against bundle contents (alias for `attest --verify`)."""
     from .verify import verify_attestation
 
-    attest_path = attestation or (directory / "attestation.json")
-    result = verify_attestation(directory, attest_path, public_key_path=public_key)
+    attest_path = attestation or (bundle / "attestation.json")
+    result = verify_attestation(bundle, attest_path, public_key_path=public_key)
     sig = result.get("signature_valid")
     if result.get("valid") and sig is not False:
         click.echo(
             f"OK: bundle matches attestation (merkle_valid={result['merkle_valid']}, signature_valid={sig})"
         )
-    else:
-        click.echo(f"FAIL: {result.get('errors')}")
-        raise SystemExit(1)
+        return
+    click.echo(f"FAIL: {result.get('errors')}")
+    raise SystemExit(1)
 
 
 @cli.command()
