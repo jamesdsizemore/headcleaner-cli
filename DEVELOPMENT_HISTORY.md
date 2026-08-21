@@ -67,3 +67,16 @@ This is the append-only record of implemented work and its verification. Before 
   - `tests/test_readiness.py`: **13 passed** (data model, documented max score, deduction allow-list, grade assignment for clean/stale/missing inputs, unknown profile rejection, explainability, determinism, schema validation, no-trust-mutation, no human-review-claim field in reports).
   - CLI smoke: ready grade for clean reviewed concept, profile switch works, bad profile returns exit 1, concept frontmatter unchanged.
 - **Known limitations:** profile thresholds are simple numeric gates; per-pack profile overrides not yet wired.
+
+### Contract 3.8 — Public benchmark transparency artifact (complete)
+
+- **Commit:** pending
+- **Scope:**
+  - `src/headcleaner/benchmark_dashboard.py`: `DashboardInputs`, `load_inputs(...)` with strict validation (refuses missing baseline/current keys, refuses `non_public: true` fixtures, refuses empty attribution, refuses attribution that lacks `author`/`license`/`source`), `build_json` (deterministic signed deltas across the four documented metrics: `heading_order`, `output_exists`, `table_anchor_recall`, `text_anchor_recall`), `render_html` (self-contained HTML, every label `html.escape`-escaped, no external scripts/URLs, no timestamps), `render_dashboard(inputs, *, fmt)`.
+  - CLI: `headcleaner benchmark-dashboard CURRENT [--baseline] [--attribution] [--fixtures-root] [--format json|html]`.
+  - `docs/QUALITY.md`: documents inputs, outputs, invariants, and limitations.
+- **Documentation impact:** added `docs/QUALITY.md`; CLI reference update pending.
+- **Verification:**
+  - `tests/quality/test_dashboard.py`: **12 passed** (rejects missing attribution keys, rejects empty attribution, rejects non_public fixture, rejects unknown fixture reference, rejects missing baseline keys; render JSON deterministic; render HTML self-contained / no timestamps / no script tags / HTML-escapes dangerous labels; includes tool version and baseline schema; signed delta direction correct; static check confirms no `urllib`/`requests`/`httpx`/`socket` imports).
+  - CLI smoke: JSON delta=0.0 for matching metrics; HTML render is `<!DOCTYPE html>`; non_public baseline causes exit 1.
+- **Known limitations:** Per-metric CI pass/fail thresholds are intentionally not part of this contract — the dashboard surfaces numbers, the workflow enforces gates.

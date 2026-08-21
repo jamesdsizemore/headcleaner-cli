@@ -732,6 +732,31 @@ def review_queue_cmd(
         )
 
 
+@cli.command(name="benchmark-dashboard")
+@click.argument("current", type=click.Path(exists=True, dir_okay=False, path_type=Path))
+@click.option("--baseline", default="tests/quality/baseline.json", type=click.Path(exists=True, dir_okay=False, path_type=Path))
+@click.option("--attribution", default="tests/quality/fixtures/ATTRIBUTION.md", type=click.Path(exists=True, dir_okay=False, path_type=Path))
+@click.option("--fixtures-root", default="tests/quality/fixtures", type=click.Path(exists=True, file_okay=False, path_type=Path))
+@click.option("--format", "fmt", type=click.Choice(["json", "html"]), default="json")
+def benchmark_dashboard_cmd(
+    current: Path,
+    baseline: Path,
+    attribution: Path,
+    fixtures_root: Path,
+    fmt: str,
+) -> None:
+    """Contract 3.8: render a self-contained benchmark dashboard."""
+    from .benchmark_dashboard import load_inputs, render_dashboard
+
+    inputs = load_inputs(
+        baseline_path=baseline,
+        current_path=current,
+        attribution_path=attribution,
+        fixtures_root=fixtures_root,
+    )
+    click.echo(render_dashboard(inputs, fmt=fmt))
+
+
 @cli.command(name="readiness")
 @click.argument("bundle", type=click.Path(exists=True, file_okay=False, path_type=Path))
 @click.option("--profile", default="default", help="Profile name (default|rag|publication).")
