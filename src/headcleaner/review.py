@@ -92,6 +92,58 @@ def reject(path: Path, reasons: list[str] | None = None) -> None:
     _write_concept(path, fm, body, _)
 
 
+def decide(
+    path: Path,
+    *,
+    decision: str,
+    reviewer: str,
+    reason: str,
+    evidence_refs: tuple[str, ...] | list[str],
+) -> None:
+    """Record an evidence-backed human review decision.
+
+    This explicit API preserves legacy review fields while appending an audit
+    record. The interactive ``approve`` and ``reject`` operations remain
+    available for current users.
+    """
+    if decision not in {"approved", "rejected"}:
+        raise ValueError("decision must be 'approved' or 'rejected'")
+    if not reviewer.strip():
+        raise ValueError("reviewer is required")
+    if not reason.strip():
+        raise ValueError("reason is required")
+    if not evidence_refs:
+        raise ValueError("at least one evidence reference is required")
+    if any(not ref.strip() for ref in evidence_refs):
+        raise ValueError("evidence references must be non-empty")
+
+    record = _read_concept(path)
+    if record is None:
+        raise ValueError(f"not a valid concept: {path}")
+    fm, body, original = record
+    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    audit = list(fm.get("review_audit") or [])
+    audit.append(
+        {
+            "decision": decision,
+            "reviewer": reviewer,
+            "reason": reason,
+            "evidence_refs": list(evidence_refs),
+            "timestamp": timestamp,
+        }
+    )
+    fm["review_audit"] = audit
+    fm["verified"] = "human:reviewed" if decision == "approved" else "human:rejected"
+    fm["status"] = "verified" if decision == "approved" else "rejected"
+    prefix = "reviewed" if decision == "approved" else "rejected"
+    fm[f"{prefix}_at"] = timestamp
+    fm[f"{prefix}_by"] = reviewer
+    fm[f"{prefix}_via"] = "headcleaner review workbench"
+    if decision == "rejected":
+        fm["rejection_reasons"] = list(fm.get("rejection_reasons") or []) + [reason]
+    _write_concept(path, fm, body, original)
+
+
 # ---------------------------------------------------------------------------
 # Textual TUI
 # ---------------------------------------------------------------------------

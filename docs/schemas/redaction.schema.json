@@ -1,0 +1,20 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/james/headcleaner-cli/schemas/redaction.schema.json",
+  "title": "HeadCleaner redaction finding",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "category", "detector", "confidence", "citation", "replacement", "status", "value_sha256", "concept_ref", "suppression_reason"],
+  "properties": {
+    "id": {"type": "string", "minLength": 1},
+    "category": {"type": "string", "minLength": 1},
+    "detector": {"type": "string", "minLength": 1},
+    "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+    "citation": {"type": "string", "minLength": 1},
+    "replacement": {"type": "string", "minLength": 1},
+    "status": {"enum": ["proposed", "suppressed", "applied_to_derivative"]},
+    "value_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "concept_ref": {"type": "string", "minLength": 1},
+    "suppression_reason": {"type": ["string", "null"]}
+  }
+}

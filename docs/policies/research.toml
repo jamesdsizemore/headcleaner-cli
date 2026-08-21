@@ -1,0 +1,16 @@
+id = "research"
+version = "1"
+extends = []
+description = "Require durable source evidence for research bundles."
+
+[[rules]]
+id = "sources-required"
+severity = "error"
+when = "sources.missing"
+message = "A source citation is required."
+
+[[rules]]
+id = "review-pending"
+severity = "warning"
+when = "verified.pending"
+message = "Human review is pending."

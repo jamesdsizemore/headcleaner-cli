@@ -27,6 +27,7 @@ Do you want to run headcleaner as a service for an AI assistant or HTTP client?
 └── Yes, local HTTP server -> headcleaner serve
 
 Do you want to validate or test something?
+├── Inspect one untrusted input without converting it -> headcleaner inspect
 ├── Validate a policy file -> headcleaner policy test
 ├── Check your environment -> headcleaner doctor
 └── Measure conversion quality on fixtures -> headcleaner benchmark
@@ -61,7 +62,7 @@ Useful options:
 - `--quiet` — suppress per-file progress lines.
 - `--json` — emit structured events on stdout instead of human-readable lines.
 
-What it checks: every file under `INPUT` that matches an `--include` pattern and does not match an `--exclude` pattern. Files are routed to the appropriate adapter based on extension.
+What it checks: every file under `INPUT` that matches an `--include` pattern and does not match an `--exclude` pattern. Before adapter selection, attachment processing, OCR, or extraction, headcleaner performs bounded signature and archive inventory inspection. Inputs with traversal, malformed-archive, encryption, macro, or type-mismatch findings are skipped with `INSPECTION_QUARANTINED`; this safety gate applies with both the default sequential mode and `--jobs N`.
 
 Possible results: `ok`, `warn`, `skipped`, `failed`, `error` per file. The complete semantics are in the [Understanding results](../user-guide/understanding-results.md) page. The run exits with code 0 if no `failed` or `error` results occurred, 1 if any `failed`, and 2 if any `error`.
 
@@ -70,6 +71,24 @@ Mutability: writes only to `OUTPUT`. Never modifies `INPUT`.
 Optional tools: depends on the input formats. OfficeCLI for Office files, LibreOffice for legacy Office, Tesseract for scanned PDFs, readpst for `.pst` archives, and so on. See the [engine directory](engine-directory.md).
 
 Related commands: `lint` (review the converted output), `index rebuild` (build the search index over the result), `benchmark` (measure conversion quality on fixtures).
+
+## inspect
+
+Purpose: inspect one untrusted file without routing it to an engine, extracting archive members, or writing output.
+
+Basic command:
+
+```bash
+uv run --no-sync --python 3.13 headcleaner inspect INPUT [--json]
+```
+
+What it checks: declared extension, container signature, ZIP member inventory, traversal paths, encrypted members, and macro indicators. Office Open XML documents are inspected as ZIP containers while retaining their logical `.docx`, `.xlsx`, or `.pptx` type.
+
+Possible results: exits `0` with `allow` when no quarantine finding exists; exits `1` with `quarantine` when a finding is present. `--json` emits the full structured inspection result, including findings and archive summary.
+
+Mutability: read-only. It does not invoke a conversion engine, extract members, create a quarantine directory, or alter the input.
+
+Related commands: `convert` applies the same inspection gate automatically before conversion.
 
 ## index
 

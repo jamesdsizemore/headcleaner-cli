@@ -1,0 +1,10 @@
+id = "publication"
+version = "1"
+extends = ["research"]
+description = "Research requirements plus extraction-diagnostic visibility."
+
+[[rules]]
+id = "diagnostics-present"
+severity = "warning"
+when = "diagnostics.present"
+message = "Resolve extraction diagnostics before publication."

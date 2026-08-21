@@ -37,6 +37,7 @@ from .emit import okf as okf_emit
 from .emit import okf_index
 from .emit.manifest import FileResult, RunRecord
 from .engine_plan import build_engine_plan
+from .inspect import inspect_file
 from .engines.base import Adapter, AdapterError
 from .jsonlog import emit_json_event  # Batch 4 / Eng #43
 from .normalize import normalize
@@ -682,6 +683,30 @@ def _process_sequential(
 
     for i, sf in enumerate(all_files, start=1):
         rel = str(sf.relpath)
+        inspection = inspect_file(sf.path)
+        if inspection.disposition == "quarantine":
+            reason = str(inspection.findings[0].get("code", "unsafe"))
+            result = FileResult(
+                source_path=str(sf.path),
+                relpath=rel,
+                engine=None,
+                sha256=None,
+                md_path=None,
+                okf_path=None,
+                status="skipped",
+                error=f"INSPECTION_QUARANTINED: {reason}",
+                duration_seconds=0.0,
+                diagnostics=[
+                    Diagnostic(
+                        code="INSPECTION_QUARANTINED",
+                        severity="warning",
+                        message=f"Input quarantined before routing: {reason}",
+                        evidence={"reason": reason, "inspection": inspection.source_ref},
+                    )
+                ],
+            )
+            _finish_result(opts, record, result)
+            continue
         adapters, plan_diagnostics = _planned_adapters(sf.path, opts)
         adapter = adapters[0][0] if adapters else None
         if adapter is None:
@@ -809,6 +834,33 @@ def _process_parallel(
     work = []
     for sf in all_files:
         rel = str(sf.relpath)
+        inspection = inspect_file(sf.path)
+        if inspection.disposition == "quarantine":
+            reason = str(inspection.findings[0].get("code", "unsafe"))
+            _finish_result(
+                opts,
+                record,
+                FileResult(
+                    source_path=str(sf.path),
+                    relpath=rel,
+                    engine=None,
+                    sha256=None,
+                    md_path=None,
+                    okf_path=None,
+                    status="skipped",
+                    error=f"INSPECTION_QUARANTINED: {reason}",
+                    duration_seconds=0.0,
+                    diagnostics=[
+                        Diagnostic(
+                            code="INSPECTION_QUARANTINED",
+                            severity="warning",
+                            message=f"Input quarantined before routing: {reason}",
+                            evidence={"reason": reason, "inspection": inspection.source_ref},
+                        )
+                    ],
+                ),
+            )
+            continue
         adapter = get_adapter(sf.path, requested_engine=opts.requested_engine)
         engine_name = adapter.name if adapter else None
 
@@ -1104,6 +1156,33 @@ def run_pipeline(opts: RunOptions) -> RunRecord:
             "path": str(state_path(opts.output_root).relative_to(opts.output_root)),
             "record_count": len(sync_records),
         }
+        quarantine_entries = [
+            {
+                "inspection": str(diagnostic.evidence.get("inspection", "")),
+                "reason": str(diagnostic.evidence.get("reason", "unsafe")),
+                "relpath": result.relpath,
+            }
+            for result in record.results
+            for diagnostic in result.diagnostics
+            if diagnostic.code == "INSPECTION_QUARANTINED"
+        ]
+        if quarantine_entries:
+            quarantine_path = opts.output_root / "quarantine.json"
+            staged_quarantine_path = quarantine_path.with_suffix(".json.tmp")
+            staged_quarantine_path.write_text(
+                json.dumps(
+                    {"schema_version": "1", "entries": quarantine_entries},
+                    ensure_ascii=False,
+                    indent=2,
+                    sort_keys=True,
+                ),
+                encoding="utf-8",
+            )
+            staged_quarantine_path.replace(quarantine_path)
+            record.options["quarantine"] = {
+                "path": "quarantine.json",
+                "count": len(quarantine_entries),
+            }
         manifest_emit.write(record, opts.output_root)
         if opts.write_bundle_manifest:
             from .bundle_manifest import write_bundle_manifest

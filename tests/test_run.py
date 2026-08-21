@@ -220,6 +220,46 @@ def test_run_pipeline_recurses_safe_zip_sibling_and_quarantines_traversal(tmp_pa
     assert not (out / "_staging").exists()
 
 
+@pytest.mark.parametrize("jobs", [1, 2])
+def test_run_pipeline_quarantines_hostile_top_level_archive_before_routing(
+    tmp_path: Path, jobs: int
+) -> None:
+    source = tmp_path / "hostile.zip"
+    with zipfile.ZipFile(source, "w") as archive:
+        archive.writestr("../escape.txt", b"unsafe")
+
+    record = run_pipeline(
+        RunOptions(input_root=tmp_path, output_root=tmp_path / "out", fmt="md", jobs=jobs)
+    )
+
+    assert [(result.status, result.error) for result in record.results] == [
+        ("skipped", "INSPECTION_QUARANTINED: archive_traversal")
+    ]
+    assert [diagnostic.code for diagnostic in record.results[0].diagnostics] == [
+        "INSPECTION_QUARANTINED"
+    ]
+
+
+def test_run_pipeline_writes_safe_quarantine_record(tmp_path: Path) -> None:
+    source = tmp_path / "hostile.zip"
+    with zipfile.ZipFile(source, "w") as archive:
+        archive.writestr("../escape.txt", b"unsafe")
+
+    out = tmp_path / "out"
+    run_pipeline(RunOptions(input_root=tmp_path, output_root=out, fmt="md"))
+
+    quarantine = json.loads((out / "quarantine.json").read_text(encoding="utf-8"))
+    assert quarantine["schema_version"] == "1"
+    assert quarantine["entries"] == [
+        {
+            "inspection": "hostile.zip",
+            "reason": "archive_traversal",
+            "relpath": "hostile.zip",
+        }
+    ]
+    assert "unsafe" not in json.dumps(quarantine)
+
+
 def test_run_pipeline_records_adapter_attachment_quarantine_on_parent(tmp_path: Path) -> None:
     message = EmailMessage()
     message["Subject"] = "Limited"

@@ -1,0 +1,16 @@
+id = "legal-hold"
+version = "1"
+extends = []
+description = "Require traceable sources and explicit human review for legal hold."
+
+[[rules]]
+id = "sources-required"
+severity = "error"
+when = "sources.missing"
+message = "A legal-hold concept requires a source citation."
+
+[[rules]]
+id = "review-pending"
+severity = "error"
+when = "verified.pending"
+message = "A legal-hold concept requires explicit human review."

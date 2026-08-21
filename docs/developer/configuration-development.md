@@ -36,11 +36,30 @@ The `evaluate` function walks every concept in the bundle and checks it against 
 def evaluate(policy: Policy, bundle_root: Path) -> list[PolicyFinding]: ...
 ```
 
-The CLI command `headcleaner policy test BUNDLE --pack PACK` calls this function and maps findings to exit codes:
+The legacy evaluator is separate from versioned policy packs. `headcleaner policy test BUNDLE --pack PACK` calls `policy_packs.evaluate_pack`; it maps pack findings to exit codes:
 
 - 0 — no error findings
 - 1 — at least one error finding
 - 2 — invalid pack
+
+## Versioned policy packs
+
+Policy packs are local TOML profiles for reproducible CI and review checks. Every
+pack declares `id`, non-empty `version`, `extends`, `description`, and an array
+of rules. Each rule has exactly `id`, `severity` (`info`, `warning`, or `error`),
+`when`, and `message`. The shipped examples are under `docs/policies/`:
+`research`, `publication`, `pii-safe`, `rag-ready`, and `legal-hold`.
+
+Packs resolve depth-first from those installed examples and then from
+`<bundle>/.headcleaner/policies/`. Pack IDs are lowercase local identifiers;
+absolute paths, URI-like IDs, `..`, escaping symlinks, cycles, duplicate rule
+IDs, unknown condition fields, and versionless packs are rejected before
+evaluation. Packs are declarative only: they cannot execute expressions or make
+network requests.
+
+`headcleaner policy explain --pack PACK --rule RULE` prints one installed rule's
+ID, severity, registered condition, and message. Both pack commands are
+read-only; an error-free result is not human approval or factual verification.
 
 ## Integration with the pipeline
 

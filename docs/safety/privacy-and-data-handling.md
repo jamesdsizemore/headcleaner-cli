@@ -19,7 +19,11 @@ When you pass `--provider openai_compatible_http --endpoint URL --model MODEL --
 Mitigations:
 
 - Pass `--provider local_sentence_transformer` to keep embedding local.
-- Pre-process your chunks to remove sensitive content before running `index embed`. Headcleaner's redaction primitive is a Phase 3 deliverable; until then, do not embed content you would not send to the endpoint manually.
+- Run `headcleaner redact BUNDLE` to inspect deterministic secret proposals
+  locally. Add `--write-derivative` only when you explicitly want a separate
+  `_redacted/` bundle; the canonical bundle stays unchanged. Review the proposal
+  before embedding: redaction does not mark content reviewed or verified, and
+  you should still avoid sending content you would not disclose to the endpoint.
 - Audit the requests with a local HTTP proxy. The provider respects standard `HTTP_PROXY` and `HTTPS_PROXY` variables; pointing those at a logging proxy lets you see every request.
 
 ### Qdrant remote vector database

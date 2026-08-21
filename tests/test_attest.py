@@ -3,15 +3,20 @@
 from __future__ import annotations
 
 import pytest
+import hashlib
 from pathlib import Path
 
 from headcleaner.attest import (
     canonical_hash,
+    canonical_json_bytes,
+    build_in_toto_statement,
     merkle_root,
     merkle_proof,
     build_attestation,
+    verify_signature,
     verify_attestation,
 )
+from headcleaner import __version__
 
 
 @pytest.fixture
@@ -51,6 +56,16 @@ def test_canonical_hash_normalizes_line_endings(tmp_path: Path) -> None:
     assert h_lf == h_crlf
 
 
+def test_canonical_json_bytes_are_stable_for_key_order_and_whitespace() -> None:
+    left = {"subject": [{"name": "bundle", "digest": {"sha256": "abc"}}], "version": 1}
+    right = {"version": 1, "subject": [{"digest": {"sha256": "abc"}, "name": "bundle"}]}
+
+    assert canonical_json_bytes(left) == canonical_json_bytes(right)
+    assert canonical_json_bytes(left) == (
+        b'{"subject":[{"digest":{"sha256":"abc"},"name":"bundle"}],"version":1}'
+    )
+
+
 def test_merkle_root_single_hash() -> None:
     """With one leaf, the root is the leaf hash."""
     assert merkle_root(["abc123"]) == "abc123"
@@ -74,11 +89,9 @@ def test_merkle_root_changes_with_order() -> None:
     assert merkle_root(["aa", "bb"]) != merkle_root(["bb", "aa"])
 
 
-def test_merkle_root_odd_count_duplicates_last() -> None:
-    """Odd-numbered leaves: the last is duplicated to make it even."""
-    # 3 leaves: [aa, bb, cc] -> [aa, bb, cc, cc] -> [H(aa,bb), H(cc,cc)]
-    expected = merkle_root(["aa", "bb", "cc", "cc"])
-    assert merkle_root(["aa", "bb", "cc"]) == expected
+def test_merkle_root_odd_count_uses_rfc9162_split_point() -> None:
+    """A three-leaf RFC 9162 tree differs from duplicate-last-leaf padding."""
+    assert merkle_root(["aa", "bb", "cc"]) != merkle_root(["aa", "bb", "cc", "cc"])
 
 
 def test_merkle_proof_inclusion_single() -> None:
@@ -103,7 +116,7 @@ def test_build_attestation_no_signing(bundle_dir: Path) -> None:
     """build_attestation produces a Merkle root + per-concept hashes without signing."""
     payload = build_attestation(bundle_dir, private_key_path=None)
     assert payload["tool"] == "headcleaner"
-    assert payload["version"] == "0.7.0"
+    assert payload["version"] == __version__
     assert payload["concept_count"] == 3
     assert "alpha.md" in payload["concepts"]
     assert "beta.md" in payload["concepts"]
@@ -114,6 +127,46 @@ def test_build_attestation_no_signing(bundle_dir: Path) -> None:
     assert payload["signature"] is None
     assert payload["public_key"] is None
     assert payload["proof"]  # per-concept proofs included
+
+
+def test_build_attestation_sources_version_from_package(bundle_dir: Path) -> None:
+    assert build_attestation(bundle_dir)["version"] == __version__
+
+
+def test_in_toto_statement_projects_integrity_without_review_claim(bundle_dir: Path) -> None:
+    statement = build_in_toto_statement(build_attestation(bundle_dir))
+
+    assert statement["_type"] == "https://in-toto.io/Statement/v1"
+    assert statement["subject"] == [
+        {"name": "bundle", "digest": {"sha256": build_attestation(bundle_dir)["merkle_root"]}}
+    ]
+    assert statement["predicateType"] == "https://headcleaner.dev/attestation/v1"
+    assert statement["predicate"]["tool_version"] == __version__
+    assert "review" not in canonical_json_bytes(statement).decode("utf-8").lower()
+
+
+def test_in_toto_statement_records_normalized_configuration_hash(bundle_dir: Path) -> None:
+    config = {"format": "okf", "options": {"ocr": False}}
+
+    statement = build_in_toto_statement(build_attestation(bundle_dir), config=config)
+
+    assert statement["predicate"]["config_sha256"] == hashlib.sha256(
+        canonical_json_bytes(config)
+    ).hexdigest()
+
+
+def test_in_toto_statement_records_lock_hash_without_lock_path(
+    bundle_dir: Path, tmp_path: Path
+) -> None:
+    lock_path = tmp_path / "uv.lock"
+    lock_path.write_bytes(b"resolution = 1\n")
+
+    statement = build_in_toto_statement(build_attestation(bundle_dir), lock_path=lock_path)
+
+    assert statement["predicate"]["lock_sha256"] == hashlib.sha256(
+        b"resolution = 1\n"
+    ).hexdigest()
+    assert str(lock_path) not in canonical_json_bytes(statement).decode("utf-8")
 
 
 def test_build_attestation_with_signing(bundle_dir: Path, tmp_path: Path) -> None:
@@ -134,6 +187,34 @@ def test_build_attestation_with_signing(bundle_dir: Path, tmp_path: Path) -> Non
     assert payload["signature"]
     assert payload["public_key"]
     assert payload["public_key"].startswith("ed25519:")
+
+
+def test_signed_attestation_uses_canonical_json_bytes(bundle_dir: Path, tmp_path: Path) -> None:
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+
+    private_key = Ed25519PrivateKey.generate()
+    key_path = tmp_path / "priv.pem"
+    key_path.write_bytes(
+        private_key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption(),
+        )
+    )
+    payload = build_attestation(bundle_dir, private_key_path=key_path)
+
+    assert verify_signature(
+        private_key.public_key(),
+        payload["signature"],
+        canonical_json_bytes(
+            {
+                "merkle_root": payload["merkle_root"],
+                "concept_count": payload["concept_count"],
+                "version": __version__,
+            }
+        ),
+    )
 
 
 def test_verify_attestation_clean(bundle_dir: Path) -> None:

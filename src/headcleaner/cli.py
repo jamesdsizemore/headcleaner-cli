@@ -617,6 +617,20 @@ def review(bundle: Path) -> None:
     )
 
 
+@cli.command(name="review-workbench")
+@click.argument("bundle", type=click.Path(exists=True, file_okay=False, path_type=Path))
+@click.argument("concept_ref")
+@click.option("--format", "output_format", type=click.Choice(["json", "html"]), default="json")
+def review_packet(bundle: Path, concept_ref: str, output_format: str) -> None:
+    """Export an offline evidence packet without changing review state."""
+    from .review_workbench import build_packet, render_packet
+
+    try:
+        click.echo(render_packet(build_packet(bundle, concept_ref), format=output_format))
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
+
+
 @cli.command()
 @click.argument("directory", type=click.Path(exists=True, file_okay=False, path_type=Path))
 def glob(directory: Path) -> None:
@@ -744,6 +758,103 @@ def chunks_cmd(bundle: Path, rebuild: bool, json_output: bool) -> None:
         if json_output
         else f"{len(payload)} chunks"
     )
+
+
+@cli.command(name="redact")
+@click.argument("bundle", type=click.Path(exists=True, file_okay=False, path_type=Path))
+@click.option("--write-derivative", is_flag=True, default=False)
+@click.option("--json", "json_output", is_flag=True, default=False)
+def redact_cmd(bundle: Path, write_derivative: bool, json_output: bool) -> None:
+    """Propose sensitive-content redactions; write only an explicit derivative."""
+    from .redact import propose_redactions, write_derivative as write_redacted_derivative
+
+    findings = propose_redactions(bundle)
+    derivative = write_redacted_derivative(bundle, findings) if write_derivative else None
+    payload = {
+        "findings": [finding.to_dict() for finding in findings],
+        "derivative": str(derivative) if derivative else None,
+    }
+    if json_output:
+        click.echo(json.dumps(payload, ensure_ascii=False, sort_keys=True))
+    else:
+        click.echo(f"{len(findings)} redaction proposal(s)")
+        if derivative:
+            click.echo(f"derivative: {derivative}")
+
+
+@cli.command(name="inspect")
+@click.argument("input_path", type=click.Path(exists=True, dir_okay=False, path_type=Path))
+@click.option("--json", "json_output", is_flag=True, default=False)
+def inspect_cmd(input_path: Path, json_output: bool) -> None:
+    """Inspect one untrusted input without routing, extracting, or writing."""
+    from .inspect import inspect_file
+
+    result = inspect_file(input_path)
+    payload = result.__dict__
+    if json_output:
+        click.echo(json.dumps(payload, ensure_ascii=False, sort_keys=True))
+    else:
+        click.echo(f"{result.disposition}: {input_path}")
+        for finding in result.findings:
+            click.echo(f"- {finding['code']}")
+    if result.disposition == "quarantine":
+        raise click.exceptions.Exit(1)
+
+
+@cli.group(name="policy")
+def policy_cmd() -> None:
+    """Evaluate local, declarative governance policy packs."""
+
+
+@policy_cmd.command(name="test")
+@click.argument("bundle", type=click.Path(exists=True, file_okay=False, path_type=Path))
+@click.option("--pack", "pack_id", required=True)
+@click.option("--json", "json_output", is_flag=True, default=False)
+def policy_test_cmd(bundle: Path, pack_id: str, json_output: bool) -> None:
+    """Evaluate PACK against BUNDLE without changing either input."""
+    from .policy_packs import evaluate_pack, load_pack
+
+    installed_dir = Path(__file__).resolve().parents[2] / "docs" / "policies"
+    try:
+        pack = load_pack(pack_id, installed_dir=installed_dir, bundle_root=bundle)
+    except ValueError as exc:
+        raise click.UsageError(str(exc)) from exc
+    findings = evaluate_pack(pack, bundle)
+    payload = [
+        {
+            "rule_id": item.rule_id,
+            "severity": item.severity,
+            "message": item.message,
+            "concept_ref": item.concept_ref,
+            "evidence": item.evidence,
+        }
+        for item in findings
+    ]
+    if json_output:
+        click.echo(json.dumps(payload, ensure_ascii=False, sort_keys=True))
+    else:
+        for item in findings:
+            click.echo(f"{item.severity}: {item.concept_ref} {item.rule_id}: {item.message}")
+    if any(item.severity == "error" for item in findings):
+        raise click.exceptions.Exit(1)
+
+
+@policy_cmd.command(name="explain")
+@click.option("--pack", "pack_id", required=True)
+@click.option("--rule", "rule_id", required=True)
+def policy_explain_cmd(pack_id: str, rule_id: str) -> None:
+    """Explain one installed declarative policy rule without evaluating a bundle."""
+    from .policy_packs import load_pack
+
+    installed_dir = Path(__file__).resolve().parents[2] / "docs" / "policies"
+    try:
+        pack = load_pack(pack_id, installed_dir=installed_dir)
+    except ValueError as exc:
+        raise click.UsageError(str(exc)) from exc
+    rule = next((candidate for candidate in pack.rules if candidate.id == rule_id), None)
+    if rule is None:
+        raise click.UsageError(f"rule not found in pack {pack.id}: {rule_id}")
+    click.echo(f"{rule.id}\nseverity: {rule.severity}\ncondition: {rule.when}\n{rule.message}")
 
 
 @cli.group(name="index")

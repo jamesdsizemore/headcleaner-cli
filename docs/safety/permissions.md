@@ -48,6 +48,31 @@ What it permits: writing to `<bundle>/.headcleaner/sync.json`. Sync state is upd
 
 Default: dry-run is the default for the `sync` command. Writing to the sync state requires `--apply`. Without `--apply`, `sync` reports what would change but does not modify anything.
 
+### `redact --write-derivative`
+
+What it permits: writing a separate `<bundle>/_redacted/` derivative plus a
+redaction report. Without this flag, `headcleaner redact BUNDLE` only emits
+proposals and writes nothing. The canonical bundle, source files, manifest, and
+review records are never overwritten by redaction.
+
+Default: disabled. The initial detector reports deterministic secret candidates
+using source coordinates and a value digest; it does not persist matched secret
+text. A redaction proposal or derivative does not approve, verify, or otherwise
+change the trust status of a concept.
+
+## Automatic hostile-input quarantine
+
+Every `convert` run inspects each top-level input before adapter selection,
+attachment processing, OCR, or extraction. The inspection inventories ZIP
+containers without extracting members and quarantines traversal paths,
+malformed/encrypted archives, macro indicators, and declared-type/signature
+mismatches. A quarantined input is recorded as `INSPECTION_QUARANTINED` and is
+not sent to a conversion engine; this is identical for sequential and parallel
+(`--jobs N`) conversion.
+
+There is deliberately no bypass flag. Use `headcleaner inspect INPUT --json`
+to examine the structured findings without converting or writing any output.
+
 ## Slow operations
 
 A few operations are slow enough that they warrant an explicit opt-in, not because they are unsafe, but because they take long enough that you should be aware of them.

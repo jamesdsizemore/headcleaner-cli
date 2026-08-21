@@ -1,0 +1,10 @@
+id = "pii-safe"
+version = "1"
+extends = ["research"]
+description = "Surface proposed redactions before sharing derivatives."
+
+[[rules]]
+id = "redaction-proposed"
+severity = "warning"
+when = "redaction.proposed"
+message = "Review proposed redactions before sharing a derivative."

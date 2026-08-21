@@ -1,0 +1,10 @@
+id = "rag-ready"
+version = "1"
+extends = ["research"]
+description = "Highlight bundles that are not yet ready for a retrieval profile."
+
+[[rules]]
+id = "readiness-not-ready"
+severity = "warning"
+when = "readiness.not_ready"
+message = "The selected readiness profile is not ready."

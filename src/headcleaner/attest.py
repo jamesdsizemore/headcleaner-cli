@@ -42,6 +42,8 @@ import json
 from pathlib import Path
 from typing import Any
 
+from . import __version__
+
 # Ed25519 signing via cryptography (pure-Python ed25519 also acceptable if needed)
 try:
     from cryptography.hazmat.primitives import serialization
@@ -58,6 +60,16 @@ except ImportError:
 # ---------------------------------------------------------------------------
 # Canonical hashing
 # ---------------------------------------------------------------------------
+
+
+def canonical_json_bytes(value: Any) -> bytes:
+    """Encode a JSON value deterministically for signing or hashing."""
+    return json.dumps(
+        value,
+        sort_keys=True,
+        ensure_ascii=False,
+        separators=(",", ":"),
+    ).encode("utf-8")
 
 
 def canonical_hash(concept_path: Path) -> str:
@@ -99,16 +111,17 @@ def merkle_root(leaf_hashes_hex: list[str]) -> str:
     """
     if not leaf_hashes_hex:
         return hashlib.sha256(b"").hexdigest()
-    leaves = [bytes.fromhex(h) for h in leaf_hashes_hex]
-    while len(leaves) > 1:
-        if len(leaves) % 2 == 1:
-            # Duplicate the last leaf to make the count even
-            leaves = leaves + [leaves[-1]]
-        new_level = []
-        for i in range(0, len(leaves), 2):
-            new_level.append(_hash_pair(leaves[i], leaves[i + 1]))
-        leaves = new_level
-    return leaves[0].hex()
+    return _merkle_root_bytes([bytes.fromhex(h) for h in leaf_hashes_hex]).hex()
+
+
+def _merkle_root_bytes(leaves: list[bytes]) -> bytes:
+    """Return an RFC 9162 split-point root for a non-empty leaf sequence."""
+    if len(leaves) == 1:
+        return leaves[0]
+    split = 1 << (len(leaves).bit_length() - 1)
+    if split == len(leaves):
+        split //= 2
+    return _hash_pair(_merkle_root_bytes(leaves[:split]), _merkle_root_bytes(leaves[split:]))
 
 
 def merkle_proof(leaf_hashes_hex: list[str], target_hex: str) -> list[str]:
@@ -120,19 +133,19 @@ def merkle_proof(leaf_hashes_hex: list[str], target_hex: str) -> list[str]:
     if not leaf_hashes_hex or target_hex not in leaf_hashes_hex:
         return []
     leaves = [bytes.fromhex(h) for h in leaf_hashes_hex]
-    proof: list[bytes] = []
-    idx = leaf_hashes_hex.index(target_hex)
-    while len(leaves) > 1:
-        if len(leaves) % 2 == 1:
-            leaves = leaves + [leaves[-1]]
-        sibling_idx = idx ^ 1
-        proof.append(leaves[sibling_idx])
-        new_level = []
-        for i in range(0, len(leaves), 2):
-            new_level.append(_hash_pair(leaves[i], leaves[i + 1]))
-        leaves = new_level
-        idx //= 2
-    return [h.hex() for h in proof]
+    return [item.hex() for item in _merkle_proof_bytes(leaves, leaf_hashes_hex.index(target_hex))]
+
+
+def _merkle_proof_bytes(leaves: list[bytes], index: int) -> list[bytes]:
+    """Return the bottom-up RFC 9162 inclusion path for one leaf index."""
+    if len(leaves) == 1:
+        return []
+    split = 1 << (len(leaves).bit_length() - 1)
+    if split == len(leaves):
+        split //= 2
+    if index < split:
+        return _merkle_proof_bytes(leaves[:split], index) + [_merkle_root_bytes(leaves[split:])]
+    return _merkle_proof_bytes(leaves[split:], index - split) + [_merkle_root_bytes(leaves[:split])]
 
 
 # ---------------------------------------------------------------------------
@@ -248,7 +261,7 @@ def build_attestation(
 
     payload: dict[str, Any] = {
         "tool": "headcleaner",
-        "version": "0.7.0",
+        "version": __version__,
         "bundle_root": str(bundle_root.resolve()),
         "concept_count": len(concepts),
         "concepts": concepts,
@@ -262,15 +275,13 @@ def build_attestation(
         key = load_private_key(private_key_path)
         if key is not None:
             # Sign the canonical encoding of the root + metadata
-            to_sign = json.dumps(
+            to_sign = canonical_json_bytes(
                 {
                     "merkle_root": root,
                     "concept_count": len(concepts),
-                    "version": "0.7.0",
-                },
-                sort_keys=True,
-                ensure_ascii=False,
-            ).encode("utf-8")
+                    "version": __version__,
+                }
+            )
             payload["public_key"] = "ed25519:" + public_key_b64(key.public_key())
             payload["signature"] = sign_message(key, to_sign)
 
@@ -281,6 +292,36 @@ def build_attestation(
         payload["proof"] = proofs
 
     return payload
+
+
+def build_in_toto_statement(
+    attestation: dict[str, Any],
+    config: dict[str, Any] | None = None,
+    lock_path: Path | None = None,
+) -> dict[str, Any]:
+    """Project an integrity attestation into a deterministic in-toto statement."""
+    config_sha256 = hashlib.sha256(canonical_json_bytes(config or {})).hexdigest()
+    predicate: dict[str, Any] = {
+        "schema_version": "1",
+        "tool_version": attestation["version"],
+        "config_sha256": config_sha256,
+        "concept_count": attestation["concept_count"],
+        "concepts": attestation["concepts"],
+        "merkle_root": attestation["merkle_root"],
+    }
+    if lock_path is not None:
+        predicate["lock_sha256"] = hashlib.sha256(Path(lock_path).read_bytes()).hexdigest()
+    return {
+        "_type": "https://in-toto.io/Statement/v1",
+        "subject": [
+            {
+                "name": "bundle",
+                "digest": {"sha256": attestation["merkle_root"]},
+            }
+        ],
+        "predicateType": "https://headcleaner.dev/attestation/v1",
+        "predicate": predicate,
+    }
 
 
 def write_attestation(
@@ -347,15 +388,13 @@ def verify_attestation(
         else:
             try:
                 pk = load_public_key(public_key_path)
-                to_verify = json.dumps(
+                to_verify = canonical_json_bytes(
                     {
                         "merkle_root": expected_root,
                         "concept_count": len(concepts),
-                        "version": "0.7.0",
-                    },
-                    sort_keys=True,
-                    ensure_ascii=False,
-                ).encode("utf-8")
+                        "version": __version__,
+                    }
+                )
                 ok = verify_signature(pk, payload["signature"], to_verify)
                 result["signature_valid"] = ok
                 if not ok:
@@ -398,23 +437,11 @@ def _verify_proof_with_index(
     """Verify a Merkle inclusion proof given the full leaf list."""
     if leaf_hash_hex not in all_leaves_hex:
         return False
-    hash_bytes = bytes.fromhex(leaf_hash_hex)
     idx = all_leaves_hex.index(leaf_hash_hex)
     leaves = [bytes.fromhex(h) for h in all_leaves_hex]
-    for sibling_hex in proof:
-        sibling = bytes.fromhex(sibling_hex)
-        if idx % 2 == 0:
-            # Hash is on the left
-            hash_bytes = _hash_pair(hash_bytes, sibling)
-        else:
-            # Hash is on the right
-            hash_bytes = _hash_pair(sibling, hash_bytes)
-        # Rebuild the level from the leaves' current configuration
-        idx //= 2
-        if len(leaves) % 2 == 1:
-            leaves = leaves + [leaves[-1]]
-        new_level = []
-        for i in range(0, len(leaves), 2):
-            new_level.append(_hash_pair(leaves[i], leaves[i + 1]))
-        leaves = new_level
-    return hash_bytes.hex() == merkle_root(all_leaves_hex)
+    expected = _merkle_proof_bytes(leaves, idx)
+    try:
+        supplied = [bytes.fromhex(sibling) for sibling in proof]
+    except ValueError:
+        return False
+    return supplied == expected
