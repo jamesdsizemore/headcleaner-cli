@@ -685,6 +685,126 @@ def review(bundle: Path) -> None:
     )
 
 
+@cli.command(name="review-queue")
+@click.argument("bundle", type=click.Path(exists=True, file_okay=False, path_type=Path))
+@click.option("--pack", "pack_id", default=None, help="Policy pack ID for queue_weights.")
+@click.option("--limit", "limit", type=int, default=None, help="Maximum items to emit.")
+@click.option("--json", "as_json", is_flag=True, default=False, help="Emit JSON.")
+def review_queue_cmd(
+    bundle: Path, pack_id: str | None, limit: int | None, as_json: bool
+) -> None:
+    """Contract 3.6: explainable risk-based review queue."""
+    from . import review_queue as rq
+
+    pack_weights = None
+    if pack_id is not None:
+        from .policy_packs import load_pack
+
+        try:
+            loaded = load_pack(
+                pack_id, installed_dir=Path("docs/policies"), bundle_root=bundle
+            )
+        except (ValueError, FileNotFoundError):
+            # Pack not present as a TOML; treat the literal id as a weightless marker
+            # by reading pack_weights from TOML inline if available, else skip.
+            pack_weights = None
+        else:
+            # Policy packs don't currently carry queue_weights; hook reserved.
+            pack_weights = None
+
+    queue = rq.build_queue(Path(bundle), pack_weights=pack_weights)
+    if limit is not None:
+        queue = queue[:limit]
+    if as_json:
+        click.echo(
+            json.dumps(
+                [rq.explain_item(i) for i in queue],
+                indent=2,
+                ensure_ascii=False,
+                sort_keys=True,
+            )
+        )
+        return
+    for idx, item in enumerate(queue, start=1):
+        click.echo(
+            f"{idx:>4}  prio={item.priority:>6.3f}  state={item.state:<10}  "
+            f"{item.concept_ref}"
+        )
+
+
+@cli.command(name="review-claim")
+@click.argument("bundle", type=click.Path(exists=True, file_okay=False, path_type=Path))
+@click.argument("concept_ref")
+@click.option("--reviewer", required=True, help="Reviewer identifier.")
+def review_claim_cmd(bundle: Path, concept_ref: str, reviewer: str) -> None:
+    """Contract 3.6: claim the top-priority item containing the given concept_ref,
+    or the named item if exactly one queue entry matches. Writes a claim audit
+    sidecar at <bundle>/.headcleaner/queue-audit.json; never mutates concept
+    trust state.
+    """
+    import json as _json
+    from datetime import UTC, datetime
+
+    from . import review_queue as rq
+
+    queue = rq.build_queue(Path(bundle))
+    if concept_ref == "@top":
+        if not queue:
+            raise click.ClickException("queue is empty")
+        item = queue[0]
+    else:
+        matches = [i for i in queue if i.concept_ref == concept_ref]
+        if not matches:
+            raise click.ClickException(f"no queue item for concept_ref={concept_ref!r}")
+        item = matches[0]
+
+    # Honour persistent claim audit: if the same item was already claimed by a
+    # different reviewer in this bundle, the race is rejected.
+    audit_path = Path(bundle) / ".headcleaner" / "queue-audit.json"
+    if audit_path.exists():
+        try:
+            prior = _json.loads(audit_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            prior = []
+        for entry in prior:
+            if (
+                isinstance(entry, dict)
+                and entry.get("concept_ref") == item.concept_ref
+                and entry.get("state") == "claimed"
+                and entry.get("reviewer") != reviewer
+            ):
+                raise click.ClickException(
+                    f"item already claimed by {entry.get('reviewer')!r}; "
+                    f"duplicate claim rejected"
+                )
+
+    try:
+        claimed = rq.claim_item(item, reviewer=reviewer)
+    except PermissionError as exc:
+        raise click.ClickException(str(exc)) from exc
+    audit_path.parent.mkdir(parents=True, exist_ok=True)
+    audit_entry = {
+        "concept_ref": claimed.concept_ref,
+        "reviewer": claimed.claimed_by,
+        "state": claimed.state,
+        "claimed_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    }
+    # Append to existing audit log if present.
+    if audit_path.exists():
+        existing = _json.loads(audit_path.read_text(encoding="utf-8"))
+    else:
+        existing = []
+    existing.append(audit_entry)
+    audit_path.write_text(
+        _json.dumps(existing, indent=2, ensure_ascii=False, sort_keys=True),
+        encoding="utf-8",
+    )
+    click.echo(
+        f"claimed {claimed.concept_ref} by {claimed.claimed_by} "
+        f"(audit: {audit_path})"
+    )
+
+
 @cli.command(name="review-workbench")
 @click.argument("bundle", type=click.Path(exists=True, file_okay=False, path_type=Path))
 @click.argument("concept_ref")
