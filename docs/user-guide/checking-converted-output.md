@@ -121,6 +121,14 @@ When you come back to an output folder a week after running headcleaner, the wor
 
 The `_md/` and `okf/` folders contain your documents. The manifest and report describe the conversion that produced them. The hidden `.headcleaner/` directory is the durable state that lets headcleaner do smart things on subsequent runs.
 
+## Phase 3 signals
+
+Phase 3 adds three read-only signals you can run after `convert` to get a richer picture of what to do next. None of them change `verified:` or the canonical output.
+
+- `headcleaner readiness BUNDLE [--profile NAME]` produces a per-concept grade (`blocked | needs_review | conditional | ready`) with every deduction cited. Use it before `headcleaner review` to filter out concepts that already satisfy the profile you care about.
+- `headcleaner review-queue BUNDLE [--json]` produces a deterministic, evidence-based queue. Use it to triage a large bundle before sending individual items to a human reviewer.
+- `headcleaner attest BUNDLE --in-toto PATH` writes a deterministic in-toto Statement alongside the attestation. Use it when you need to hand the bundle to a downstream system that expects an in-toto-compatible integrity statement.
+
 ## What to read next
 
 If you want to understand the frontmatter fields in detail, read [Citations and trust](citations-and-trust.md). If you want to make the content searchable, read [Search and context](search-and-context.md). If you want a complete field reference for the manifest, read the [result reference](../reference/result-reference.md).

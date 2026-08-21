@@ -1,0 +1,16 @@
+.claude-plugin
+.github
+.gitignore
+.okf
+CHANGELOG.md
+LICENSE
+Makefile
+NOTICE
+README.md
+action.yml
+docs
+examples
+hooks
+skills
+templates
+tests

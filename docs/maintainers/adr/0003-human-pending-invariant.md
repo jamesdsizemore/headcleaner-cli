@@ -11,6 +11,8 @@
 - Downstream systems that require human review can safely consume headcleaner output as `human:pending`.
 - The transition to `human:reviewed` is part of the human review workflow, not the conversion workflow.
 - A reviewer who marks a file as reviewed is asserting "I read this and it is correct." No programmatic interface can know whether the assertion is true.
+- Phase 3 adds `headcleaner review-queue` and `headcleaner readiness` as evidence-driven read-only signals. Both are explicitly forbidden from mutating `verified:` — the queue writes only an audit sidecar at `<bundle>/.headcleaner/queue-audit.json`, and the readiness report is computed without ever touching concept frontmatter. Verified by `tests/test_review_queue.py::test_queue_commands_never_change_verified_in_frontmatter` and `tests/test_readiness.py::test_build_report_does_not_modify_concept_frontmatter`.
+- Phase 3 `headcleaner attest` carries the trust state through the OKF `verified` field but does not change it; the attestation payload is a signed snapshot of what was, not an authorisation of what should be.
 
 ## Supersedes
 

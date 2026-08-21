@@ -12,6 +12,7 @@
 - Adding a new direct dependency is a deliberate change; it requires updating both `pyproject.toml` and `uv.lock`.
 - The lockfile is large but provides strong reproducibility guarantees.
 - The policy prohibits `optional-dependencies` tables in `pyproject.toml`; all required dependencies are pinned directly.
+- Phase 3 adds `in-toto==3.1.0` to the locked dependency set (Contract 3.5). It transitively pulls `securesystemslib`, `iso8601`, `pathspec`, and `python-dateutil`. The dependency is consumed only by the `attest --in-toto` code path; the rest of the attestation surface continues to use the existing `cryptography==50.0.0` plus stdlib. The lockfile is the authoritative source; `uv lock --check` must pass before any Phase 3 commit.
 
 ## Supersedes
 

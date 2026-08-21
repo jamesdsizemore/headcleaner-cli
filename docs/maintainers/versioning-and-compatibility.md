@@ -84,3 +84,7 @@ Releases are not automatic; a maintainer explicitly authorizes each step.
 ## What to read next
 
 The [compatibility reference](../reference/compatibility.md) is the platform support matrix. The [support runbook](support-runbook.md) covers bug reports. The [incident and security runbook](incident-and-security.md) covers security releases.
+
+## Phase 3 additions
+
+Phase 3 added three new JSON Schemas (`attestation.schema.json`, `readiness.schema.json`, `redaction.schema.json`). Each uses Draft 7 with `additionalProperties: false` and a documented `schema_version`. Within the `1.x` range, schemas gain additive fields; breaking changes bump to `2`. Phase 3 also added one new Python dependency (`in-toto==3.1.0`) and four new CLI commands (`attest`, `review-queue`, `review-claim`, `readiness`, `benchmark-dashboard`). The legacy `headcleaner verify` and `--private-key` aliases are retained for backwards compatibility.

@@ -81,3 +81,10 @@ Be patient. The user is reporting a problem they care about; taking time to unde
 ## What to read next
 
 The [incident and security runbook](incident-and-security.md) covers the cases where a bug report is actually a security issue. The [versioning and compatibility reference](versioning-and-compatibility.md) covers version semantics. The [user troubleshooting guide](../user-guide/troubleshooting.md) is the symptom-first page you can point users at.
+
+## Phase 3 support categories
+
+- **Attestation verification failures.** Almost always caused by a bundle edit after `headcleaner attest`. Have the user re-run `headcleaner attest`; do not suggest modifying the attestation.
+- **Queue claim rejected.** Confirm whether another reviewer has already claimed the item. The audit sidecar at `<bundle>/.headcleaner/queue-audit.json` is the source of truth.
+- **Readiness grade lower than expected.** The deductions array shows exactly which frontmatter fields drove the grade down. Walk the user through the citations; do not suggest editing the bundle to game the score.
+- **In-toto envelope rejected by a downstream system.** Confirm the downstream system reads `application/vnd.in-toto+json` as the payload type and that the Statement's `_type` is read from inside the decoded payload, not from the envelope.

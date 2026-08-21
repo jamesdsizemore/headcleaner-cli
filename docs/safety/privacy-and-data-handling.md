@@ -81,6 +81,17 @@ Headcleaner's design follows a data minimization principle: every piece of data 
 
 If you find a place where headcleaner persists data that is not justified by one of these three categories, please open an issue.
 
+## Phase 3 data minimization
+
+Phase 3 adds the following persistent artifacts; each is justified and bounded:
+
+- `<bundle>/attestation.json` (Contract 3.5) — required for the audit trail of what headcleaner did. Contains only concept SHA-256 hashes, source provenance SHAs, and engine capability/version metadata. Never contains raw concept text, absolute paths, hostnames, or usernames.
+- `<bundle>/.headcleaner/queue-audit.json` (Contract 3.6) — append-only audit log of human-review claims. Contains reviewer identifiers, concept references, and timestamps. Does not contain review verdicts or trust-state changes.
+- `<bundle>/_redacted/` (Contract 3.3, opt-in via `--write-derivative`) — redaction derivative parallel to canonical output. Contains only SHA-256 digests of matched values, never the raw matched text. The canonical concepts are not modified.
+- `docs/development/phase-audits/phase-3.json` (governance) — local file only; contains disposition evidence for every active documentation file. No user data.
+
+The in-toto Statement emitted alongside the attestation carries the same SHA-256-only payload; raw content is never serialised into the signed or unsigned statement.
+
 ## Where to read next
 
 The [safety overview](safety-overview.md) is the single-page summary of the safety guarantees. The [permissions page](permissions.md) documents every flag that affects data leaving your machine. The [security model page](security-model.md) is the formal threat model.

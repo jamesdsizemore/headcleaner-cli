@@ -60,6 +60,16 @@ Passing `--json` to `convert` produces a stream of structured events that downst
 
 The stream's `events validate` subcommand checks the stream against the schema. Use it in CI as a guard against silent format drift.
 
+## Phase 3 artefacts to capture
+
+Phase 3 produces three additional persistent artifacts that CI workflows may want to upload:
+
+- `<bundle>/attestation.json` — produced by `headcleaner attest`. Upload alongside the manifest for downstream consumers that need a signed integrity statement.
+- `<bundle>/.headcleaner/queue-audit.json` — produced by `headcleaner review-claim`. Upload for audit traceability of human-review claims.
+- `<bundle>/_redacted/` — produced by `headcleaner redact --write-derivative`. Upload if the downstream system consumes the redacted derivative.
+
+Phase 3 also ships a self-contained public benchmark dashboard via `headcleaner benchmark-dashboard CURRENT --format json|html`. The recommended CI artifact is the JSON payload — upload it as a build artifact so reviewers can diff metric deltas without running the renderer.
+
 ## Common pitfalls
 
 The most common CI pitfalls are:

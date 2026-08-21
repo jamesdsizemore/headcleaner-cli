@@ -122,3 +122,16 @@ For clarity, the following flags are sometimes assumed but do not exist:
 ## Where to read next
 
 The [safety overview](safety-overview.md) is the single-page summary of the guarantees. The [privacy and data handling page](privacy-and-data-handling.md) explains what headcleaner does with the data you give it. The [CLI reference](../reference/cli-reference.md) is the complete flag reference.
+
+## Phase 3 additions (Contracts 3.3, 3.5, 3.6, 3.7, 3.8)
+
+The following flags were added in Phase 3. Each follows the same mutability/audit discipline as the Phase 1/Phase 2 commands.
+
+- `headcleaner attest --key PATH` — passes a user-supplied ed25519 private key. The CLI does not generate, store, or upload key material; the user is responsible for custody and rotation. No key → unsigned integrity statement only.
+- `headcleaner attest --in-toto PATH` — writes a deterministic in-toto Statement (DSSE-wrapped) alongside the attestation. Still no network egress.
+- `headcleaner attest --verify` — re-computes the attestation and exits non-zero on mismatch. Read-only.
+- `headcleaner review-queue BUNDLE` — builds a deterministic evidence queue. Read-only against the bundle.
+- `headcleaner review-claim BUNDLE CONCEPT_REF --reviewer ID` — appends a claim entry to `<bundle>/.headcleaner/queue-audit.json`. Never mutates concept frontmatter; the audit sidecar is the only write.
+- `headcleaner readiness BUNDLE [--profile NAME]` — read-only grade computation. Never overwrites `verified:`.
+- `headcleaner redact BUNDLE [--write-derivative]` — by default emits a proposal report without mutating canonical output. With `--write-derivative`, writes only inside `<bundle>/_redacted/`. Never overwrites `verified:`.
+- `headcleaner benchmark-dashboard CURRENT` — read-only; refuses to render against any non-public fixture. No network egress.

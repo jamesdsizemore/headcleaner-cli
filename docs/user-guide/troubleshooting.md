@@ -82,3 +82,15 @@ If none of the above match your situation, the next best places to look are:
 - The run report at `<bundle>/REPORT.md` for a structured summary of what happened.
 
 If you have found a bug — for example, an `error` status that suggests headcleaner encountered something the maintainers did not anticipate — please open an issue with the smallest possible reproduction, the output of `headcleaner --version`, and the relevant portion of the report.
+
+## Symptom: I want to know why a concept is gated
+
+Run `headcleaner readiness BUNDLE --json` and look at the `deductions` array for the concept. Every deduction cites a `rule_id`, a `value`, a `threshold`, a `contribution`, and a `citation` (the frontmatter field that triggered the deduction). The grade is computed by subtracting documented deductions from `MAX_SCORE = 1.0` against the named profile's thresholds (`default`, `rag`, or `publication`).
+
+## Symptom: My attestation `--verify` fails after I edit one concept
+
+That is the expected behavior. `headcleaner attest --verify` re-hashes the bundle and compares against `attestation.json`; any concept edit breaks the Merkle root. Re-run `headcleaner attest BUNDLE [--key PATH] [--in-toto PATH]` to record a fresh attestation. The `--verify` exit code is non-zero on mismatch — a named error is printed to stderr.
+
+## Symptom: My queue claim was rejected
+
+`headcleaner review-claim` consults the per-bundle audit sidecar at `<bundle>/.headcleaner/queue-audit.json` before claiming. If another reviewer has already claimed that concept_ref, the CLI rejects the claim with exit 1 and a `duplicate claim rejected` message. Use the same `--reviewer` to retry (idempotent for the same reviewer), or pick a different concept.

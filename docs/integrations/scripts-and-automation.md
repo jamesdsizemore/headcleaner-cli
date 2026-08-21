@@ -84,3 +84,7 @@ The most common automation pitfalls are:
 ## Where to read next
 
 The [result reference](../reference/result-reference.md) explains every field of the manifest and every event in the JSON stream. The [CLI reference](../reference/cli-reference.md) is the complete command reference. The [tutorial on CI integration](../tutorials/ci-integration.md) is the GitHub Actions walkthrough.
+
+## Phase 3 additions
+
+The Phase 3 commands follow the same `--json` + `--strict` discipline as Phase 1 and Phase 2 commands. Capturing both stdout and stderr is especially important for `headcleaner review-claim`, which writes a human-readable claim line to stderr and an updated audit sidecar to disk; the `--json` flag for `headcleaner readiness`, `review-queue`, and `benchmark-dashboard` makes downstream parsing deterministic.

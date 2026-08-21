@@ -1,0 +1,314 @@
+[
+  {
+    "repo": "rvben/rumdl",
+    "stars": 1441,
+    "primary": "Rust",
+    "langs": [
+      "Makefile",
+      "Rust",
+      "Python",
+      "Shell",
+      "Go Template"
+    ],
+    "pushed": "2026-08-19",
+    "release": "v0.2.58",
+    "license": "mit",
+    "forks": 76
+  },
+  {
+    "repo": "NanoNets/docstrange",
+    "stars": 1528,
+    "primary": "Python",
+    "langs": [
+      "Python",
+      "Shell",
+      "JavaScript",
+      "CSS",
+      "HTML"
+    ],
+    "pushed": "2025-10-31",
+    "release": null,
+    "license": "mit",
+    "forks": 136
+  },
+  {
+    "repo": "DavidWells/markdown-magic",
+    "stars": 866,
+    "primary": "JavaScript",
+    "langs": [
+      "JavaScript",
+      "MDX"
+    ],
+    "pushed": "2026-07-27",
+    "release": "markdown-magic@4.11.0",
+    "license": null,
+    "forks": 223
+  },
+  {
+    "repo": "coderaiser/putout",
+    "stars": 796,
+    "primary": "JavaScript",
+    "langs": [
+      "JavaScript",
+      "TypeScript",
+      "CSS",
+      "HTML",
+      "Shell"
+    ],
+    "pushed": "2026-08-20",
+    "release": "v42.13.0",
+    "license": "mit",
+    "forks": 45
+  },
+  {
+    "repo": "thombashi/pytablewriter",
+    "stars": 630,
+    "primary": "Python",
+    "langs": [
+      "Python",
+      "Makefile"
+    ],
+    "pushed": "2026-07-27",
+    "release": "v1.2.1",
+    "license": "mit",
+    "forks": 48
+  },
+  {
+    "repo": "harshankur/officeParser",
+    "stars": 528,
+    "primary": "Rich Text Format",
+    "langs": [
+      "JavaScript",
+      "TypeScript",
+      "Rich Text Format",
+      "HTML",
+      "Shell"
+    ],
+    "pushed": "2026-08-18",
+    "release": "v7.8.0",
+    "license": "mit",
+    "forks": 52
+  },
+  {
+    "repo": "scaccogatto/okf-skills",
+    "stars": 324,
+    "primary": "Python",
+    "langs": [
+      "Python",
+      "Makefile",
+      "Shell"
+    ],
+    "pushed": "2026-08-15",
+    "release": "okf--v0.7.2",
+    "license": "mit",
+    "forks": 32
+  },
+  {
+    "repo": "charmbracelet/glow",
+    "stars": 26974,
+    "primary": "Go",
+    "langs": [
+      "Go",
+      "Dockerfile"
+    ],
+    "pushed": "2026-08-16",
+    "release": "v3.0.0",
+    "license": "mit",
+    "forks": 747
+  },
+  {
+    "repo": "daaain/claude-code-log",
+    "stars": 1197,
+    "primary": "Python",
+    "langs": [
+      "Python",
+      "HTML",
+      "Just",
+      "CSS",
+      "JavaScript"
+    ],
+    "pushed": "2026-07-31",
+    "release": "1.5.0",
+    "license": "mit",
+    "forks": 96
+  },
+  {
+    "repo": "raphaelmansuy/code2prompt",
+    "stars": 882,
+    "primary": "Python",
+    "langs": [
+      "Python",
+      "Jinja",
+      "Shell"
+    ],
+    "pushed": "2026-07-07",
+    "release": null,
+    "license": "mit",
+    "forks": 57
+  },
+  {
+    "repo": "ZeroSumQuant/claude-conversation-extractor",
+    "stars": 661,
+    "primary": "Python",
+    "langs": [
+      "Python"
+    ],
+    "pushed": "2026-01-02",
+    "release": "v1.1.2",
+    "license": "mit",
+    "forks": 88
+  },
+  {
+    "repo": "messkan/rag-chunk",
+    "stars": 116,
+    "primary": "Python",
+    "langs": [
+      "Python"
+    ],
+    "pushed": "2026-01-18",
+    "release": "v0.3.0",
+    "license": "mit",
+    "forks": 7
+  },
+  {
+    "repo": "parsehawk/parsehawk",
+    "stars": 62,
+    "primary": "Python",
+    "langs": [
+      "HTML",
+      "TypeScript",
+      "CSS",
+      "Just",
+      "Python"
+    ],
+    "pushed": "2026-08-18",
+    "release": "v0.2.4",
+    "license": "apache-2.0",
+    "forks": 8
+  },
+  {
+    "repo": "xberg-io/tree-sitter-language-pack",
+    "stars": 459,
+    "primary": "Rust",
+    "langs": [
+      "Python",
+      "C",
+      "Rust",
+      "Go",
+      "TypeScript"
+    ],
+    "pushed": "2026-08-20",
+    "release": "v1.15.2",
+    "license": "mit",
+    "forks": 69
+  },
+  {
+    "repo": "basnijholt/agent-cli",
+    "stars": 225,
+    "primary": "Python",
+    "langs": [
+      "Python",
+      "Nix",
+      "Shell",
+      "Dockerfile",
+      "Just"
+    ],
+    "pushed": "2026-08-19",
+    "release": "v0.102.4",
+    "license": "mit",
+    "forks": 21
+  },
+  {
+    "repo": "al1-nasir/codegraph-cli",
+    "stars": 27,
+    "primary": "Python",
+    "langs": [
+      "Python",
+      "HTML"
+    ],
+    "pushed": "2026-04-08",
+    "release": "v2.1.1",
+    "license": "mit",
+    "forks": 7
+  },
+  {
+    "repo": "HelixDB/helix-db",
+    "stars": 5821,
+    "primary": "Rust",
+    "langs": [
+      "Rust",
+      "Shell",
+      "JavaScript",
+      "TypeScript",
+      "Go"
+    ],
+    "pushed": "2026-08-20",
+    "release": "v3.1.1",
+    "license": "apache-2.0",
+    "forks": 335
+  },
+  {
+    "repo": "christopherkarani/Wax",
+    "stars": 784,
+    "primary": "Swift",
+    "langs": [
+      "Swift",
+      "Metal",
+      "JavaScript",
+      "Shell",
+      "C"
+    ],
+    "pushed": "2026-08-20",
+    "release": "waxmcp-v0.1.30",
+    "license": "apache-2.0",
+    "forks": 48
+  },
+  {
+    "repo": "HariSekhon/DevOps-Python-tools",
+    "stars": 823,
+    "primary": "Python",
+    "langs": [
+      "Python",
+      "Makefile",
+      "PigLatin",
+      "Shell",
+      "Jinja"
+    ],
+    "pushed": "2026-02-03",
+    "release": null,
+    "license": "mit",
+    "forks": 348
+  },
+  {
+    "repo": "kestra-io/kestra",
+    "stars": 27867,
+    "primary": "Java",
+    "langs": [
+      "Java",
+      "HTML",
+      "JavaScript",
+      "Vue",
+      "Dockerfile"
+    ],
+    "pushed": "2026-08-20",
+    "release": "v1.3.30",
+    "license": "apache-2.0",
+    "forks": 2929
+  },
+  {
+    "repo": "johnkerl/miller",
+    "stars": 10001,
+    "primary": "Go",
+    "langs": [
+      "C",
+      "Shell",
+      "Ruby",
+      "D",
+      "Go"
+    ],
+    "pushed": "2026-08-20",
+    "release": "v6.21.0",
+    "license": "other",
+    "forks": 240
+  }
+]

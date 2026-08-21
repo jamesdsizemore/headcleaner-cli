@@ -72,6 +72,12 @@ The threats headcleaner explicitly does not defend against:
 - **Side-channel attacks on the embedding model.** Headcleaner does not defend against information leakage through the embedding model itself; that is the model's concern.
 - **Legal compliance.** Headcleaner does not promise compliance with HIPAA, GDPR, or any other regulatory framework. Use headcleaner's output as input to a compliance-aware system.
 
+## Phase 3 additions
+
+- **Attestation signing.** `headcleaner attest --key` requires an explicit user-supplied ed25519 PEM. The CLI does not generate, store, or upload key material; the user is responsible for custody and rotation. If the user passes no key, the emitted attestation is unsigned — still useful for integrity diffing, but without a signature it cannot prove provenance to a third party. The in-toto Statement emitted via `--in-toto PATH` wraps the canonical statement bytes in a DSSE envelope (`application/vnd.in-toto+json` payload type) so downstream verifiers using the official `in-toto==3.1.0` library can validate the wire format.
+- **Queue audit integrity.** `headcleaner review-claim` appends to a per-bundle JSON sidecar. A second reviewer claiming an item already claimed by another is rejected at the CLI boundary; the audit sidecar is the source of truth for claim history.
+- **Readiness evidence.** Every deduction emitted by `headcleaner readiness` cites a `rule_id, value, threshold, contribution, citation` so a downstream auditor can replay the exact score from the source bundle. Missing inputs produce a deduction and a citation — never an optimistic zero.
+
 ## Reporting a vulnerability
 
 If you find a security issue — a code path that violates one of the mitigations above, or a vulnerability in any of headcleaner's dependencies — please report it privately. The project maintains a security policy; check the repository for the contact information.

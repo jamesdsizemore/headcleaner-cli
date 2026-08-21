@@ -22,6 +22,23 @@ Do you want to convert a folder of documents into Markdown or OKF?
     ├── Compare two bundles or files -> headcleaner diff
     └── Preview rename/deletion-safe sync -> headcleaner sync
 
+Do you want to prove what happened to a bundle?
+├── Compute Merkle root + optional ed25519 signature -> headcleaner attest
+├── Verify a previously-emitted attestation -> headcleaner attest --verify (or headcleaner verify)
+└── Export a deterministic in-toto Statement alongside -> headcleaner attest --in-toto PATH
+
+Do you want to triage or grade a converted bundle?
+├── Build a risk-prioritised review queue -> headcleaner review-queue
+├── Claim the next item for human review -> headcleaner review-claim
+└── Grade each concept's readiness for a named profile -> headcleaner readiness
+
+Do you want to redact a bundle?
+├── Compute redaction proposals without mutating the canonical output -> headcleaner redact
+└── Write a parallel `_redacted/` derivative -> headcleaner redact --write-derivative
+
+Do you want to render the public benchmark transparency dashboard?
+└── headcleaner benchmark-dashboard CURRENT --format json|html
+
 Do you want to run headcleaner as a service for an AI assistant or HTTP client?
 ├── Yes, MCP server -> headcleaner mcp
 └── Yes, local HTTP server -> headcleaner serve
@@ -429,3 +446,151 @@ Possible results: exits 0 if all fixtures pass, 1 if any fixture fails. With `--
 Mutability: none against the fixtures. With `--update-baseline`, writes to the baseline file.
 
 Related commands: `convert` (the operation being benchmarked), `doctor` (which validates the environment the benchmark depends on).
+
+## attest
+
+Purpose: compute an RFC 9162 Merkle root over an OKF bundle and optionally sign it with ed25519. May also emit a deterministic in-toto Statement alongside.
+
+Basic command:
+
+```bash
+uv run --no-sync --python 3.13 headcleaner attest BUNDLE [--key PATH] [--in-toto PATH] [--verify]
+```
+
+Useful options:
+
+- `--key PATH` — PEM ed25519 private key for signing the Merkle root. No key produces an unsigned integrity statement.
+- `--private-key PATH` — deprecated alias for `--key`.
+- `--in-toto PATH` — also write a deterministic in-toto Statement (DSSE-wrapped) to this path.
+- `--verify` — no-write verification: re-compute the attestation and exit non-zero if it does not match the existing `attestation.json` on disk.
+- `--public-key PATH` — optional PEM ed25519 public key, used only with `--verify`.
+- `--output PATH` — output path for `attestation.json`. Defaults to `<bundle>/attestation.json`.
+
+What it checks: every `.md` concept under the bundle (excluding `index.md` and `log.md`), the OKF `sources[]` provenance for each concept, and the registered engine capabilities. No absolute paths, hostnames, or usernames are emitted into the signed payload.
+
+Possible results: exit 0 on success, exit 1 on `--verify` failure with a named error (concept hash mismatch, merkle root mismatch, signature does not verify, missing key, etc.).
+
+Mutability: writes `attestation.json` to the bundle (unless `--verify`) and optionally writes the in-toto Statement. Does not mutate any concept frontmatter. Does not generate or persist any signing key.
+
+Related commands: `headcleaner verify` (legacy alias for `attest --verify`), `headcleaner readiness` (suitability signal), `headcleaner review-queue` (claim workflow).
+
+## verify
+
+Purpose: backwards-compatible alias for `headcleaner attest --verify`. Reads `<bundle>/attestation.json` (or `--attestation PATH`) and exits non-zero if the bundle does not match.
+
+Basic command:
+
+```bash
+uv run --no-sync --python 3.13 headcleaner verify BUNDLE [--public-key PATH] [--attestation PATH]
+```
+
+Mutability: read-only. Never writes the bundle.
+
+## review-queue
+
+Purpose: build a deterministic, evidence-based review queue from an OKF bundle. Each item carries a priority, the contributing factors (`rule_id, value, weight, contribution, evidence`), the source sha256, and the bundle-relative concept path.
+
+Basic command:
+
+```bash
+uv run --no-sync --python 3.13 headcleaner review-queue BUNDLE [--pack ID] [--limit N] [--json]
+```
+
+Useful options:
+
+- `--pack ID` — load a policy pack (the `queue_weights` field, when present, overrides the default factor weights for this build).
+- `--limit N` — emit at most N items.
+- `--json` — emit a JSON explanation payload with every factor and citation.
+
+What it checks: only allow-listed factor functions (`diagnostic_severity`, `ocr_fallback_state`, `sensitivity_findings`, `policy_errors`, `stale_state`, `age`). Missing inputs contribute zero plus a diagnostic — never assumed risk. Ordering is `(-priority, source_sha256, concept_ref)` so two consecutive builds against the same bundle are byte-identical.
+
+Possible results: exit 0 on success.
+
+Mutability: read-only against the bundle. Writes nothing.
+
+Related commands: `headcleaner review-claim`, `headcleaner readiness`, `headcleaner policy test`.
+
+## review-claim
+
+Purpose: claim a specific concept in the queue for human review, or the top-priority item if you pass `@top`. Writes an append-only audit sidecar at `<bundle>/.headcleaner/queue-audit.json`. Rejects a second reviewer claiming an item already claimed by another.
+
+Basic command:
+
+```bash
+uv run --no-sync --python 3.13 headcleaner review-claim BUNDLE CONCEPT_REF --reviewer ID
+uv run --no-sync --python 3.13 headcleaner review-claim BUNDLE @top --reviewer ID
+```
+
+What it checks: the audit sidecar is consulted before any new claim; a different reviewer attempting to claim an already-claimed item gets a duplicate-claim rejection with a named error.
+
+Possible results: exit 0 on first claim by a reviewer, exit 1 with a named error if the item is already claimed by a different reviewer.
+
+Mutability: writes only the `.headcleaner/queue-audit.json` sidecar. Never mutates concept frontmatter, never changes `verified:`.
+
+Related commands: `headcleaner review-queue`, `headcleaner review`.
+
+## readiness
+
+Purpose: compute an evidence-based readiness grade per concept for a named profile. Grades are `blocked | needs_review | conditional | ready`. Each deduction carries `rule_id, value, threshold, contribution, citation`.
+
+Basic command:
+
+```bash
+uv run --no-sync --python 3.13 headcleaner readiness BUNDLE [--profile NAME] [--json]
+```
+
+Useful options:
+
+- `--profile NAME` — one of `default`, `rag`, `publication`. Each profile has documented grade thresholds.
+- `--json` — emit a JSON payload that conforms to `docs/schemas/readiness.schema.json`.
+
+What it checks: each grade starts from a documented `MAX_SCORE = 1.0` and subtracts only declared deductions for `citation_completeness`, `chunk_integrity`, `ocr_table_diagnostics`, `redaction_state`, `freshness`, `policy`, `human_review`. Missing inputs yield deductions, never optimistic readiness.
+
+Possible results: exit 0 on success, exit 1 on unknown profile or missing required input.
+
+Mutability: read-only. Never mutates concept frontmatter. Readiness outcomes never overwrite `verified:`.
+
+Related commands: `headcleaner review-queue`, `headcleaner attest`, `headcleaner policy test`.
+
+## redact
+
+Purpose: propose PII / secret redactions for an OKF bundle. Proposals cite the source span and store only a SHA-256 digest of the matched value — never the raw text. Does not mutate the canonical concepts.
+
+Basic command:
+
+```bash
+uv run --no-sync --python 3.13 headcleaner redact BUNDLE [--write-derivative] [--json]
+```
+
+Useful options:
+
+- `--write-derivative` — write a parallel `<bundle>/_redacted/` derivative that links back to the canonical concept and lists every finding. Canonical output is never overwritten.
+- `--json` — emit a JSON proposal report instead of text.
+
+What it checks: detector order is deterministic regexes first, then Presidio if configured. Overlapping spans are deduped via longest-span/priority. Each finding cites an element/chunk/source span and records detector/version metadata.
+
+Possible results: exit 0 on success, exit 1 on configuration error.
+
+Mutability: read-only against canonical concepts. With `--write-derivative`, writes only inside `<bundle>/_redacted/`. Redaction never changes `verified:`.
+
+Related commands: `headcleaner policy test`, `headcleaner readiness`.
+
+## benchmark-dashboard
+
+Purpose: render a self-contained, public benchmark transparency dashboard (HTML or JSON) from `tests/quality/baseline.json`, a current benchmark result JSON, and `tests/quality/fixtures/ATTRIBUTION.md`.
+
+Basic command:
+
+```bash
+uv run --no-sync --python 3.13 headcleaner benchmark-dashboard CURRENT \
+    [--baseline tests/quality/baseline.json] \
+    [--attribution tests/quality/fixtures/ATTRIBUTION.md] \
+    [--fixtures-root tests/quality/fixtures] \
+    [--format json|html]
+```
+
+What it checks: refuses to render if `ATTRIBUTION.md` is missing or lacks `author`/`license`/`source`; refuses any fixture marked `non_public: true`; refuses if a current result references an unknown fixture. The HTML output is fully self-contained (no external scripts, URLs, or analytics) and HTML-escapes every label.
+
+Possible results: exit 0 on success, exit 1 on validation failure with a named error.
+
+Mutability: read-only. Never writes the baseline, never uploads original fixture bytes, never makes a network call.

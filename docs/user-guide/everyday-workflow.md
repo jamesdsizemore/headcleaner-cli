@@ -122,3 +122,7 @@ What to do next:
 If you remember nothing else from this page, remember this: **headcleaner does not touch your source files.** Every command above writes to a directory you name; nothing in your source folder is modified. The output is rebuildable, so you can experiment freely — delete the search index, delete the graph, delete the dedupe report — and rerun the appropriate command to regenerate them.
 
 That property is the foundation of every workflow described above. It is also the foundation of the safety model documented in the [Safety overview](../safety/safety-overview.md). When you trust that headcleaner will not silently modify your world, you can use it confidently in the moments that matter.
+
+## Where Phase 3 fits
+
+After `convert` and before `review`, run `headcleaner readiness BUNDLE` and `headcleaner review-queue BUNDLE --json` to see what is gated and what is queued for human review. After `review`, run `headcleaner attest BUNDLE --in-toto PATH` to produce a deterministic in-toto Statement you can hand to a downstream system. None of these commands change `verified:` — that still happens only through `headcleaner review`.

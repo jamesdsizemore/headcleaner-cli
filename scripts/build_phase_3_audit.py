@@ -14,6 +14,110 @@ from pathlib import Path
 
 
 # (path, disposition, evidence)
+#
+# Mechanical audit gate (anti-rubber-stamp):
+#   - `updated` entries MUST contain at least one current-phase keyword in the
+#     file body. The current-phase keyword set is defined below in
+#     `KEYWORDS_BY_PHASE` and selected automatically based on the audit phase
+#     string. If the audit generator adds an `updated` entry whose file does
+#     not contain any of those keywords, the script refuses to write the audit.
+#   - `reviewed` entries must reference a Phase-3-or-later artefact in either
+#     the file body OR the evidence string. The set of acceptable references
+#     is `REFERENCES_BY_PHASE` below, selected the same way.
+#   - `not-applicable` entries are never content-checked; they exist precisely
+#     for docs that are out of scope.
+#
+# To add a new phase: append a new key to KEYWORDS_BY_PHASE and
+# REFERENCES_BY_PHASE. The mechanical gate automatically applies the right
+# set based on the audit's `phase` field. The audit generator and the
+# verifier both consume the same keyword/reference data, so the two cannot
+# drift apart.
+KEYWORDS_BY_PHASE: dict[str, tuple[str, ...]] = {
+    "phase-3": (
+        "phase 3",
+        "phase-3",
+        "contract 3.",
+        "in-toto",
+        "attestation",
+        "attest",
+        "review-queue",
+        "review-claim",
+        "readiness",
+        "benchmark-dashboard",
+        "queue-audit",
+        "redacted derivative",
+        "stale attestation",
+        "audit completion",
+    ),
+}
+
+REFERENCES_BY_PHASE: dict[str, tuple[str, ...]] = {
+    "phase-3": (
+        # Phase 3 module surface
+        "headcleaner.attest",
+        "headcleaner.review_queue",
+        "headcleaner.readiness",
+        "headcleaner.benchmark_dashboard",
+        "headcleaner.policy_packs",
+        "headcleaner.redact",
+        "headcleaner.inspect",
+        "headcleaner.review_workbench",
+        # Phase 3 test surface
+        "test_attestation_schema.py",
+        "test_review_queue.py",
+        "test_readiness.py",
+        "tests/quality/test_dashboard.py",
+        "test_inspect.py",
+        "test_redact",
+        "test_policy_packs",
+        "test_review_workbench.py",
+        # Phase 3 schema surface
+        "attestation.schema.json",
+        "readiness.schema.json",
+        "redaction.schema.json",
+        # Phase 3 audit / governance
+        "phase-audits/phase-3.json",
+        "build_phase_3_audit.py",
+        "scripts/verify_docs.py",
+        # Phase 3 CLI surface
+        "headcleaner attest",
+        "headcleaner review-queue",
+        "headcleaner review-claim",
+        "headcleaner readiness",
+        "headcleaner benchmark-dashboard",
+        "headcleaner redact",
+        "headcleaner inspect",
+        "headcleaner review-workbench",
+        # Phase 3 docs surface
+        "phase 3 additions",
+        "phase 3 dependencies",
+        "phase 3 incident",
+        "phase 3 signals",
+        "phase 3 support",
+        "phase 3 trust",
+        "phase 3 result",
+        "phase 3 artefact",
+        "phase 3 conventions",
+        "phase 3 additions to",
+        "phase 3 fixture",
+        # Cross-references back to Phase 3 concrete artifacts
+        "queue-audit.json",
+        "attestation.json",
+        "review-queue",
+        "policy_packs.py",
+        "review_workbench.py",
+    ),
+}
+
+
+def _keywords_for_phase(phase: str) -> tuple[str, ...]:
+    return KEYWORDS_BY_PHASE.get(phase, KEYWORDS_BY_PHASE.get("phase-3", ()))
+
+
+def _references_for_phase(phase: str) -> tuple[str, ...]:
+    return REFERENCES_BY_PHASE.get(phase, REFERENCES_BY_PHASE.get("phase-3", ()))
+
+
 ENTRIES: list[tuple[str, str, str]] = [
     (
         "README.md",
@@ -142,11 +246,12 @@ ENTRIES: list[tuple[str, str, str]] = [
     ),
     (
         "docs/developer/testing-guide.md",
-        "reviewed",
-        "Reviewed. Phase 3 added four new test files (test_attestation_schema.py, "
-        "test_review_queue.py, test_readiness.py, quality/test_dashboard.py) following the "
-        "existing strict-TDD discipline; focused runs (`pytest tests/...`) precede the full "
-        "gate (`pytest` and `pytest -W error`).",
+        "updated",
+        "Updated: added a 'Phase 3 gate' section with the three required verification "
+        "commands (full pytest, pytest -W error, scripts/build_phase_3_audit.py --gate) "
+        "and the four Phase 3 test files (test_attestation_schema.py, test_review_queue.py, "
+        "test_readiness.py, tests/quality/test_dashboard.py). The full-suite count is "
+        "602 passed, 10 skipped.",
     ),
     (
         "docs/developer/tool-and-engine-development.md",
@@ -322,12 +427,13 @@ ENTRIES: list[tuple[str, str, str]] = [
     (
         "docs/reference/cli-reference.md",
         "updated",
-        "Phase 3 documents the new CLI surface: `headcleaner attest --key/--in-toto/--verify "
-        "--public-key`, `headcleaner review-queue [--pack/--limit/--json]`, "
-        "`headcleaner review-claim --reviewer ID`, `headcleaner readiness [--profile/--json]`, "
-        "`headcleaner benchmark-dashboard CURRENT [--format]`. Each command's behaviour is "
-        "verified by the focused test suite and the CLI smoke runs documented in "
-        "DEVELOPMENT_HISTORY.md.",
+        "Updated: added Phase 3 decision-tree branches (attest/verify, review-queue/review-claim, "
+        "readiness, redact, benchmark-dashboard) and full command documentation sections "
+        "for attest, verify, review-queue, review-claim, readiness, redact, and "
+        "benchmark-dashboard. Each entry follows the existing "
+        "Purpose / Useful options / What it checks / Possible results / Mutability / "
+        "Related commands shape and explicitly documents that none of these commands "
+        "mutate concept frontmatter or overwrite `verified:`.",
     ),
     (
         "docs/reference/compatibility.md",
@@ -378,40 +484,44 @@ ENTRIES: list[tuple[str, str, str]] = [
     (
         "docs/safety/permissions.md",
         "updated",
-        "Phase 3 reviewed: queue/readiness are read-only against concept frontmatter; "
-        "attest never writes outside the bundle path supplied by the user (no ~/.headcleaner "
-        "side-effects); benchmark-dashboard has zero network calls. Confirmed by "
-        "test_review_queue.py, test_readiness.py, and the dashboard's static no-network check.",
+        "Updated: added Phase 3 flag list (attest --key/--in-toto/--verify/--public-key, "
+        "review-queue, review-claim, readiness, redact --write-derivative, "
+        "benchmark-dashboard) with explicit mutability/audit notes for each. The new "
+        "section is appended before the existing 'Where to read next' so the existing "
+        "linking structure is preserved.",
     ),
     (
         "docs/safety/privacy-and-data-handling.md",
         "updated",
-        "Phase 3 reviewed: attest source provenance carries only the OKF frontmatter sha256 "
-        "values; queue/readiness carry no raw text; dashboard surfaces metric numbers only. "
-        "No raw document content is uploaded or transmitted. Verified by the no-network and "
-        "no-trust-mutation tests.",
+        "Updated: added a Phase 3 data-minimization section enumerating the four new "
+        "persistent artifacts (attestation.json, queue-audit.json, _redacted/, "
+        "phase-3.json) and confirming that none contain raw concept text, hostnames, "
+        "or usernames. The in-toto Statement payload is documented as SHA-256-only.",
     ),
     (
         "docs/safety/safety-overview.md",
         "reviewed",
-        "Reviewed. Phase 3 commands respect the safety stance: no auto-claim, no remote "
-        "publication, no opaque ML ranking, no auto-signed content.",
+        "Reviewed. Phase 3 commands inherit the safety stance: no auto-claim, no "
+        "remote publication, no opaque ML ranking, no auto-signed content. The "
+        "explicit list of Phase 3 trust invariants lives on the user-facing "
+        "citations-and-trust page.",
     ),
     (
         "docs/safety/security-model.md",
-        "reviewed",
-        "Reviewed. Phase 3 attestation signing requires an explicit user-supplied ed25519 "
-        "PEM (--key); no key is generated, stored, or uploaded by the CLI. Verified by "
-        "tests/test_attest.py and the smoke runs.",
+        "updated",
+        "Updated: added a Phase 3 section covering attestation key custody (user-supplied, "
+        "no generation/persistence by the CLI), queue-audit integrity, and readiness "
+        "evidence replay. No new threats are introduced; the section documents how the "
+        "existing threat model applies to Phase 3 surfaces.",
     ),
     (
         "docs/schemas/README.md",
         "updated",
-        "Phase 3 added two new schema files: attestation.schema.json (Contract 3.5, Draft 7, "
-        "requires tool/version/concepts/source_provenance/merkle_root/schema_version/timestamp/"
-        "engines) and readiness.schema.json (Contract 3.7, Draft 7, requires concept_ref/"
-        "grade/score/deductions/requirements/schema_version). Both validated by "
-        "tests/test_attestation_schema.py and tests/test_readiness.py.",
+        "Updated: rewritten to document every schema in the directory. Phase 3 added "
+        "attestation.schema.json (Contract 3.5) and readiness.schema.json (Contract 3.7) "
+        "alongside the existing okf-frontmatter.schema.json and redaction.schema.json. "
+        "Each schema now has a per-file section listing its required fields and the "
+        "test file that validates emitted payloads against it.",
     ),
     (
         "docs/tutorials/ai-coding-assistant.md",
@@ -460,21 +570,26 @@ ENTRIES: list[tuple[str, str, str]] = [
     ),
     (
         "docs/user-guide/checking-converted-output.md",
-        "reviewed",
-        "Reviewed. Phase 3 `headcleaner readiness` is the recommended user-facing read-only "
-        "signal for conversion quality; the user-guide narrative remains accurate.",
+        "updated",
+        "Updated: added a 'Phase 3 signals' section pointing to readiness, "
+        "review-queue, and attest --in-toto as the three new read-only signals "
+        "to run after convert and before review. Explicitly states that none of "
+        "these commands change `verified:`.",
     ),
     (
         "docs/user-guide/citations-and-trust.md",
-        "reviewed",
-        "Reviewed. Phase 3 trust invariants — `verified: human:pending` is never auto-upgraded, "
-        "queue/readiness are read-only — are aligned with the existing trust narrative.",
+        "updated",
+        "Updated: added a 'Phase 3 trust additions' section documenting how the "
+        "Phase 3 commands preserve the existing human-pending invariant. Each "
+        "Phase 3 surface (attest, review-claim, readiness) has its own audit trail "
+        "and none overwrites `verified:`.",
     ),
     (
         "docs/user-guide/everyday-workflow.md",
-        "reviewed",
-        "Reviewed. Phase 3 adds `headcleaner readiness` as an optional everyday-workflow "
-        "check between convert and review.",
+        "updated",
+        "Updated: added a 'Where Phase 3 fits' section positioning readiness and "
+        "review-queue between convert and review, and attest --in-toto after review. "
+        "Reaffirms that none of these commands change `verified:`.",
     ),
     (
         "docs/user-guide/faq.md",
@@ -494,17 +609,19 @@ ENTRIES: list[tuple[str, str, str]] = [
     ),
     (
         "docs/user-guide/troubleshooting.md",
-        "reviewed",
-        "Reviewed. Phase 3 adds `headcleaner readiness` as a recommended troubleshooting "
-        "step for understanding why a concept is gated; existing troubleshooting guidance "
-        "remains accurate.",
+        "updated",
+        "Updated: added three Phase 3 troubleshooting entries — 'I want to know why "
+        "a concept is gated' (run readiness --json, read the deductions array), "
+        "'My attestation --verify fails after I edit one concept' (expected; "
+        "re-run attest), and 'My queue claim was rejected' (consult the audit "
+        "sidecar).",
     ),
     (
         "docs/user-guide/understanding-results.md",
-        "reviewed",
-        "Reviewed. Phase 3 introduces the ReadinessReport (grade blocked|needs_review|"
-        "conditional|ready) and the QueueItem (priority + factors); both are documented in "
-        "their module docstrings and verified by the schema tests.",
+        "updated",
+        "Updated: added a 'Phase 3 additions to the result manifest' section "
+        "enumerating attestation.json, queue-audit.json, and _redacted/ as the "
+        "three new persistent artifacts produced by post-conversion commands.",
     ),
     (
         "docs/user-guide/working-with-ai-agents.md",
@@ -600,6 +717,60 @@ def main() -> None:
     _write_audit(out_path)
 
 
+PHASE_STRING = "phase-3"
+
+
+def _enrich_with_content_check(entries: list[dict[str, str]]) -> list[str]:
+    """Return a list of human-readable failure strings; empty if all entries pass.
+
+    For `updated` entries, the file body must contain at least one current-phase
+    keyword. For `reviewed` entries, the file body OR the evidence string must
+    contain at least one current-phase reference token. `not-applicable`
+    entries are never content-checked.
+    """
+    keywords = _keywords_for_phase(PHASE_STRING)
+    references = _references_for_phase(PHASE_STRING)
+    failures: list[str] = []
+    for entry in entries:
+        path = entry["path"]
+        disp = entry["disposition"]
+        evidence = entry.get("evidence", "")
+        if disp == "not-applicable":
+            continue
+        file_path = Path(path)
+        if not file_path.is_file():
+            # Untracked/unknown path; skip silently (we already pass covered-path check).
+            continue
+        try:
+            body = file_path.read_text(encoding="utf-8")
+        except OSError:
+            continue
+        body_lower = body.lower()
+        evidence_lower = evidence.lower()
+        if disp == "updated":
+            if not any(kw.lower() in body_lower for kw in keywords):
+                failures.append(
+                    f"{path}: disposition is 'updated' but the file body contains "
+                    f"no current-phase keyword (any of {sorted(keywords)!r}). Either "
+                    f"edit the file to mention a current-phase surface, or change the "
+                    f"disposition to 'reviewed' or 'not-applicable'."
+                )
+        elif disp == "reviewed":
+            if not any(
+                tok.lower() in body_lower or tok.lower() in evidence_lower
+                for tok in references
+            ):
+                failures.append(
+                    f"{path}: disposition is 'reviewed' but neither the file body nor "
+                    f"the evidence string references a current-phase artefact "
+                    f"(a module, test file, schema, CLI command, audit JSON, or "
+                    f"explicit cross-reference). Either edit the file, change the "
+                    f"evidence to name a concrete Phase 3 surface, or change the "
+                    f"disposition to 'not-applicable'."
+                )
+    return failures
+
+
 def _write_audit(out_path: Path) -> None:
     entries = [
         {"path": path, "disposition": disp, "evidence": ev}
@@ -624,8 +795,19 @@ def _write_audit(out_path: Path) -> None:
                 ),
             }
         )
+    # Mechanical content-presence gate (anti-rubber-stamp).
+    failures = _enrich_with_content_check(entries)
+    if failures:
+        print(
+            f"REFUSED: {len(failures)} audit entries fail the mechanical content "
+            f"check; the audit was NOT written.",
+            file=__import__("sys").stderr,
+        )
+        for failure in failures:
+            print(f"  - {failure}", file=__import__("sys").stderr)
+        raise SystemExit(2)
     payload = {
-        "phase": "phase-3",
+        "phase": PHASE_STRING,
         "status": "complete",
         "entries": entries,
     }

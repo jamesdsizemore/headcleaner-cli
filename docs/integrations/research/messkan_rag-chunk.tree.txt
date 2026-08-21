@@ -1,0 +1,13 @@
+.github
+.gitignore
+CHANGELOG.md
+LICENSE
+README.md
+demo.gif
+docs
+example.md
+examples
+pyproject.toml
+requirements.txt
+src
+tests

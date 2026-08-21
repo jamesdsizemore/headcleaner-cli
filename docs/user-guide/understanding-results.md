@@ -108,6 +108,14 @@ Imagine you converted a folder of twelve mixed documents. Your terminal output m
 
 This run processed nine files successfully (`ok`), one with a recoverable condition (`warn`), one with an unsupported format (`skipped`), one with a missing optional tool (`skipped`), and one that was actually corrupted (`fail`). The healthy actions are: read the `warn` line and decide whether the encrypted attachment matters to you; install Tesseract if you want OCR on the scanned PDF; open the corrupted `.docx` in Word and either fix or remove it. None of these are signs that headcleaner is misbehaving.
 
+## Phase 3 additions to the result manifest
+
+The `manifest.json` continues to record what happened during the conversion run. Phase 3 adds new result files that are produced by post-conversion commands but not by `convert` itself:
+
+- `attestation.json` (Contract 3.5) — produced by `headcleaner attest`. Carries the Merkle root, per-concept SHA-256 set, source provenance, engine capability records, and an optional ed25519 signature.
+- `<bundle>/.headcleaner/queue-audit.json` (Contract 3.6) — produced by `headcleaner review-claim`. Append-only audit log of human-review claims.
+- `<bundle>/_redacted/` (Contract 3.3, opt-in) — produced by `headcleaner redact --write-derivative`. Parallel derivative that links back to canonical concepts.
+
 ## What to read next
 
 If you want a complete reference for every status, every engine, and every field of the result manifest, see the [result reference](../reference/result-reference.md). If a specific status is causing you trouble right now, the [troubleshooting guide](troubleshooting.md) is symptom-driven and will get you to a fix faster than reading the reference end to end.

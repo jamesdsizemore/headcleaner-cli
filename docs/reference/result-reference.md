@@ -97,6 +97,14 @@ The five status values carry the same meaning across all the artifacts. The sema
 
 The status colors in `REPORT.md` and the terminal output use cyan for `ok`, pink for `warn`/`failed`/`error`, and purple for information. Skipped is shown in muted grey.
 
+## Phase 3 result artifacts
+
+These artifacts are produced by post-conversion commands and follow the same JSON shape discipline as the manifest.
+
+- `<bundle>/attestation.json` (Contract 3.5) — produced by `headcleaner attest`. Carries `tool`, `version`, `bundle_root`, `concept_count`, `concepts` (per-bundle-relative SHA-256 set), `source_provenance` (OKF sources[] bundle-relative paths and SHA-256), `merkle_root`, `engines` (capability/version records), `schema_version`, `timestamp`, and optionally `public_key`/`signature`/`proof`. Conforms to `docs/schemas/attestation.schema.json`.
+- `<bundle>/.headcleaner/queue-audit.json` (Contract 3.6) — produced by `headcleaner review-claim`. Append-only list of `{concept_ref, reviewer, state, claimed_at}` entries.
+- `<bundle>/_redacted/` (Contract 3.3, opt-in) — produced by `headcleaner redact --write-derivative`. A parallel derivative that links back to canonical concepts; never overwrites canonical output.
+
 ## What to read next
 
 The [CLI reference](cli-reference.md) documents every command and its flags. The [configuration reference](configuration-reference.md) documents every field you can set in a policy file. The [engine directory](engine-directory.md) is the per-engine reference.

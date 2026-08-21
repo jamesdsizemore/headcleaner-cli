@@ -84,3 +84,9 @@ Every security incident is an opportunity to improve. The improvements to consid
 ## What to read next
 
 The [support runbook](support-runbook.md) covers non-security bug reports. The [versioning and compatibility reference](versioning-and-compatibility.md) covers how security fixes are versioned. The [safety overview](../safety/safety-overview.md) documents the safety guarantees that security incidents may violate.
+
+## Phase 3 incident classes
+
+- **Stale attestation `--verify` after a bundle edit.** Expected behaviour, not a security incident; documented in the user-guide troubleshooting page. The right answer is to re-run `headcleaner attest` rather than to revert the bundle.
+- **Queue-claim race.** Already handled at the CLI boundary (a second reviewer claiming an already-claimed item is rejected with exit 1). If a stale audit sidecar at `<bundle>/.headcleaner/queue-audit.json` is causing persistent rejections, the right fix is to inspect the sidecar and confirm whether the prior claim is intentional.
+- **In-toto payload-type mismatch.** The DSSE envelope must use `application/vnd.in-toto+json` as the payload type; the Statement's `_type` lives inside the decoded payload. A downstream verifier that misreads the payload type will reject every Phase 3 statement. Verify with `python -c "from in_toto.models.metadata import Envelope; Envelope.load(open('stmt.intoto.json','rb'))"`.

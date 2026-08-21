@@ -1,0 +1,17 @@
+.github
+.gitignore
+.readthedocs.yaml
+CHANGELOG.md
+LICENSE
+MANIFEST.in
+Makefile
+README.rst
+docs
+examples
+pyproject.toml
+pytablewriter
+requirements
+setup.py
+ss
+test
+tox.ini

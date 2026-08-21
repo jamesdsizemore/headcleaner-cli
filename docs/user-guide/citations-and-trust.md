@@ -54,3 +54,11 @@ If you want to change the staleness window, you can configure it in your policy 
 ## What to read next
 
 If you want a complete field reference for the frontmatter block, the OKF vocabulary is documented in the archived [`docs/_archive/legacy-docs/OKF_NOTES.md`](../_archive/legacy-docs/OKF_NOTES.md). If you want to understand the search and indexing side of citations — how chunks carry citation data, how the graph uses citation evidence — read [Search and context](search-and-context.md). If you want to add explicit policy rules that govern which sources can be converted and what status they must have, read the [configuration reference](../reference/configuration-reference.md).
+
+## Phase 3 trust additions
+
+The Phase 3 commands do not change the trust invariants documented above — `verified: human:pending` is never auto-upgraded; only `headcleaner review` may transition it to `human:reviewed`. Phase 3 adds three new trusted surfaces, each with its own audit trail:
+
+- `headcleaner attest BUNDLE [--key PATH]` emits an RFC 9162 Merkle root and optional ed25519 signature. The audit trail is `attestation.json`; downstream consumers verify with `headcleaner attest --verify`. The in-toto Statement emitted via `--in-toto PATH` is the canonical handoff format.
+- `headcleaner review-claim` writes an append-only audit sidecar at `<bundle>/.headcleaner/queue-audit.json`. A second reviewer claiming an item already claimed by another is rejected; the sidecar is the source of truth.
+- `headcleaner readiness` writes no artifacts. It is purely an evidence-based grade; missing inputs always produce a deduction rather than an optimistic readiness, and the grade never overwrites `verified:`.

@@ -70,7 +70,18 @@ These are the limitations headcleaner acknowledges as of this writing. Each one 
 - **OCR is slow.** Running Tesseract on a scanned PDF takes seconds per page. For a large corpus, the OCR step may take hours. The `fast` profile trades accuracy for speed; the `archival` profile trades speed for accuracy.
 - **Embedding providers are explicit.** Headcleaner does not download embedding models implicitly. You must point it at a local model path or configure an HTTP provider.
 - **Qdrant is the only supported remote vector database.** Other vector databases are not supported. Adding support for another database requires writing an adapter; the [embeddings and vectors developer guide](../developer/embeddings-and-vectors.md) describes the adapter contract.
-- **Redacted indexing is not yet implemented.** The Phase 2 amendment specified chunking from a redacted derivative when a policy selects redacted indexing; that primitive is a Phase 3 deliverable and is not yet available.
+- **Redacted indexing is delivered as a parallel derivative, not in-place mutation.** Phase 3 Contract 3.3 implements `headcleaner redact BUNDLE --write-derivative` which writes a separate `<bundle>/_redacted/` derivative that links back to canonical concepts. The canonical bundle is never mutated, and a downstream index can consume the derivative. In-place redaction rewriting of canonical output is explicitly out of scope.
+
+## Phase 3 dependencies
+
+Phase 3 adds one Python dependency: `in-toto==3.1.0`, used by the `attest --in-toto` path to wrap the canonical statement in a DSSE envelope. It transitively pulls `securesystemslib`, `iso8601`, `pathspec`, and `python-dateutil`. The lockfile is the authoritative source; if `uv lock --check` fails, the right move is to pull and re-sync, not to relax the constraint.
+
+## Phase 3 CLI compatibility
+
+- `headcleaner attest` (Contract 3.5) — adds `--key`, `--in-toto`, `--verify`, `--public-key`. The legacy `--private-key` is retained as a deprecated alias.
+- `headcleaner verify` — retained as a backwards-compatible alias for `headcleaner attest --verify`.
+
+No Phase 1 or Phase 2 command was renamed or had its exit-code semantics changed.
 
 ## Where to read next
 

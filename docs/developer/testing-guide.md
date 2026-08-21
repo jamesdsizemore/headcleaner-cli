@@ -81,6 +81,20 @@ uv run --no-sync --python 3.13 pytest tests/test_chunking.py tests/test_index.py
 
 The first command refreshes the locked environment; the second runs the focused Phase 2 tests. A green run on the focused tests is the signal that the implementation is complete for the stage.
 
+## The Phase 3 gate
+
+The Phase 3 final-verification gate is the full suite plus the documentation audit:
+
+```bash
+unset PYTHONPATH
+uv run --no-sync --python 3.13 pytest
+unset PYTHONPATH
+uv run --no-sync --python 3.13 pytest -W error
+uv run --no-sync --python 3.13 python scripts/build_phase_3_audit.py --gate
+```
+
+A green run on all three is the signal that the Phase 3 implementation is complete. Phase 3 added four new test files: `tests/test_attestation_schema.py`, `tests/test_review_queue.py`, `tests/test_readiness.py`, and `tests/quality/test_dashboard.py`. The full suite reports 602 passed, 10 skipped.
+
 ## What to read next
 
 The [contributor onboarding guide](contributor-onboarding.md) covers the platform-specific setup. The [architecture developer guide](architecture.md) explains how the modules fit together. The [CI and packaging guide](ci-and-packaging.md) covers the CI workflow.

@@ -1,0 +1,12 @@
+.github
+.gitignore
+CLAUDE.md
+LICENSE
+README.md
+docstrange
+example.py
+examples
+mcp_server_module
+pyproject.toml
+scripts
+tests

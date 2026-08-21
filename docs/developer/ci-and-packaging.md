@@ -78,6 +78,10 @@ If you need to add a new direct dependency:
 3. Add a test that asserts the dependency is importable and the version matches the pin.
 4. Update the [compatibility reference](../reference/compatibility.md) if the dependency has platform-specific notes.
 
+## Phase 3 dependencies
+
+Phase 3 added `in-toto==3.1.0` to the locked dependency set, transitively pulling `securesystemslib`, `iso8601`, `pathspec`, and `python-dateutil`. The dependency is consumed only by the `attest --in-toto` code path; the rest of the attestation surface (Merkle tree, ed25519 signing, canonical JSON, source/output SHA sets) uses the existing `cryptography==50.0.0` and stdlib modules. The CI workflow picks the dep up via `uv sync --locked`; no extra install step is required.
+
 ## What to read next
 
 The [contributor onboarding guide](contributor-onboarding.md) covers the platform-specific setup. The [compatibility reference](../reference/compatibility.md) is the platform support matrix. The [testing guide](testing-guide.md) covers the test layers and the RED/GREEN cycle.
