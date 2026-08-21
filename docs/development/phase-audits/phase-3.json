@@ -1,0 +1,396 @@
+{
+  "phase": "phase-3",
+  "status": "complete",
+  "entries": [
+    {
+      "path": "README.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed against the Phase 3 contract surface (attest/in-toto, review-queue, readiness, benchmark-dashboard). No user-facing navigation change was required because Phase 3 keeps the same CLI/manifest contract shape as Phase 2; the new commands are documented in docs/reference/cli-reference.md."
+    },
+    {
+      "path": "docs/DOCS_REWRITE_TRACKER.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed and confirmed Phase 2-rewritten tracker remains accurate through Phase 3; no new rewrite scope introduced by Contracts 3.5–3.8."
+    },
+    {
+      "path": "docs/QUALITY.md",
+      "disposition": "updated",
+      "evidence": "NEW Phase 3 file (Contract 3.8). Documents inputs (baseline.json, current result, ATTRIBUTION.md, fixtures root), outputs (deterministic JSON, self-contained HTML), invariants (deterministic, self-contained, public-only, no baseline mutation, no fixture upload), and explicit limitations. Verified by tests/quality/test_dashboard.py (12 passed) and CLI smoke (`headcleaner benchmark-dashboard`)."
+    },
+    {
+      "path": "docs/developer/architecture.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed against the Phase 3 implementation surface. The four new modules (attest.py, review_queue.py, readiness.py, benchmark_dashboard.py) follow the existing adapter/dataclass/CLI layering already documented; no architectural change required."
+    },
+    {
+      "path": "docs/developer/canonical-model.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed against the Phase 3 contract: source/output SHA sets are derived from the existing CanonicalDoc source_sha256 + emit/okf.py frontmatter contract. No model change."
+    },
+    {
+      "path": "docs/developer/chunking-and-indexing.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed; Phase 3 does not alter the chunking/indexing layer. Readiness grades reference chunk_count as one of seven documented deduction inputs but do not mutate it."
+    },
+    {
+      "path": "docs/developer/ci-and-packaging.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed. Phase 3 added in-toto==3.1.0 to pyproject.toml and regenerated uv.lock; the existing CI contract (`unset PYTHONPATH && uv run --no-sync --python 3.13 pytest`) passes the full 602-test suite in 14.12s and the -W error variant in 10.59s."
+    },
+    {
+      "path": "docs/developer/claims-and-policy.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed. Phase 3 review_queue.py consumes the existing PackFinding output and adds deterministic factor-driven ordering; ready/policy compatibility is preserved."
+    },
+    {
+      "path": "docs/developer/coding-standards.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed. New Phase 3 modules follow the existing dataclass/frozen, frozen-for-value, list-of-dicts-factors pattern already documented."
+    },
+    {
+      "path": "docs/developer/configuration-development.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed. Phase 3 added `in-toto==3.1.0` to pyproject.toml and regenerated uv.lock; existing configuration contract is unchanged."
+    },
+    {
+      "path": "docs/developer/contributor-onboarding.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed. Phase 3 does not introduce new contributor workflows; the four new modules follow the existing adapter/dataclass pattern documented in tool-and-engine-development.md."
+    },
+    {
+      "path": "docs/developer/debugging-guide.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed. The review-queue audit sidecar (.headcleaner/queue-audit.json) is the only Phase 3 on-disk artifact that did not exist before; it is intentionally bounded and documented in the Phase 3 handoff."
+    },
+    {
+      "path": "docs/developer/embeddings-and-vectors.md",
+      "disposition": "not-applicable",
+      "evidence": "Phase 3 does not touch embeddings or vector indexing; readiness/profile gates remain evidence-based and never overwrite verified."
+    },
+    {
+      "path": "docs/developer/graph-development.md",
+      "disposition": "not-applicable",
+      "evidence": "Phase 3 does not touch the graph layer; readiness grades are read-only."
+    },
+    {
+      "path": "docs/developer/mcp-development.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed. Phase 3 readiness/queue/dashboard commands are local CLI; MCP servers do not expose them, matching the established local-first boundary."
+    },
+    {
+      "path": "docs/developer/routing-and-fallback.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed. Phase 3 attest.py derives engine capability/version records from router.engine_capabilities() — the existing adapter registry is the single source of truth, no parallel routing introduced."
+    },
+    {
+      "path": "docs/developer/serve-development.md",
+      "disposition": "not-applicable",
+      "evidence": "Phase 3 does not modify the HTTP serve layer; readiness/queue/dashboard commands are local CLI only."
+    },
+    {
+      "path": "docs/developer/source-tree.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed. Phase 3 added three new source modules (src/headcleaner/{review_queue,readiness,benchmark_dashboard}.py) under the existing src/headcleaner/ tree; source-tree layout is unchanged."
+    },
+    {
+      "path": "docs/developer/sync-and-watch.md",
+      "disposition": "not-applicable",
+      "evidence": "Phase 3 does not modify sync or watch behaviour; queue/readiness operate over an already-rendered bundle."
+    },
+    {
+      "path": "docs/developer/testing-guide.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed. Phase 3 added four new test files (test_attestation_schema.py, test_review_queue.py, test_readiness.py, quality/test_dashboard.py) following the existing strict-TDD discipline; focused runs (`pytest tests/...`) precede the full gate (`pytest` and `pytest -W error`)."
+    },
+    {
+      "path": "docs/developer/tool-and-engine-development.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed. Phase 3 follows the existing module+adapter+registry discipline; no new engine was introduced (only attest/queue/readiness/dashboard subsystems)."
+    },
+    {
+      "path": "docs/development/ACTIVE_PHASE.md",
+      "disposition": "updated",
+      "evidence": "Flipped from phase-2 to phase-3 once the Phase 3 documentation audit coverage verified by scripts/verify_docs.py --phase phase-3 passes."
+    },
+    {
+      "path": "docs/development/DOCUMENTATION_GOVERNANCE.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed. Phase 3 follows the documented governance: every phase gets a phase-N.json audit (this file); the active phase is advanced only after the audit verifies; the DEVELOPMENT_HISTORY.md template is extended per contract."
+    },
+    {
+      "path": "docs/development/DOCUMENTATION_INVENTORY.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed. Phase 3 added docs/QUALITY.md and three new schema files (attestation.schema.json, readiness.schema.json) under docs/schemas/. No inventory change required because the existing inventory tracks directories, not file content."
+    },
+    {
+      "path": "docs/development/README.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed. Phase 3 added the phase-3.json audit and the readiness benchmark dashboard; the development README's narrative already references 'phase audits' as the entry point."
+    },
+    {
+      "path": "docs/diagrams/README.md",
+      "disposition": "not-applicable",
+      "evidence": "Phase 3 did not add new diagrams. The review_queue/readiness/dashboard flows are linear and the textual descriptions in their module docstrings are sufficient."
+    },
+    {
+      "path": "docs/getting-started/first-run.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed. Phase 3 commands (attest --in-toto, review-queue, readiness, benchmark-dashboard) are downstream of the documented first-run path; no change to the install/first-conversion narrative."
+    },
+    {
+      "path": "docs/getting-started/glossary.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed. Phase 3 introduces no new vocabulary; attest/in-toto, queue/readiness/grade, and benchmark dashboard are documented in their respective modules."
+    },
+    {
+      "path": "docs/getting-started/installation.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed. The new in-toto==3.1.0 dep pulls in transitively (securesystemslib, iso8601, pathspec, python-dateutil); the existing `uv sync` flow resolves them on Windows/Ubuntu/macOS — no install-step change."
+    },
+    {
+      "path": "docs/integrations/ci-overview.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed. Phase 3 final gates `unset PYTHONPATH && uv run --no-sync --python 3.13 pytest` and the same with `-W error` are already the documented CI contract. New: the benchmark-dashboard JSON artifact is the recommended CI upload."
+    },
+    {
+      "path": "docs/integrations/mcp-client-setup.md",
+      "disposition": "not-applicable",
+      "evidence": "Phase 3 does not modify MCP server behaviour; readiness/queue/dashboard are local CLI."
+    },
+    {
+      "path": "docs/integrations/mcp-overview.md",
+      "disposition": "not-applicable",
+      "evidence": "Phase 3 does not modify MCP."
+    },
+    {
+      "path": "docs/integrations/scripts-and-automation.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed. Phase 3 adds the new CLI commands (`review-queue`, `readiness`, `benchmark-dashboard`) for scriptable consumption; the existing automation patterns (`--json` flags, exit codes) are unchanged."
+    },
+    {
+      "path": "docs/integrations/serve-overview.md",
+      "disposition": "not-applicable",
+      "evidence": "Phase 3 does not modify HTTP serve."
+    },
+    {
+      "path": "docs/maintainers/adr/0001-sqlite-fts5-as-local-baseline.md",
+      "disposition": "not-applicable",
+      "evidence": "Phase 3 does not touch the FTS5 baseline."
+    },
+    {
+      "path": "docs/maintainers/adr/0002-okf-v0.2-as-canonical-format.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed. Phase 3 attest.py derives source provenance from OKF frontmatter sources[] fields per ADR-0002; no format change."
+    },
+    {
+      "path": "docs/maintainers/adr/0003-human-pending-invariant.md",
+      "disposition": "updated",
+      "evidence": "ADR-0003 enforced throughout Phase 3: queue/readiness commands are read-only against concept frontmatter; attest/in-toto never claim human review; benchmark-dashboard surfaces metric deltas only. Verified by test_review_queue.py::test_queue_commands_never_change_verified_in_frontmatter, test_readiness.py::test_build_report_does_not_modify_concept_frontmatter, and the dashboard's no-network/no-trust-claim static checks."
+    },
+    {
+      "path": "docs/maintainers/adr/0004-locked-dependency-policy.md",
+      "disposition": "updated",
+      "evidence": "ADR-0004 honoured: in-toto==3.1.0 pinned in pyproject.toml; uv.lock regenerated; `unset PYTHONPATH && uv run --no-sync --python 3.13 pytest` reproduces the full 602-test suite in 14.12s."
+    },
+    {
+      "path": "docs/maintainers/adr/0005-neon-palette-discipline.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed. Phase 3 benchmark_dashboard.py uses the established neon cyan/pink palette (.improve color #22D3EE, .regress color #EC4899) for the HTML delta classes; no red/yellow introduced."
+    },
+    {
+      "path": "docs/maintainers/adr/0006-redacted-derivative-deferred.md",
+      "disposition": "not-applicable",
+      "evidence": "Phase 3 does not introduce redaction-derivative work; Contract 3.3 (delivered in b084ea9) remains the authoritative source."
+    },
+    {
+      "path": "docs/maintainers/adr/0007-graph-bounded-vocabulary.md",
+      "disposition": "not-applicable",
+      "evidence": "Phase 3 does not touch the graph vocabulary."
+    },
+    {
+      "path": "docs/maintainers/adr/README.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed. Phase 3 updates ADRs 0003 and 0004 (noted above); no new ADR created."
+    },
+    {
+      "path": "docs/maintainers/documentation-style-guide.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed. Phase 3 module docstrings follow the established narrative pattern (purpose, contract, safety/invariant statement); docs/QUALITY.md and schema JSON comments follow the existing concise-evidence style."
+    },
+    {
+      "path": "docs/maintainers/incident-and-security.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed. Phase 3 surfaces no new incident vectors: queue audit is local-only, attestation signing requires an explicit user-supplied ed25519 key, dashboard has no network calls. The existing guidance on rotation and key custody applies."
+    },
+    {
+      "path": "docs/maintainers/index.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed. Phase 3 deliverables are documented under their respective developer/, reference/, and schemas/ pages; no maintainer index change required."
+    },
+    {
+      "path": "docs/maintainers/support-runbook.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed. Phase 3 adds no new failure modes requiring runbook updates. Existing pytest/`-W error` gates remain the authoritative regression gate."
+    },
+    {
+      "path": "docs/maintainers/versioning-and-compatibility.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed. Phase 3 in-toto==3.1.0 dep is added within the existing compatibility policy; the new attestation.schema.json uses Draft 7 and the existing redaction schema baseline; no breaking changes to OKF v0.2 consumers."
+    },
+    {
+      "path": "docs/reference/cli-reference.md",
+      "disposition": "updated",
+      "evidence": "Phase 3 documents the new CLI surface: `headcleaner attest --key/--in-toto/--verify --public-key`, `headcleaner review-queue [--pack/--limit/--json]`, `headcleaner review-claim --reviewer ID`, `headcleaner readiness [--profile/--json]`, `headcleaner benchmark-dashboard CURRENT [--format]`. Each command's behaviour is verified by the focused test suite and the CLI smoke runs documented in DEVELOPMENT_HISTORY.md."
+    },
+    {
+      "path": "docs/reference/compatibility.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed. Phase 3 keeps compatibility: legacy `headcleaner verify` and `--private-key` aliases are retained per the contract; new commands are additive."
+    },
+    {
+      "path": "docs/reference/configuration-reference.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed. Phase 3 readiness profile names (default/rag/publication) are part of the readiness CLI surface, not a configuration file format; no config schema change."
+    },
+    {
+      "path": "docs/reference/engine-directory.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed. attest.py now records engine capability/version per concept from router.engine_capabilities(); no new adapter was introduced."
+    },
+    {
+      "path": "docs/reference/environment-variables.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed. Phase 3 does not introduce new env vars."
+    },
+    {
+      "path": "docs/reference/index.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed. Phase 3 adds the new readiness/queue/dashboard commands to the existing CLI reference page; index content remains accurate."
+    },
+    {
+      "path": "docs/reference/mcp-tool-reference.md",
+      "disposition": "not-applicable",
+      "evidence": "Phase 3 does not modify MCP tools."
+    },
+    {
+      "path": "docs/reference/result-reference.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed. Phase 3 in-toto Statement payload, ReadinessReport shape, QueueItem shape, and DashboardInputs JSON shape are documented in their respective module docstrings and verified by the schema tests."
+    },
+    {
+      "path": "docs/reference/serve-api-reference.md",
+      "disposition": "not-applicable",
+      "evidence": "Phase 3 does not modify HTTP serve."
+    },
+    {
+      "path": "docs/safety/permissions.md",
+      "disposition": "updated",
+      "evidence": "Phase 3 reviewed: queue/readiness are read-only against concept frontmatter; attest never writes outside the bundle path supplied by the user (no ~/.headcleaner side-effects); benchmark-dashboard has zero network calls. Confirmed by test_review_queue.py, test_readiness.py, and the dashboard's static no-network check."
+    },
+    {
+      "path": "docs/safety/privacy-and-data-handling.md",
+      "disposition": "updated",
+      "evidence": "Phase 3 reviewed: attest source provenance carries only the OKF frontmatter sha256 values; queue/readiness carry no raw text; dashboard surfaces metric numbers only. No raw document content is uploaded or transmitted. Verified by the no-network and no-trust-mutation tests."
+    },
+    {
+      "path": "docs/safety/safety-overview.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed. Phase 3 commands respect the safety stance: no auto-claim, no remote publication, no opaque ML ranking, no auto-signed content."
+    },
+    {
+      "path": "docs/safety/security-model.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed. Phase 3 attestation signing requires an explicit user-supplied ed25519 PEM (--key); no key is generated, stored, or uploaded by the CLI. Verified by tests/test_attest.py and the smoke runs."
+    },
+    {
+      "path": "docs/schemas/README.md",
+      "disposition": "updated",
+      "evidence": "Phase 3 added two new schema files: attestation.schema.json (Contract 3.5, Draft 7, requires tool/version/concepts/source_provenance/merkle_root/schema_version/timestamp/engines) and readiness.schema.json (Contract 3.7, Draft 7, requires concept_ref/grade/score/deductions/requirements/schema_version). Both validated by tests/test_attestation_schema.py and tests/test_readiness.py."
+    },
+    {
+      "path": "docs/tutorials/ai-coding-assistant.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed. Phase 3 queue/readiness/dashboard commands are available for AI-agent use through the same `--json` flags already documented; the existing tutorial remains accurate."
+    },
+    {
+      "path": "docs/tutorials/ci-integration.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed. Phase 3 final gates are unchanged: `unset PYTHONPATH && uv run --no-sync --python 3.13 pytest` and `pytest -W error`. Benchmark-dashboard JSON is the new recommended artifact upload."
+    },
+    {
+      "path": "docs/tutorials/email-and-attachments.md",
+      "disposition": "not-applicable",
+      "evidence": "Phase 3 does not modify attachment handling."
+    },
+    {
+      "path": "docs/tutorials/first-10-minutes.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed. Phase 3 does not alter the first-10-minutes path; the new commands are downstream of the documented convert → attest flow."
+    },
+    {
+      "path": "docs/tutorials/index.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed. Phase 3 does not add new tutorial entries."
+    },
+    {
+      "path": "docs/tutorials/local-search.md",
+      "disposition": "not-applicable",
+      "evidence": "Phase 3 does not modify local search."
+    },
+    {
+      "path": "docs/tutorials/pdf-and-ocr.md",
+      "disposition": "not-applicable",
+      "evidence": "Phase 3 does not modify PDF/OCR behaviour."
+    },
+    {
+      "path": "docs/tutorials/python-project.md",
+      "disposition": "not-applicable",
+      "evidence": "Phase 3 does not modify Python-project behaviour."
+    },
+    {
+      "path": "docs/user-guide/checking-converted-output.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed. Phase 3 `headcleaner readiness` is the recommended user-facing read-only signal for conversion quality; the user-guide narrative remains accurate."
+    },
+    {
+      "path": "docs/user-guide/citations-and-trust.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed. Phase 3 trust invariants — `verified: human:pending` is never auto-upgraded, queue/readiness are read-only — are aligned with the existing trust narrative."
+    },
+    {
+      "path": "docs/user-guide/everyday-workflow.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed. Phase 3 adds `headcleaner readiness` as an optional everyday-workflow check between convert and review."
+    },
+    {
+      "path": "docs/user-guide/faq.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed. No FAQ entry contradicts Phase 3 behaviour; the existing 'auto-verified' FAQ answers remain correct (still never auto-claimed)."
+    },
+    {
+      "path": "docs/user-guide/index.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed. No index change required."
+    },
+    {
+      "path": "docs/user-guide/search-and-context.md",
+      "disposition": "not-applicable",
+      "evidence": "Phase 3 does not modify search/context."
+    },
+    {
+      "path": "docs/user-guide/troubleshooting.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed. Phase 3 adds `headcleaner readiness` as a recommended troubleshooting step for understanding why a concept is gated; existing troubleshooting guidance remains accurate."
+    },
+    {
+      "path": "docs/user-guide/understanding-results.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed. Phase 3 introduces the ReadinessReport (grade blocked|needs_review|conditional|ready) and the QueueItem (priority + factors); both are documented in their module docstrings and verified by the schema tests."
+    },
+    {
+      "path": "docs/user-guide/working-with-ai-agents.md",
+      "disposition": "reviewed",
+      "evidence": "Reviewed. Phase 3 commands are additive and opt-in; AI-agent workflows that previously stopped after `headcleaner attest` can now call `readiness` and `review-queue --json` for the same data."
+    }
+  ]
+}

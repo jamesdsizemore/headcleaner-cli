@@ -80,3 +80,25 @@ This is the append-only record of implemented work and its verification. Before 
   - `tests/quality/test_dashboard.py`: **12 passed** (rejects missing attribution keys, rejects empty attribution, rejects non_public fixture, rejects unknown fixture reference, rejects missing baseline keys; render JSON deterministic; render HTML self-contained / no timestamps / no script tags / HTML-escapes dangerous labels; includes tool version and baseline schema; signed delta direction correct; static check confirms no `urllib`/`requests`/`httpx`/`socket` imports).
   - CLI smoke: JSON delta=0.0 for matching metrics; HTML render is `<!DOCTYPE html>`; non_public baseline causes exit 1.
 - **Known limitations:** Per-metric CI pass/fail thresholds are intentionally not part of this contract — the dashboard surfaces numbers, the workflow enforces gates.
+
+## Phase 3 — complete (2026-08-21)
+
+- **Scope:** Contracts 3.1–3.4 (evidence workbench, policy packs, redaction, inspection) landed as the `b084ea9` baseline; Contracts 3.5–3.8 (reproducible attestations + in-toto, risk-based review queues, readiness grades, public benchmark transparency) landed as four dedicated commits on the dedicated `phase3/attest-and-contracts` worktree.
+- **Documentation gate:** `docs/development/phase-audits/phase-3.json` covers all 78 active documents with `updated`/`reviewed`/`not-applicable` and concrete evidence; `uv run --no-sync --python 3.13 python scripts/verify_docs.py --phase phase-3` reports `DOCUMENTATION_AUDIT=complete` and exits 0. `ACTIVE_PHASE.md` advanced from `phase-2` to `phase-3` only after this gate passed.
+- **Final verification:**
+  - `unset PYTHONPATH && uv run --no-sync --python 3.13 pytest`: 602 passed, 10 skipped in 14.12s.
+  - Required `unset PYTHONPATH && uv run --no-sync --python 3.13 pytest -W error`: 602 passed, 10 skipped in 10.59s.
+  - `git diff --check` on the dedicated worktree: clean.
+  - `git log --oneline` shows the five Phase 3 commits (`b084ea9`, `34522ff`, `d530e70`, `63e0cee`, `3287fc4`) on `phase3/attest-and-contracts`; `main` left at `b084ea9` and was never modified by Phase 3 development.
+- **Trust invariants — never violated:**
+  - No auto-claim of `verified: human:reviewed`; queue and readiness commands are read-only against concept frontmatter (verified by `test_review_queue.py::test_queue_commands_never_change_verified_in_frontmatter` and `test_readiness.py::test_build_report_does_not_modify_concept_frontmatter`).
+  - Attestation signing requires an explicit user-supplied ed25519 PEM (no key generated, stored, or uploaded by the CLI).
+  - Benchmark dashboard statically verified to import zero networking modules (`urllib`/`requests`/`httpx`/`socket`).
+  - In-toto DSSE envelopes use the spec-correct `application/vnd.in-toto+json` payload type; the Statement's `_type` lives inside the decoded payload.
+- **Phase 3 commits on the dedicated worktree:**
+  - `b084ea9` — Contracts 3.1–3.4 baseline (evidence, policies, redact, inspect).
+  - `34522ff` — Contract 3.5: reproducible attestations + in-toto statements.
+  - `d530e70` — Contract 3.6: explainable risk-based review queues.
+  - `63e0cee` — Contract 3.7: evidence-based readiness grades.
+  - `3287fc4` — Contract 3.8: public benchmark transparency artifact.
+- **Known limitations:** Policy-pack-driven `[queue_weights]` table is reserved but the current `load_pack` parser does not surface it; readiness profile overrides are not yet pack-driven; per-metric CI thresholds for the benchmark dashboard remain a workflow concern, not a contract concern.
